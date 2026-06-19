@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de pendências — SUBPEAMS e SUBCOPERGD</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: #F2F4F7;
+    color: #1A1A1A;
+    margin: 0;
+    padding: 0 0 3rem;
+  }
+  header {
+    background: #1F4E79;
+    color: #FFFFFF;
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 4px solid #E8821E;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  #sync-indicator {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  header p {
+    margin: 0;
+    font-size: 14px;
+    color: #CFE0EF;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 1.5rem 0;
+  }
+  .metric-card {
+    background: #FFFFFF;
+    border: 1px solid #DDE3EA;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+  .metric-card .label {
+    font-size: 12px;
+    color: #5C6B7A;
+    margin: 0 0 4px;
+  }
+  .metric-card .value {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    color: #1F4E79;
+  }
+  .filters-group {
+    margin: 1rem 0 0.5rem;
+  }
+  .filters-group .group-label {
+    font-size: 12px;
+    color: #5C6B7A;
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .filter-btn {
+    border: 1px solid #C7CFD8;
+    background: #FFFFFF;
+    color: #1A1A1A;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 16px;
+    cursor: pointer;
+  }
+  .filter-btn:hover {
+    border-color: #1F4E79;
+  }
+  .filter-btn.active {
+    background: #1F4E79;
+    color: #FFFFFF;
+    border-color: #1F4E79;
+  }
+  .filter-btn.active.orange {
+    background: #E8821E;
+    border-color: #E8821E;
+  }
+  #cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 0.5rem;
+  }
+  .card {
+    background: #FFFFFF;
+    border: 1px solid #DDE3EA;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+  .card-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .item-no {
+    font-size: 12px;
+    color: #8A97A5;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1A1A1A;
+  }
+  .card-text {
+    font-size: 14px;
+    color: #44515E;
+    margin: 0 0 10px;
+    line-height: 1.5;
+  }
+  .card-text.clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .toggle-btn {
+    background: none;
+    border: none;
+    color: #1F4E79;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    margin: -4px 0 10px;
+    display: inline-block;
+  }
+  .toggle-btn:hover { text-decoration: underline; }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    border-top: 1px solid #EDEFF2;
+    padding-top: 10px;
+    font-size: 13px;
+  }
+  .meta-grid .meta-label {
+    color: #8A97A5;
+    font-size: 11px;
+    text-transform: uppercase;
+    display: block;
+  }
+  footer {
+    max-width: 1000px;
+    margin: 2rem auto 0;
+    padding: 0 2rem;
+    font-size: 12px;
+    color: #8A97A5;
+  }
+  .empty-state {
+    text-align: center;
+    color: #8A97A5;
+    padding: 2rem;
+    font-size: 14px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .status-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #5C6B7A;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  .status-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: #1F4E79;
+    cursor: pointer;
+  }
+  .card.completed {
+    background: #F7FAF7;
+    border-color: #CFE3CF;
+  }
+  .card.completed .card-title {
+    text-decoration: line-through;
+    color: #7A8A7A;
+  }
+  .tag.status-done {
+    background: #E1F0E1;
+    color: #2E6B2E;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Dashboard de pendências — SUBPEAMS e SUBCOPERGD</h1>
+    <p>UAE / SGP — TRT-17 · consolidado por eixo e comitê</p>
+  </div>
+  <span id="sync-indicator">⟳ conectando…</span>
+</header>
+
+<div class="container">
+  <div class="metrics" id="metrics"></div>
+
+  <div class="filters-group">
+    <p class="group-label">Comitê</p>
+    <div class="filter-row" id="filters-comite"></div>
+  </div>
+
+  <div class="filters-group">
+    <p class="group-label">Eixo</p>
+    <div class="filter-row" id="filters-eixo"></div>
+  </div>
+
+  <div class="filters-group">
+    <p class="group-label">Status</p>
+    <div class="filter-row" id="filters-status"></div>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<footer>
+  Gerado a partir dos itens reportados em correição, PDGP, COP e demandas diversas. Campos marcados [a confirmar] não tiveram fonte explícita no material de origem. As marcações de "concluída" são sincronizadas em tempo real via Firebase Firestore — qualquer alteração feita por um usuário aparece automaticamente para os demais.
+</footer>
+
+<script type="module">
+import { initializeApp }                                     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCybE6ghe_F8Rdr6vha3QQaDQLrDMK4uVQ",
+  authDomain:        "demandas-trt-17.firebaseapp.com",
+  projectId:         "demandas-trt-17",
+  storageBucket:     "demandas-trt-17.firebasestorage.app",
+  messagingSenderId: "72728505894",
+  appId:             "1:72728505894:web:c2289011bdf6ac9dfb40e7",
+};
+const app        = initializeApp(firebaseConfig);
+const db         = getFirestore(app);
+const STATE_DOC  = doc(db, 'estado', 'pendencias_subpeams_subcopergd');
+
+// Estado local dos status (sincronizado via Firestore)
+let statuses = {};
+let syncReady = false;
+
+// Listener em tempo real
+onSnapshot(STATE_DOC,
+  snap => {
+    statuses = snap.exists() ? (snap.data().statuses || {}) : {};
+    syncReady = true;
+    setSyncIndicator('ok');
+    renderAll();
+  },
+  err => {
+    console.error(err);
+    setSyncIndicator('error');
+  }
+);
+
+function setSyncIndicator(state) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  if (state === 'ok')    { el.textContent = '● sincronizado'; el.style.color = '#22C55E'; }
+  if (state === 'saving'){ el.textContent = '⟳ salvando…';   el.style.color = '#F59E0B'; }
+  if (state === 'error') { el.textContent = '✗ erro';         el.style.color = '#EF4444'; }
+}
+
+async function toggleStatus(id, done) {
+  setSyncIndicator('saving');
+  statuses[id] = done;
+  try {
+    await setDoc(STATE_DOC, { statuses, updatedAt: serverTimestamp() });
+  } catch(e) {
+    setSyncIndicator('error');
+  }
+}
+
+const data = [
+  {id:`item-1`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:1, titulo:`Política afirmativa racial: formação de gestores, cotas, cláusulas de terceirização e monitoramento (ADPF 973/STF)`, texto:`Determina-se que, em cumprimento à decisão proferida pelo STF na ADPF nº 973, se institua, no âmbito do TRT17, política afirmativa específica destinada a: formação de gestores negros; reserva de vagas em cargos em comissão, funções comissionadas, estágio e aprendizagem; cláusulas de inclusão racial em contratos de terceirização; mecanismos permanentes de monitoramento; e articulação com programas de capacitação institucional.`, ref:`Item 23, subitem 23.4`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-2`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:2, titulo:`Adequação à Lei nº 15.142/2025 — cotas raciais em concursos futuros`, texto:`Recomenda-se a adoção de providências institucionais voltadas à adequação progressiva à Lei nº 15.142/2025, mediante inclusão sistemática das cotas legais em futuros certames, acompanhamento periódico da composição étnico-racial do quadro de pessoal e avaliação de ações afirmativas complementares.`, ref:`Item 1, subitem 1.2.7-C`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-3`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:3, titulo:`Equiparação de oportunidades para pessoas com deficiência em cargos e promoções`, texto:`Recomendam-se a adoção e o fortalecimento de práticas institucionais voltadas à equiparação de oportunidades no acesso a cargos, nos critérios de promoção e remoção, e no exercício de funções comissionadas e cargos em comissão para pessoas com deficiência.`, ref:`Item 1, subitem 1.2.7-D`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-4`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:4, titulo:`Divulgação do Protocolo de Julgamento com Perspectiva de Gênero — ciência ao SUBCOPERGD`, texto:`Determina-se o cumprimento da Resolução CNJ nº 492/2023, para propiciar o acesso ao Protocolo para Julgamento com Perspectiva de Gênero e sua ampla divulgação ao público interno e externo, bem como dar ciência ao SUBCOPERGD do assunto.`, ref:`Item 23, subitem 23.4`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-5`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:5, titulo:`Política judiciária de atenção a comunidades quilombolas`, texto:`Recomenda-se a adoção de medidas que implementem a política judiciária de atenção às comunidades quilombolas da jurisdição, nos termos da Resolução CNJ nº 599/2024, com adoção das ações sugeridas no subitem 23.12 da ata.`, ref:`Item 23, subitem 23.13`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-6`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:6, titulo:`Plano de implementação do Protocolo de Perspectiva Racial em 90 dias`, texto:`Recomenda-se que, no prazo de 90 dias, seja apresentado plano de implementação do Protocolo para julgamento com perspectiva racial, contemplando cronograma por etapas, áreas responsáveis e indicadores de monitoramento, nos termos da Resolução CNJ nº 598/2024.`, ref:`Item 23, subitem 23.14`, dest:`Presidência`, comite:`SUBCOPERGD`, prazo:`90 dias`},
+  {id:`item-7`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:7, titulo:`Protocolo de proteção a vítimas e testemunhas de assédio`, texto:`Recomenda-se, à luz dos artigos 10, 11 e 22 da Resolução CNJ nº 351/2020, a instituição de protocolo específico sobre proteção institucional a vítimas e testemunhas de assédio, contemplando teletrabalho ou licenças temporárias quando indicadas por equipe multiprofissional, e articulação entre subcomitês, saúde e alta administração.`, ref:`Item 23, subitens 23.15 / 23.16.6`, dest:`Presidência`, comite:`SUBPEAMS`, prazo:`Sem prazo definido`},
+  {id:`item-8`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:8, titulo:`Coordenação dos subcomitês de assédio não pode ser de magistrado da alta gestão`, texto:`Recomenda-se que a coordenadoria dos subcomitês de assédio não seja exercida por magistrado integrante de cargo da alta gestão do Tribunal, tampouco que seus integrantes sejam indicados pela Presidência.`, ref:`Item 23, subitem 23.16.1`, dest:`Presidência`, comite:`SUBPEAMS`, prazo:`Sem prazo definido`},
+  {id:`item-9`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:9, titulo:`Relatórios estatísticos periódicos de denúncias de assédio`, texto:`Recomenda-se a elaboração e publicação regular de relatórios estatísticos, abrangendo denúncias formalizadas e não formalizadas, conforme art. 14, §4º, da Resolução CNJ nº 351/2020, como subsídio para ajustes nas políticas de combate ao assédio.`, ref:`Item 23, subitem 23.16.5`, dest:`Presidência`, comite:`SUBPEAMS`, prazo:`Sem prazo definido`},
+  {id:`item-10`, eixo:`Correição`, color:`#993C1D`, bg:`#FAECE7`, n:10, titulo:`Parceria institucional para políticas afirmativas e combate ao assédio`, texto:`Propõe-se a atuação do TRT17, em parceria com entidades públicas e privadas, na introdução de políticas afirmativas e de combate ao assédio moral e sexual e à discriminação, observando as diretrizes do CNJ e do CSJT.`, ref:`Item 23, subitem 23.16.7`, dest:`Presidência e Corregedoria-Regional`, comite:`SUBPEAMS / SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-11`, eixo:`PDGP`, color:`#0F6E56`, bg:`#E1F5EE`, titulo:`Plano de Ação de Prevenção e Enfrentamento (Res. CSJT 360/2023)`, texto:`Adotar e executar plano de ação de prevenção e enfrentamento às práticas de violência, assédio e discriminação baseadas na gestão e organização do trabalho, nos termos do art. 5º da Resolução CSJT nº 360/2023.`, ref:`PDGP 26 / Res. CSJT 360/2023`, dest:`UAE / SUBPEAMS`, comite:`SUBPEAMS`, prazo:`Ano de 2026 (1º e 2º sem)`},
+  {id:`item-12`, eixo:`COP`, color:`#534AB7`, bg:`#EEEDFE`, titulo:`Benchmark de acesso de PCD a cargos gerenciais`, texto:`O COP aprovou a realização de pesquisa de benchmarks no setor público e privado (demanda ID 17015), com objetivo de identificar boas práticas que fomentem o acesso de pessoas com deficiência a cargos gerenciais no Tribunal.`, ref:`Demanda COP ID 17015`, dest:`SGP / UAE`, comite:`SUBCOPERGD`, prazo:`Sem prazo definido`},
+  {id:`item-13`, eixo:`Cartilha / Comunicação`, color:`#185FA5`, bg:`#E6F1FB`, titulo:`Dados técnicos para o TR da cartilha de ambientação`, texto:`Fornecer dados técnicos (formato, número de páginas, projeto gráfico) para o Termo de Referência da cartilha, conforme Despacho 555.`, ref:`Despacho 555 / SEI 0000674-31.2023.5.17.0500`, dest:`UAE / SUBPEAMS`, comite:`SUBPEAMS`, prazo:`Imediato`},
+  {id:`item-14`, eixo:`Contratos / Apoio administrativo`, color:`#854F0B`, bg:`#FAEEDA`, titulo:`Apoio administrativo às contratações do Projeto Transeuntes`, texto:`Apoio administrativo e condução das contratações e rubricas financeiras do Projeto Transeuntes.`, ref:`SEI 0000405-55.2024.5.17.0500`, dest:`UAE / SEADM / DIGER`, comite:`SUBCOPERGD`, prazo:`Durante a execução (2026)`}
+];
+
+const eixos = [`Todos`, ...new Set(data.map(d => d.eixo))];
+const comites = [`Todos`, `SUBPEAMS`, `SUBCOPERGD`];
+const statusOptions = [`Todos`, `Pendentes`, `Concluídas`];
+let activeEixo = `Todos`;
+let activeComite = `Todos`;
+let activeStatus = `Todos`;
+
+function isDone(id) { return !!statuses[id]; }
+function countDone() { return data.filter(d => isDone(d.id)).length; }
+
+function countByComite(c) {
+  if (c === `Todos`) return data.length;
+  return data.filter(d => d.comite.includes(c)).length;
+}
+
+function renderMetrics() {
+  const critico = data.filter(d => d.prazo === `Imediato` || d.prazo === `90 dias`).length;
+  const done = countDone();
+  const metrics = [
+    {label: `Total de pendências`, value: data.length},
+    {label: `SUBCOPERGD`, value: countByComite(`SUBCOPERGD`)},
+    {label: `SUBPEAMS`, value: countByComite(`SUBPEAMS`)},
+    {label: `Concluídas`, value: `${done} / ${data.length}`},
+    {label: `Prazo crítico (\u226490 dias)`, value: critico}
+  ];
+  document.getElementById(`metrics`).innerHTML = metrics.map(m =>
+    `<div class="metric-card"><p class="label">${m.label}</p><p class="value">${m.value}</p></div>`
+  ).join(``);
+}
+
+function renderFilterGroup(containerId, options, active, onClick, orangeWhenActive) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = options.map(o => {
+    const cls = o === active ? `filter-btn active${orangeWhenActive ? ` orange` : ``}` : `filter-btn`;
+    return `<button class="${cls}" data-value="${o}">${o}</button>`;
+  }).join(``);
+  el.querySelectorAll(`button`).forEach(btn => {
+    btn.addEventListener(`click`, () => {
+      onClick(btn.getAttribute(`data-value`));
+      renderAll();
+    });
+  });
+}
+
+function renderCards() {
+  const filtered = data.filter(d => {
+    const matchEixo = activeEixo === `Todos` || d.eixo === activeEixo;
+    const matchComite = activeComite === `Todos` || d.comite.includes(activeComite);
+    const done = isDone(d.id);
+    const matchStatus = activeStatus === `Todos`
+      || (activeStatus === `Concluídas` && done)
+      || (activeStatus === `Pendentes` && !done);
+    return matchEixo && matchComite && matchStatus;
+  });
+
+  if (filtered.length === 0) {
+    document.getElementById(`cards`).innerHTML = `<div class="empty-state">Nenhuma pendência encontrada para esse filtro.</div>`;
+    return;
+  }
+
+  document.getElementById(`cards`).innerHTML = filtered.map((d, i) => {
+    const longText = d.texto.length > 140;
+    const done = isDone(d.id);
+    return `<div class="card${done ? ` completed` : ``}" style="border-left: 4px solid ${d.color};">
+      <div class="card-header">
+        <div class="card-tags">
+          <span class="tag" style="background:${d.bg}; color:${d.color};">${d.eixo}</span>
+          <span class="tag" style="background:#EEF2F6; color:#1F4E79;">${d.comite}</span>
+          ${done ? `<span class="tag status-done">Concluída</span>` : ``}
+          ${d.n ? `<span class="item-no">item ${d.n}</span>` : ``}
+        </div>
+        <label class="status-check">
+          <input type="checkbox" data-id="${d.id}" ${done ? `checked` : ``}>
+          Concluída
+        </label>
+      </div>
+      <p class="card-title">${d.titulo}</p>
+      <p class="card-text${longText ? ` clamp` : ``}" id="texto-${i}">${d.texto}</p>
+      ${longText ? `<button class="toggle-btn" data-target="texto-${i}">Ver texto completo</button>` : ``}
+      <div class="meta-grid">
+        <div><span class="meta-label">Responsável</span>${d.dest}</div>
+        <div><span class="meta-label">Prazo</span>${d.prazo}</div>
+        <div><span class="meta-label">Referência</span>${d.ref}</div>
+      </div>
+    </div>`;
+  }).join(``);
+
+  document.querySelectorAll(`.toggle-btn`).forEach(btn => {
+    btn.addEventListener(`click`, () => {
+      const target = document.getElementById(btn.getAttribute(`data-target`));
+      const isClamped = target.classList.contains(`clamp`);
+      target.classList.toggle(`clamp`);
+      btn.textContent = isClamped ? `Recolher` : `Ver texto completo`;
+    });
+  });
+
+  document.querySelectorAll(`.status-check input`).forEach(checkbox => {
+    checkbox.addEventListener(`change`, () => {
+      toggleStatus(checkbox.getAttribute(`data-id`), checkbox.checked);
+    });
+  });
+}
+
+function renderAll() {
+  renderMetrics();
+  renderFilterGroup(`filters-comite`, comites, activeComite, v => activeComite = v, true);
+  renderFilterGroup(`filters-eixo`, eixos, activeEixo, v => activeEixo = v, false);
+  renderFilterGroup(`filters-status`, statusOptions, activeStatus, v => activeStatus = v, false);
+  renderCards();
+}
+
+// Não chama renderAll() aqui — o onSnapshot dispara assim que conecta
+</script>
+
+</body>
+</html>
