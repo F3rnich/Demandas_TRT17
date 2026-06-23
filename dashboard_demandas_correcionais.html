@@ -6,138 +6,63 @@
 <title>Demandas correcionais da SGP — TRT-17</title>
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-    background: #F2F4F7;
-    color: #1A1A1A;
-    margin: 0;
-    padding: 0 0 3rem;
-  }
-  header {
-    background: #1F4E79;
-    color: #FFFFFF;
-    padding: 2rem 2rem 1.5rem;
-    border-bottom: 4px solid #E8821E;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-  }
+  body { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; background: #F2F4F7; color: #1A1A1A; margin: 0; padding: 0 0 3rem; }
+  header { background: #1F4E79; color: #FFF; padding: 2rem 2rem 1.5rem; border-bottom: 4px solid #E8821E; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
   header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
   header p { margin: 0; font-size: 14px; color: #CFE0EF; }
-  #sync-indicator {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.4);
-    margin-top: 4px;
-    white-space: nowrap;
-  }
+  #sync-indicator { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); margin-top: 4px; white-space: nowrap; }
   .container { max-width: 1180px; margin: 0 auto; padding: 0 2rem; }
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin: 1.5rem 0;
-  }
-  .metric-card {
-    background: #FFFFFF;
-    border: 1px solid #DDE3EA;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-  }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 1.5rem 0; }
+  .metric-card { background: #FFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 1rem 1.25rem; }
   .metric-card .label { font-size: 12px; color: #5C6B7A; margin: 0 0 4px; }
   .metric-card .value { font-size: 26px; font-weight: 700; margin: 0; color: #1F4E79; }
   .metric-card.accent .value { color: #B45309; }
   .metric-card.ok .value { color: #2E6B2E; }
   .metric-card.warn .value { color: #B91C1C; }
-
   .filters-group { margin: 1rem 0 0.5rem; }
-  .filters-group .group-label {
-    font-size: 12px; color: #5C6B7A; margin: 0 0 6px;
-    text-transform: uppercase; letter-spacing: 0.03em;
-  }
+  .filters-group .group-label { font-size: 12px; color: #5C6B7A; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.03em; }
   .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; }
-  .filter-btn {
-    border: 1px solid #C7CFD8; background: #FFFFFF; color: #1A1A1A;
-    font-size: 13px; padding: 6px 14px; border-radius: 16px; cursor: pointer;
-  }
+  .filter-btn { border: 1px solid #C7CFD8; background: #FFF; color: #1A1A1A; font-size: 13px; padding: 6px 14px; border-radius: 16px; cursor: pointer; }
   .filter-btn:hover { border-color: #1F4E79; }
-  .filter-btn.active { background: #1F4E79; color: #FFFFFF; border-color: #1F4E79; }
+  .filter-btn.active { background: #1F4E79; color: #FFF; border-color: #1F4E79; }
   .filter-btn.active.orange { background: #E8821E; border-color: #E8821E; }
-
   .status-section { margin-top: 1.5rem; }
-  .status-bar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 14px; border-radius: 8px 8px 0 0;
-    font-size: 14px; font-weight: 700; color: #FFFFFF;
-  }
-  .status-bar .count {
-    background: rgba(255,255,255,0.25); border-radius: 12px;
-    font-size: 12px; padding: 1px 9px;
-  }
-  .status-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-    gap: 12px;
-    padding: 12px;
-    background: #FFFFFF;
-    border: 1px solid #DDE3EA;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-  }
-  .card {
-    background: #FFFFFF;
-    border: 1px solid #DDE3EA;
-    border-radius: 8px;
-    padding: 0.9rem 1rem;
-    display: flex; flex-direction: column;
-  }
+  .status-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 8px 8px 0 0; font-size: 14px; font-weight: 700; color: #FFF; }
+  .status-bar .count { background: rgba(255,255,255,0.25); border-radius: 12px; font-size: 12px; padding: 1px 9px; }
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; padding: 12px; background: #FFF; border: 1px solid #DDE3EA; border-top: none; border-radius: 0 0 8px 8px; }
+  .card { background: #FFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 0.9rem 1rem; display: flex; flex-direction: column; }
   .card-tags { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-  .tag {
-    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px;
-    text-transform: uppercase; letter-spacing: 0.02em;
-  }
+  .tag { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
   .tag.diverg { background: #FEE2E2; color: #B91C1C; }
   .item-no { font-size: 12px; color: #8A97A5; margin-left: auto; }
-  .card-title { font-size: 15px; font-weight: 700; margin: 0 0 6px; color: #1A1A1A; line-height: 1.35; }
-  .card-text { font-size: 13.5px; color: #44515E; margin: 0 0 8px; line-height: 1.5; }
-  .card-text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .toggle-btn {
-    background: none; border: none; color: #1F4E79; font-size: 12px;
-    cursor: pointer; padding: 0; margin: -2px 0 10px; display: inline-block; align-self: flex-start;
-  }
-  .toggle-btn:hover { text-decoration: underline; }
-  .manifesto {
-    font-size: 12.5px; color: #3C4A57; background: #F6F8FA;
-    border-left: 3px solid #C7CFD8; padding: 7px 10px; border-radius: 4px; margin: 0 0 8px; line-height: 1.45;
-  }
+  .card-title { font-size: 15px; font-weight: 700; margin: 0 0 4px; color: #1A1A1A; line-height: 1.35; }
+  .ref-ata { font-size: 11.5px; color: #8A97A5; margin: 0 0 8px; }
+  .manifesto { font-size: 12.5px; color: #3C4A57; background: #F6F8FA; border-left: 3px solid #C7CFD8; padding: 7px 10px; border-radius: 4px; margin: 0 0 8px; line-height: 1.45; }
   .manifesto .ml { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: #8A97A5; margin-bottom: 2px; }
   .manifesto.cgjt { border-left-color: #B91C1C; background: #FEF5F5; }
-  .meta-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px;
-    border-top: 1px solid #EDEFF2; padding-top: 9px; margin-top: 2px; font-size: 12.5px;
-  }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; border-top: 1px solid #EDEFF2; padding-top: 9px; margin-top: 2px; font-size: 12.5px; }
   .meta-grid div { min-width: 0; }
   .meta-grid .meta-label { color: #8A97A5; font-size: 10px; text-transform: uppercase; display: block; }
   .meta-grid .full { grid-column: 1 / -1; }
-  .editrow {
-    border-top: 1px solid #EDEFF2; margin-top: 10px; padding-top: 10px;
-    display: flex; flex-direction: column; gap: 8px;
-  }
+  .itens-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 6px; }
+  .itens-head .it-title { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #5C6B7A; font-weight: 700; }
+  .progress { font-size: 11.5px; color: #5C6B7A; }
+  .progress b { color: #2E6B2E; }
+  .progress-bar { height: 5px; background: #EDEFF2; border-radius: 3px; overflow: hidden; margin: 0 0 8px; }
+  .progress-bar > span { display: block; height: 100%; background: #2E6B2E; }
+  .item { display: flex; gap: 8px; padding: 8px; border: 1px solid #EDEFF2; border-radius: 6px; margin-bottom: 6px; background: #FCFCFD; }
+  .item-badge { flex: 0 0 22px; height: 22px; border-radius: 5px; background: #1F4E79; color: #FFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .item-body { flex: 1; min-width: 0; }
+  .item-text { font-size: 13px; color: #3C4A57; margin: 0 0 6px; line-height: 1.45; }
+  .item-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .prazo { font-size: 11px; color: #8A97A5; background: #EEF2F6; padding: 2px 7px; border-radius: 10px; }
+  .item-select { font-size: 12.5px; padding: 4px 7px; border: 1px solid #C7CFD8; border-radius: 6px; background: #FFF; cursor: pointer; font-family: inherit; margin-left: auto; }
+  .item-select:focus { outline: 2px solid #1F4E79; outline-offset: -1px; }
+  .editrow { border-top: 1px solid #EDEFF2; margin-top: 8px; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
   .editrow label { font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: #8A97A5; }
-  .status-select {
-    width: 100%; font-size: 13px; padding: 7px 8px; border: 1px solid #C7CFD8;
-    border-radius: 6px; background: #FFFFFF; cursor: pointer; font-family: inherit;
-  }
-  .obs-input {
-    width: 100%; font-size: 13px; padding: 7px 8px; border: 1px solid #C7CFD8;
-    border-radius: 6px; resize: vertical; min-height: 38px; font-family: inherit; color: #1A1A1A;
-  }
-  .obs-input:focus, .status-select:focus { outline: 2px solid #1F4E79; outline-offset: -1px; }
-  footer {
-    max-width: 1180px; margin: 2rem auto 0; padding: 0 2rem;
-    font-size: 12px; color: #8A97A5; line-height: 1.55;
-  }
+  .obs-input { width: 100%; font-size: 13px; padding: 7px 8px; border: 1px solid #C7CFD8; border-radius: 6px; resize: vertical; min-height: 38px; font-family: inherit; color: #1A1A1A; }
+  .obs-input:focus { outline: 2px solid #1F4E79; outline-offset: -1px; }
+  footer { max-width: 1180px; margin: 2rem auto 0; padding: 0 2rem; font-size: 12px; color: #8A97A5; line-height: 1.55; }
   .empty-state { text-align: center; color: #8A97A5; padding: 1.5rem; font-size: 14px; grid-column: 1 / -1; }
 </style>
 </head>
@@ -146,7 +71,7 @@
 <header>
   <div>
     <h1>Demandas correcionais da SGP — TRT-17</h1>
-    <p>UAE / SGP · Correição Ordinária CGJT 2026 · status por demanda</p>
+    <p>UAE / SGP · Correição Ordinária CGJT 2026 · acompanhamento por item</p>
   </div>
   <span id="sync-indicator">⟳ conectando…</span>
 </header>
@@ -167,7 +92,7 @@
 </div>
 
 <footer>
-  Gerado a partir do rol de demandas correcionais (demandas_correcionais.docx) e das certidões de providências da SGP juntadas aos processos SEI (PDF mesclado da correição). O status exibido é a <strong>autoavaliação registrada pela SGP</strong> em cada certidão; quando a Corregedoria já se manifestou em sentido diverso, isso é sinalizado no card (selo "divergência CGJT"). O campo <em>Status</em> e as <em>Observações internas</em> são editáveis e sincronizados em tempo real via Firebase Firestore — alterações de qualquer usuário aparecem automaticamente para os demais. Demandas sem prazo, data ou número de processo aparecem como <em>[a confirmar]</em>.
+  Construído a partir do texto integral das demandas (Demandas_Correicionais_SGP) e das certidões de providências da SGP juntadas aos processos SEI. O <strong>status é rastreado por item</strong>: cada determinação/recomendação é decomposta nos itens que a ata enumera (ex.: 17011 com 5 itens, 17038 com 8). O <strong>status da demanda é derivado automaticamente</strong> dos itens — Cumprida (todos os itens cumpridos), Sem andamento (nenhum iniciado) ou Em andamento (qualquer combinação). O status inicial de cada item parte da autoavaliação registrada pela SGP na respectiva certidão e deve ser refinado item a item. Quando a Corregedoria já se manifestou em sentido diverso, há selo <em>divergência CGJT</em>. Status dos itens e observações são editáveis e sincronizados em tempo real (Firebase Firestore). Campos sem fonte aparecem como <em>[a confirmar]</em>.
 </footer>
 
 <script type="module">
@@ -186,176 +111,226 @@ const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const STATE_DOC = doc(db, 'estado', 'demandas_correcionais_sgp');
 
-let statuses = {};   // overrides de status por id
-let notes    = {};   // observações internas por id
-let syncReady = false;
+let state = { itemStatus: {}, notes: {} };
 
 onSnapshot(STATE_DOC,
   snap => {
     const d = snap.exists() ? snap.data() : {};
-    statuses = d.statuses || {};
-    notes    = d.notes || {};
-    syncReady = true;
+    state.itemStatus = d.itemStatus || {};
+    state.notes      = d.notes || {};
     setSyncIndicator('ok');
     renderAll();
   },
   err => { console.error(err); setSyncIndicator('error'); }
 );
 
-function setSyncIndicator(state) {
-  const el = document.getElementById('sync-indicator');
-  if (!el) return;
-  if (state === 'ok')     { el.textContent = '● sincronizado'; el.style.color = '#22C55E'; }
-  if (state === 'saving') { el.textContent = '⟳ salvando…';    el.style.color = '#F59E0B'; }
-  if (state === 'error')  { el.textContent = '✗ erro';          el.style.color = '#EF4444'; }
+function setSyncIndicator(s) {
+  const el = document.getElementById('sync-indicator'); if (!el) return;
+  if (s === 'ok')     { el.textContent = '● sincronizado'; el.style.color = '#22C55E'; }
+  if (s === 'saving') { el.textContent = '⟳ salvando…';    el.style.color = '#F59E0B'; }
+  if (s === 'error')  { el.textContent = '✗ erro';          el.style.color = '#EF4444'; }
 }
-
 async function persist() {
   setSyncIndicator('saving');
-  try {
-    await setDoc(STATE_DOC, { statuses, notes, updatedAt: serverTimestamp() });
-  } catch(e) { console.error(e); setSyncIndicator('error'); }
+  try { await setDoc(STATE_DOC, { itemStatus: state.itemStatus, notes: state.notes, updatedAt: serverTimestamp() }); }
+  catch(e) { console.error(e); setSyncIndicator('error'); }
 }
 
-// ---- definição dos status ----
-const STATUS = {
-  cumprida:      { label: 'Cumprida',         bar: '#2E6B2E', tagBg: '#E1F0E1', tagFg: '#2E6B2E' },
-  parcial:       { label: 'Em andamento / parcial', bar: '#B45309', tagBg: '#FEF0DC', tagFg: '#B45309' },
-  sem_andamento: { label: 'Sem andamento',    bar: '#5C6B7A', tagBg: '#EEF2F6', tagFg: '#5C6B7A' },
+// status de ITEM
+const ISTAT = {
+  nao_iniciada: { label:'Não iniciada', fg:'#5C6B7A', bg:'#EEF2F6' },
+  em_andamento: { label:'Em andamento', fg:'#B45309', bg:'#FEF0DC' },
+  cumprida:     { label:'Cumprida',     fg:'#2E6B2E', bg:'#E1F0E1' },
 };
-const STATUS_ORDER = ['parcial', 'cumprida', 'sem_andamento'];
-
-// ---- eixos temáticos ----
+const ISTAT_ORDER = ['nao_iniciada','em_andamento','cumprida'];
+// status DERIVADO da demanda
+const DSTAT = {
+  cumprida:      { label:'Cumprida',              bar:'#2E6B2E', tagBg:'#E1F0E1', tagFg:'#2E6B2E' },
+  parcial:       { label:'Em andamento / parcial', bar:'#B45309', tagBg:'#FEF0DC', tagFg:'#B45309' },
+  sem_andamento: { label:'Sem andamento',         bar:'#5C6B7A', tagBg:'#EEF2F6', tagFg:'#5C6B7A' },
+};
+const DSTAT_ORDER = ['parcial','cumprida','sem_andamento'];
 const EIXO = {
-  assedio:       { label: 'Assédio',                fg: '#0C4A45', bg: '#EAF3F1' },
-  equidade:      { label: 'Equidade e diversidade', fg: '#993C1D', bg: '#FAECE7' },
-  teletrabalho:  { label: 'Teletrabalho',           fg: '#185FA5', bg: '#E6F1FB' },
-  jornada:       { label: 'Jornada / plantão',      fg: '#854F0B', bg: '#FAEEDA' },
+  assedio:      { label:'Assédio',                fg:'#0C4A45', bg:'#EAF3F1' },
+  equidade:     { label:'Equidade e diversidade', fg:'#993C1D', bg:'#FAECE7' },
+  teletrabalho: { label:'Teletrabalho',           fg:'#185FA5', bg:'#E6F1FB' },
+  jornada:      { label:'Jornada / plantão',      fg:'#854F0B', bg:'#FAEEDA' },
 };
 
-// ---- dados (fixos, da fonte) ----
+// def: status documentado da demanda -> semente de cada item
+const seed = { cumprida:'cumprida', parcial:'em_andamento', sem_andamento:'nao_iniciada' };
+
 const data = [
   { id:'17007', proc:'0000293-18.2026.5.17.0500', eixo:'jornada', comite:'SGP (geral)', def:'cumprida',
     titulo:'Sobreaviso como horas-crédito — Res. TRT 30/2014 × Res. CSJT 225/2018',
-    texto:'Compatibilização da Resolução TRT 17 nº 30/2014 com a Resolução CSJT nº 225/2018 quanto ao cômputo de horas de sobreaviso como horas-crédito (plantão judiciário e concessão de folgas a magistrados e servidores).',
-    sgp:'Pleno e tempestivo cumprimento: o normativo local foi ajustado e encontra-se em harmonia com a Res. CSJT nº 225/2018.', data:'16/04/2026', cert:'Certidão 7 (1306311)' },
+    ref:'Item 1 Estrutura — subitem 1.1.12.2 (Plantão judiciário; folgas a magistrados e servidores)',
+    sgp:'Pleno e tempestivo cumprimento: o normativo local foi ajustado e encontra-se em harmonia com a Res. CSJT nº 225/2018.', data:'16/04/2026', cert:'Certidão 7 (1306311)',
+    itens:[ {id:'u', prazo:'60 dias', texto:'Compatibilizar a Res. TRT 17 nº 30/2014 com a Res. CSJT nº 225/2018 quanto ao cômputo das horas de sobreaviso como horas-crédito, compensáveis à razão de 1/3 da hora normal quando o servidor não for convocado ao trabalho presencial.'} ] },
 
   { id:'17011', proc:'0000285-41.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Política afirmativa racial — ADPF 973/STF',
-    texto:'Instituição de política afirmativa racial no TRT17 em cumprimento à ADPF nº 973 do STF: formação de gestores negros, reserva de vagas, cláusulas em contratos de terceirização, monitoramento e capacitação institucional.',
-    sgp:'Cumprimento parcial — aplicação institucional da política afirmativa (ADPF 973) em estágio de implementação; demanda de terceirização e dados de gestão encaminhados.', data:'24/04/2026', cert:'Certidão 9 (1307590)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.4; Determinações e recomendações à Presidência',
+    sgp:'Cumprimento parcial — aplicação institucional da política afirmativa (ADPF 973) em estágio de implementação; demanda de terceirização e dados de gestão encaminhados.', data:'24/04/2026', cert:'Certidão 9 (1307590)',
+    itens:[
+      {id:'1', texto:'Formação de gestores negros entre os servidores, capacitando-os para ocupar cargos em comissão e funções comissionadas.'},
+      {id:'2', texto:'Percentuais mínimos de reserva de vagas para pessoas negras em cargos em comissão, funções comissionadas, estágio e aprendizagem.'},
+      {id:'3', texto:'Cláusulas específicas nos contratos de terceirização exigindo políticas afirmativas de inclusão racial pelas empresas contratadas.'},
+      {id:'4', texto:'Mecanismos permanentes de monitoramento e avaliação periódica do cumprimento das medidas.'},
+      {id:'5', texto:'Articulação das ações com programas contínuos de capacitação e sensibilização institucional (magistrados, servidores, estagiários, terceirizados e gestores de contratos).'},
+    ] },
 
   { id:'17014', proc:'0000292-33.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Cotas raciais — adequação à Lei nº 15.142/2025',
-    texto:'Recomendação de providências para adequação à Lei nº 15.142/2025, com inclusão sistemática de cotas legais em certames e acompanhamento da composição étnico-racial do quadro de pessoal.',
-    sgp:'Cumprimento parcial — em pleno processo de implementação. Edital 01/2022 não retroage; todo certame posterior à lei adotará 30% e reserva a negros, indígenas e quilombolas.', data:'09/04/2026', cert:'Certidão 6 (1305321)' },
+    ref:'Item 1 Estrutura — subitem 1.2.7, "c" (servidores quotistas)',
+    sgp:'Cumprimento parcial — em pleno processo de implementação. Edital 01/2022 não retroage; todo certame posterior à lei adotará 30% e reserva a negros, indígenas e quilombolas.', data:'09/04/2026', cert:'Certidão 6 (1305321)',
+    itens:[ {id:'u', texto:'Adequação progressiva e efetiva à Lei nº 15.142/2025: inclusão sistemática das cotas legais em futuros certames, acompanhamento periódico da composição étnico-racial do quadro e avaliação de ações afirmativas complementares.'} ] },
 
   { id:'17015', proc:'0000294-03.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Equiparação de oportunidades para pessoas com deficiência',
-    texto:'Fortalecimento de práticas institucionais para equiparação de oportunidades às pessoas com deficiência no acesso a cargos, promoção, remoção e funções comissionadas.',
-    sgp:'Cumprimento parcial — propostas de práticas institucionais afirmativas em estágio de implementação.', data:'13/05/2026', cert:'Certidão 20 (1312633)' },
+    ref:'Item 1 Estrutura — subitem 1.2.7, "d" (servidores com deficiência)',
+    sgp:'Cumprimento parcial — propostas de práticas institucionais afirmativas em estágio de implementação.', data:'13/05/2026', cert:'Certidão 20 (1312633)',
+    itens:[ {id:'u', texto:'Adotar e fortalecer práticas institucionais de equiparação de oportunidades às pessoas com deficiência no acesso a cargos, critérios de promoção e remoção e exercício de funções comissionadas/cargos em comissão.'} ] },
 
   { id:'17038', proc:'0000325-23.2026.5.17.0500', eixo:'teletrabalho', comite:'SUBCOTELE', def:'parcial', diverg:true,
     titulo:'Teletrabalho — revisão do Ato 12/2025 e adequações',
-    texto:'Determinações sobre teletrabalho: exclusão do teletrabalho assíncrono, mínimo de 3 dias presenciais por semana no híbrido, adequação às decisões do CNJ, limite de 30% dos servidores, mecanismo biométrico de frequência, revisão do teletrabalho no exterior, entre outras providências.',
-    sgp:'Autoavaliação da SGP: recomendação em pleno processo de implementação, com ciência das gestoras e planejamento definido. TRT chegou a afirmar cumprimento integral.',
-    cgjt:'Decisão da Corregedoria no PP 0000112-40.2026.2.00.0500 reconheceu cumprimento PARCIAL e exigiu complementação urgente da documentação para aferição material.', data:'16/04/2026', cert:'Certidão 8 (1306325)' },
+    ref:'Item 1 Estrutura Administrativa — subitem 1.2.18 (Teletrabalho)',
+    sgp:'Autoavaliação da SGP: recomendação em pleno processo de implementação, com ciência das gestoras e planejamento definido. O TRT chegou a afirmar cumprimento integral.',
+    cgjt:'Decisão da Corregedoria no PP 0000112-40.2026.2.00.0500 reconheceu cumprimento PARCIAL e exigiu complementação urgente da documentação para aferição material.', data:'16/04/2026', cert:'Certidão 8 (1306325)',
+    itens:[
+      {id:'a', prazo:'60 dias', texto:'Revisar o Ato TRT 17ª PRESI/SGP nº 12/2025 para excluir a possibilidade de teletrabalho assíncrono.'},
+      {id:'b', prazo:'60 dias', texto:'Alterar o inciso II do §2º do Ato 12/2025 para exigir, no teletrabalho parcial/híbrido, comparecimento presencial de no mínimo 3 dias úteis por semana.'},
+      {id:'c', prazo:'30 dias', texto:'Adequar as unidades (inclusive gabinetes de desembargadores) à decisão do PCA 0002260-11.2022.2.00.0000/CNJ: 3 dias presenciais × 2 remotos, quórum suficiente em todo o expediente e controle de ponto. Acompanhamento direto da CGJT via Pedido de Providências.'},
+      {id:'d', prazo:'60 dias', texto:'Limitar o teletrabalho (integral ou parcial) a 30% do quadro permanente de cada unidade, incluídos os assistentes de gabinete de 1º e 2º grau (art. 5º, III, Res. CNJ 227/2016 c/ Res. 481/2022).'},
+      {id:'e', prazo:'60 dias', texto:'Instituir critérios objetivos de monitoramento contínuo da efetividade do serviço presencial, sobretudo em unidades com maior concentração de teletrabalho ou em exceção aos limites.'},
+      {id:'f', prazo:'180 dias', texto:'Implantar mecanismo eletrônico ou biométrico de apuração da frequência dos servidores em teletrabalho (1º e 2º graus) e regulamentar a matéria.'},
+      {id:'g', prazo:'60 dias', texto:'Rever todos os processos de teletrabalho fora do país sob a ótica do interesse público, com cronograma de retorno presencial quando cabível. Acompanhamento direto da CGJT via Pedido de Providências.'},
+      {id:'h', prazo:'30 dias', texto:'Interromper autorizações de teletrabalho acima de 30% da lotação da unidade, para propiciar o rodízio de servidores.'},
+    ] },
 
   { id:'17042', proc:'0000323-53.2026.5.17.0500', eixo:'teletrabalho', comite:'SUBCOTELE', def:'cumprida',
     titulo:'Comissão de Gestão do Teletrabalho — art. 17, II, Res. CNJ 227/2016',
-    texto:'Adoção das providências exigidas pelo art. 17, II, da Resolução CNJ nº 227/2016, relativas à Comissão de Gestão do Teletrabalho (Subcomitê).',
-    sgp:'Recomendação atendida: relatório consolidado de acompanhamento do teletrabalho (exercício 2025) apresentado pelo SUBCOTELE à Presidência.', data:'17/04/2026', cert:'Certidão 9 (1306328)' },
+    ref:'Item 1 Estrutura — subitem 1.2.19 (Comissão/Subcomitê de Gestão do Teletrabalho)',
+    sgp:'Recomendação atendida: relatório consolidado de acompanhamento do teletrabalho (exercício 2025) apresentado pelo SUBCOTELE à Presidência.', data:'17/04/2026', cert:'Certidão 9 (1306328)',
+    itens:[ {id:'u', prazo:'60 dias', texto:'Adotar as providências do art. 17, II, da Res. CNJ 227/2016 (Comissão/Subcomitê de Gestão do Teletrabalho) e informar as medidas adotadas à CGJT.'} ] },
 
   { id:'17064', proc:'0000350-36.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Protocolo de Julgamento com Perspectiva de Gênero — Res. CNJ 492/2023',
-    texto:'Cumprimento da Resolução CNJ nº 492/2023, propiciando o acesso ao Protocolo para Julgamento com Perspectiva de Gênero e sua ampla divulgação.',
-    sgp:'Cumprimento parcial — política institucional de julgamento com perspectiva de gênero em estágio de implementação.', data:'13/05/2026', cert:'Certidão 19 (1312570)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.4',
+    sgp:'Cumprimento parcial — política institucional de julgamento com perspectiva de gênero em estágio de implementação.', data:'13/05/2026', cert:'Certidão 19 (1312570)',
+    itens:[ {id:'u', texto:'Cumprir a Res. CNJ 492/2023: propiciar e divulgar amplamente o acesso ao Protocolo para Julgamento com Perspectiva de Gênero (público interno e externo) e dar ciência ao SUBCOPERGD.'} ] },
 
   { id:'17066', proc:'0000355-58.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Política de atenção às comunidades quilombolas — Res. CNJ 599/2024',
-    texto:'Implementação da política judiciária de atenção às comunidades quilombolas, nos termos da Resolução CNJ nº 599/2024.',
-    sgp:'Cumprimento parcial — política de atenção às comunidades quilombolas em estágio de implementação (articulação com o Governo do Estado do ES registrada).', data:'13/05/2026', cert:'Certidão 21 (1312663)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.13 (comunidades quilombolas)',
+    sgp:'Cumprimento parcial — política de atenção às comunidades quilombolas em estágio de implementação (articulação com o Governo do Estado do ES registrada).', data:'13/05/2026', cert:'Certidão 21 (1312663)',
+    itens:[ {id:'u', texto:'Implementar a política judiciária de atenção às comunidades quilombolas (Res. CNJ 599/2024), com as ações sugeridas no subitem 23.12 da ata.'} ] },
 
   { id:'17067', proc:'0000358-13.2026.5.17.0500', eixo:'equidade', comite:'SUBCOPERGD', def:'parcial',
     titulo:'Plano do Protocolo de Perspectiva Racial em 90 dias — Res. CNJ 598/2024',
-    texto:'Apresentação, em 90 dias, de plano de implementação do Protocolo para Julgamento com Perspectiva Racial, conforme Resolução CNJ nº 598/2024.',
-    sgp:'Cumprimento parcial — política de julgamento com perspectiva racial em estágio de implementação e desenvolvimento.', data:'22/04/2026', cert:'Certidão 8 (1307209)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.14 (perspectiva racial)',
+    sgp:'Cumprimento parcial — política de julgamento com perspectiva racial em estágio de implementação e desenvolvimento.', data:'22/04/2026', cert:'Certidão 8 (1307209)',
+    itens:[ {id:'u', prazo:'90 dias', texto:'Apresentar plano de implementação do Protocolo para Julgamento com Perspectiva Racial (Res. CNJ 598/2024), com cronograma por etapas, áreas responsáveis e indicadores de monitoramento da efetividade.'} ] },
 
   { id:'17068', proc:'0000360-80.2026.5.17.0500', eixo:'assedio', comite:'SUBPEAMS', def:'cumprida',
     titulo:'Protocolo de proteção a vítimas e testemunhas de assédio',
-    texto:'Instituição de protocolo específico de proteção institucional a vítimas e testemunhas de assédio, com medidas como teletrabalho, licenças e articulação entre subcomitês e unidades de saúde.',
-    sgp:'Cumprimento integral — existência de normativo interno que atende as medidas recomendadas pela CGJT.', data:'13/05/2026', cert:'Certidão 18 (1312459)' },
+    ref:'Item 23 Políticas Afirmativas — subitens 23.15 e 23.16.6 (proteção a vítimas e testemunhas)',
+    sgp:'Cumprimento integral — existência de normativo interno que atende às medidas recomendadas pela CGJT.', data:'13/05/2026', cert:'Certidão 18 (1312459)',
+    itens:[ {id:'u', texto:'Instituir protocolo de proteção institucional a vítimas e testemunhas de assédio (arts. 10, 11 e 22 da Res. CNJ 351/2020): teletrabalho/licenças sob indicação de equipe multiprofissional, articulação entre subcomitês, unidades de saúde e alta administração, e garantias de não retaliação.'} ] },
 
   { id:'17070', proc:'0000383-26.2026.5.17.0500', eixo:'assedio', comite:'SUBPEAMS', def:'parcial',
     titulo:'Coordenação dos subcomitês de assédio fora da alta gestão',
-    texto:'Recomendação de que a coordenadoria dos subcomitês de assédio não seja exercida por magistrado da alta gestão do Tribunal, nem que seus integrantes sejam indicados pela Presidência.',
-    sgp:'Cumprimento parcial — coordenador do SUBPEAMS não integra a alta gestão; proposta encaminhada (Portaria nº 30/2025 — Coordenador SUBPEAMS).', data:'13/05/2026', cert:'Certidão 17 (1312240)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.16.1 (estrutura e composição do subcomitê)',
+    sgp:'Cumprimento parcial — coordenador do SUBPEAMS não integra a alta gestão; proposta encaminhada (Portaria nº 30/2025 — Coordenador SUBPEAMS).', data:'13/05/2026', cert:'Certidão 17 (1312240)',
+    itens:[ {id:'u', texto:'A coordenadoria dos subcomitês de assédio não deve ser exercida por magistrado integrante da alta gestão do Tribunal, nem seus integrantes indicados pela Presidência.'} ] },
 
   { id:'17072', proc:'0000349-51.2026.5.17.0500', eixo:'assedio', comite:'SUBPEAMS', def:'parcial',
     titulo:'Relatórios estatísticos de denúncias de assédio — art. 14, §4º, Res. CNJ 351/2020',
-    texto:'Elaboração e publicação regular de relatórios estatísticos sobre denúncias de assédio (formalizadas e não formalizadas), nos termos do art. 14, §4º, da Resolução CNJ nº 351/2020.',
-    sgp:'Cumprimento parcial — compilação dos dados pelo próprio subcomitê e publicação no Portal de Prevenção e Enfrentamento do Assédio.', data:'12/05/2026', cert:'Certidão 16 (1312209)' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.16.5; Determinações e recomendações conjuntas à Presidência e à Corregedoria Regional',
+    sgp:'Cumprimento parcial — compilação dos dados pelo próprio subcomitê e publicação no Portal de Prevenção e Enfrentamento do Assédio.', data:'12/05/2026', cert:'Certidão 16 (1312209)',
+    itens:[ {id:'u', texto:'Elaborar e publicar regularmente relatórios estatísticos das denúncias de assédio (formalizadas e não formalizadas), nos termos do art. 14, §4º, da Res. CNJ 351/2020, para subsidiar ajustes e aperfeiçoamentos das políticas.'} ] },
 
   { id:'17103', proc:'[a confirmar]', eixo:'assedio', comite:'SUBPEAMS / SUBCOPERGD', def:'sem_andamento',
     titulo:'Parceria institucional para políticas afirmativas e combate ao assédio',
-    texto:'Proposta de atuação do TRT17 em parceria com entidades públicas e privadas para introdução de políticas afirmativas, combate ao assédio moral/sexual e discriminação, e observância das diretrizes do CNJ e CSJT.',
-    sgp:'Sem processo SEI associado e sem providências registradas até o momento.', data:'[a confirmar]', cert:'[a confirmar]' },
+    ref:'Item 23 Políticas Afirmativas — subitem 23.16.7 (observância de diretrizes do CNJ/CSJT)',
+    sgp:'Sem processo SEI associado e sem providências registradas até o momento.', data:'[a confirmar]', cert:'[a confirmar]',
+    itens:[ {id:'u', texto:'Atuar em parceria com entidades públicas e privadas na introdução de políticas afirmativas, combate ao assédio moral/sexual e à discriminação, observando as diretrizes do CNJ e do CSJT no âmbito regional.'} ] },
 ];
 
-// ---- filtros ----
 const comites = ['Todos', ...Array.from(new Set(data.map(d => d.comite)))];
 const eixos   = ['Todos', ...Object.keys(EIXO)];
 let activeComite = 'Todos';
 let activeEixo   = 'Todos';
 
-const effStatus = d => statuses[d.id] || d.def;
-const effNote   = d => (notes[d.id] !== undefined ? notes[d.id] : '');
+const itemKey  = (d, it) => `${d.id}:${it.id}`;
+const itemStat = (d, it) => state.itemStatus[itemKey(d, it)] || seed[d.def];
+function demandStat(d) {
+  const s = d.itens.map(it => itemStat(d, it));
+  if (s.every(x => x === 'cumprida'))     return 'cumprida';
+  if (s.every(x => x === 'nao_iniciada')) return 'sem_andamento';
+  return 'parcial';
+}
+const note = d => (state.notes[d.id] !== undefined ? state.notes[d.id] : '');
 
 function renderMetrics() {
   const c = { cumprida:0, parcial:0, sem_andamento:0 };
-  data.forEach(d => c[effStatus(d)]++);
+  data.forEach(d => c[demandStat(d)]++);
+  let totItens = 0, cumpItens = 0;
+  data.forEach(d => d.itens.forEach(it => { totItens++; if (itemStat(d, it) === 'cumprida') cumpItens++; }));
   const diverg = data.filter(d => d.diverg).length;
-  const metrics = [
-    { label:'Total de demandas', value:data.length, cls:'' },
+  const cards = [
+    { label:'Demandas', value:data.length, cls:'' },
     { label:'Cumpridas', value:c.cumprida, cls:'ok' },
-    { label:'Em andamento / parcial', value:c.parcial, cls:'accent' },
+    { label:'Em andamento', value:c.parcial, cls:'accent' },
     { label:'Sem andamento', value:c.sem_andamento, cls:'' },
+    { label:'Itens cumpridos', value:`${cumpItens}/${totItens}`, cls:'' },
     { label:'Divergência CGJT', value:diverg, cls:'warn' },
   ];
-  document.getElementById('metrics').innerHTML = metrics.map(m =>
-    `<div class="metric-card ${m.cls}"><p class="label">${m.label}</p><p class="value">${m.value}</p></div>`
-  ).join('');
+  document.getElementById('metrics').innerHTML = cards.map(m =>
+    `<div class="metric-card ${m.cls}"><p class="label">${m.label}</p><p class="value">${m.value}</p></div>`).join('');
 }
 
-function renderFilterGroup(containerId, options, active, labelFn, onClick, orange) {
-  const el = document.getElementById(containerId);
+function renderFilterGroup(id, options, active, labelFn, onClick, orange) {
+  const el = document.getElementById(id);
   el.innerHTML = options.map(o => {
     const cls = o === active ? `filter-btn active${orange ? ' orange' : ''}` : 'filter-btn';
     return `<button class="${cls}" data-value="${o}">${labelFn(o)}</button>`;
   }).join('');
-  el.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => { onClick(btn.getAttribute('data-value')); renderAll(); });
-  });
+  el.querySelectorAll('button').forEach(b =>
+    b.addEventListener('click', () => { onClick(b.getAttribute('data-value')); renderAll(); }));
 }
 
-function cardHTML(d, idx) {
+function itemHTML(d, it) {
+  const cur = itemStat(d, it);
+  const opts = ISTAT_ORDER.map(s => `<option value="${s}" ${s === cur ? 'selected' : ''}>${ISTAT[s].label}</option>`).join('');
+  const badge = d.itens.length > 1 ? it.id : '•';
+  return `<div class="item" style="border-left:3px solid ${ISTAT[cur].fg};">
+    <span class="item-badge">${badge}</span>
+    <div class="item-body">
+      <p class="item-text">${it.texto}</p>
+      <div class="item-foot">
+        ${it.prazo ? `<span class="prazo">prazo: ${it.prazo}</span>` : ''}
+        <select class="item-select" data-key="${itemKey(d, it)}">${opts}</select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function cardHTML(d) {
   const eixo = EIXO[d.eixo];
-  const st = effStatus(d);
-  const stMeta = STATUS[st];
-  const longText = d.texto.length > 150;
-  const note = effNote(d);
-  const opts = STATUS_ORDER.map(s =>
-    `<option value="${s}" ${s === st ? 'selected' : ''}>${STATUS[s].label}</option>`).join('');
+  const st = DSTAT[demandStat(d)];
+  const n = d.itens.length;
+  const done = d.itens.filter(it => itemStat(d, it) === 'cumprida').length;
+  const pct = Math.round(done / n * 100);
+  const itensBlock = d.itens.map(it => itemHTML(d, it)).join('');
   return `<div class="card" style="border-left:4px solid ${eixo.fg};">
     <div class="card-tags">
       <span class="tag" style="background:${eixo.bg};color:${eixo.fg};">${eixo.label}</span>
-      <span class="tag" style="background:${stMeta.tagBg};color:${stMeta.tagFg};">${stMeta.label}</span>
+      <span class="tag" style="background:${st.tagBg};color:${st.tagFg};">${st.label}</span>
       ${d.diverg ? `<span class="tag diverg" title="A Corregedoria divergiu da autoavaliação da SGP">⚠ divergência CGJT</span>` : ''}
       <span class="item-no">demanda nº ${d.id}</span>
     </div>
     <p class="card-title">${d.titulo}</p>
-    <p class="card-text${longText ? ' clamp' : ''}" id="t-${idx}">${d.texto}</p>
-    ${longText ? `<button class="toggle-btn" data-target="t-${idx}">Ver texto completo</button>` : ''}
+    <p class="ref-ata">${d.ref}</p>
     <div class="manifesto"><span class="ml">Manifestação da SGP</span>${d.sgp}</div>
     ${d.cgjt ? `<div class="manifesto cgjt"><span class="ml">Análise da Corregedoria (CGJT)</span>${d.cgjt}</div>` : ''}
     <div class="meta-grid">
@@ -364,15 +339,15 @@ function cardHTML(d, idx) {
       <div><span class="meta-label">Última providência</span>${d.data}</div>
       <div class="full"><span class="meta-label">Documento de referência</span>${d.cert}</div>
     </div>
+    <div class="itens-head">
+      <span class="it-title">${n > 1 ? `Itens da demanda (${n})` : 'Obrigação'}</span>
+      <span class="progress"><b>${done}</b>/${n} cumprido${done === 1 ? '' : 's'}</span>
+    </div>
+    <div class="progress-bar"><span style="width:${pct}%"></span></div>
+    ${itensBlock}
     <div class="editrow">
-      <div>
-        <label for="st-${d.id}">Status (editável)</label>
-        <select class="status-select" id="st-${d.id}" data-id="${d.id}">${opts}</select>
-      </div>
-      <div>
-        <label for="obs-${d.id}">Observações internas</label>
-        <textarea class="obs-input" id="obs-${d.id}" data-id="${d.id}" placeholder="Anote aqui o andamento, pendências ou próximos passos…">${note}</textarea>
-      </div>
+      <label for="obs-${d.id}">Observações internas</label>
+      <textarea class="obs-input" id="obs-${d.id}" data-id="${d.id}" placeholder="Andamento, pendências, próximos passos…">${note(d)}</textarea>
     </div>
   </div>`;
 }
@@ -380,56 +355,34 @@ function cardHTML(d, idx) {
 function renderSections() {
   const filtered = data.filter(d =>
     (activeComite === 'Todos' || d.comite === activeComite) &&
-    (activeEixo === 'Todos' || d.eixo === activeEixo)
-  );
+    (activeEixo === 'Todos' || d.eixo === activeEixo));
   const cont = document.getElementById('sections');
-
   if (filtered.length === 0) {
     cont.innerHTML = `<div class="status-section"><div class="status-grid"><div class="empty-state">Nenhuma demanda para esse filtro.</div></div></div>`;
     return;
   }
-
-  let idx = 0;
-  cont.innerHTML = STATUS_ORDER.map(s => {
-    const group = filtered.filter(d => effStatus(d) === s);
+  cont.innerHTML = DSTAT_ORDER.map(s => {
+    const group = filtered.filter(d => demandStat(d) === s);
     if (group.length === 0) return '';
-    const meta = STATUS[s];
-    const cards = group.map(d => cardHTML(d, idx++)).join('');
+    const meta = DSTAT[s];
     return `<div class="status-section">
-      <div class="status-bar" style="background:${meta.bar};">
-        ${meta.label}<span class="count">${group.length}</span>
-      </div>
-      <div class="status-grid">${cards}</div>
+      <div class="status-bar" style="background:${meta.bar};">${meta.label}<span class="count">${group.length}</span></div>
+      <div class="status-grid">${group.map(cardHTML).join('')}</div>
     </div>`;
   }).join('');
 
-  // expandir/recolher texto
-  cont.querySelectorAll('.toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const t = document.getElementById(btn.getAttribute('data-target'));
-      const clamped = t.classList.contains('clamp');
-      t.classList.toggle('clamp');
-      btn.textContent = clamped ? 'Recolher' : 'Ver texto completo';
-    });
-  });
-
-  // mudança de status
-  cont.querySelectorAll('.status-select').forEach(sel => {
+  cont.querySelectorAll('.item-select').forEach(sel => {
     sel.addEventListener('change', () => {
-      statuses[sel.getAttribute('data-id')] = sel.value;
+      state.itemStatus[sel.getAttribute('data-key')] = sel.value;
       persist();
-      renderAll(); // o card migra de seção
+      renderAll();
     });
   });
-
-  // observações (salva ao sair do campo)
   cont.querySelectorAll('.obs-input').forEach(ta => {
     ta.addEventListener('blur', () => {
-      const id = ta.getAttribute('data-id');
-      const val = ta.value.trim();
-      if (val === (notes[id] || '')) return;
-      notes[id] = val;
-      persist();
+      const id = ta.getAttribute('data-id'); const v = ta.value.trim();
+      if (v === (state.notes[id] || '')) return;
+      state.notes[id] = v; persist();
     });
   });
 }
@@ -440,8 +393,6 @@ function renderAll() {
   renderFilterGroup('filters-eixo', eixos, activeEixo, o => o === 'Todos' ? 'Todos' : EIXO[o].label, v => activeEixo = v, false);
   renderSections();
 }
-
-// renderização inicial dispara via onSnapshot
 </script>
 
 </body>
