@@ -1,470 +1,109 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>SGP · Mapa de Alocação — Colegiados Temáticos</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:system-ui,-apple-system,sans-serif;background:#F1F5F9;}
-    ::-webkit-scrollbar{width:6px;}
-    ::-webkit-scrollbar-track{background:#F1F5F9;}
-    ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px;}
-    .staff-card{padding:8px 10px;border-radius:7px;border:2px solid #E2E8F0;background:white;cursor:pointer;margin-bottom:5px;}
-    .staff-card:hover{border-color:#BFDBFE;background:#F8FAFC;}
-    .staff-card.sel{border-color:#3B82F6;background:#EFF6FF;}
-    .uae-card{background:white;border-radius:8px;padding:10px 13px;margin-bottom:8px;}
-    table{width:100%;border-collapse:collapse;}
-    th{padding:10px 14px;text-align:left;font-size:12px;font-weight:700;background:#1B3A6B;color:white;}
-    td{padding:9px 14px;font-size:12px;border-bottom:1px solid #F1F5F9;}
-    .badge{border-radius:4px;padding:2px 7px;font-size:10px;display:inline-block;margin:2px;}
-    button{font-family:inherit;cursor:pointer;}
-    input,select{font-family:inherit;}
-    .g2{display:grid;grid-template-columns:1fr 1.55fr;gap:14px;}
-    .scr{overflow-y:auto;padding-right:2px;}
-    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;}
-    .modal{background:white;border-radius:10px;padding:24px 28px;width:420px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.2);}
-    #toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;max-width:360px;line-height:1.4;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .spin{display:inline-block;animation:spin .8s linear infinite;}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Painéis · SGP — TRT-17</title>
+<style>
+  :root{
+    --navy:#1F4E79; --navy-d:#163a5a; --orange:#E8821E;
+    --ink:#0f1d2b; --muted:#5a6b7b; --line:#e4ebf1; --bg:#f4f7fa; --card:#fff;
+    --live:#0f9d58; --static:#8a97a3;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.5}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+  header{background:linear-gradient(120deg,var(--navy),var(--navy-d));color:#fff;border-bottom:3px solid var(--orange)}
+  .head-in{padding:30px 0 26px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
+  h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em}
+  header p{margin-top:8px;color:rgba(255,255,255,.82);font-size:14.5px;max-width:640px}
+
+  main{padding:28px 0 60px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  a.card{
+    display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;
+    box-shadow:0 1px 2px rgba(15,29,43,.04);transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease
+  }
+  a.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,29,43,.10);border-color:#cdd9e4}
+  a.card:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+  .ct{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .ct h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .tag{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:none}
+  .tag.live{background:#e6f6ee;color:var(--live)}
+  .tag.static{background:#eef2f5;color:var(--static)}
+  .desc{font-size:13px;color:var(--muted)}
+  .meta{font-family:var(--mono);font-size:11px;color:#90a0ad;margin-top:auto;display:flex;align-items:center;gap:6px}
+  .arrow{color:var(--navy);font-weight:700}
+
+  .note{margin-top:22px;font-size:12.5px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:12px;padding:13px 15px}
+  .note b{color:var(--ink)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .dot.live{background:var(--live)} .dot.static{background:var(--static)}
+  footer{padding:22px 0 50px;text-align:center;font-size:12px;color:#90a0ad}
+</style>
 </head>
 <body>
-<div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:14px;color:#64748B;">Conectando ao banco de dados…</div></div>
-<div id="toast"></div>
 
-<script type="module">
-import { initializeApp }                              from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+<header>
+  <div class="wrap head-in">
+    <div class="kicker">TRT-17 · Secretaria de Gestão de Pessoas</div>
+    <h1>Painéis da SGP</h1>
+    <p>Índice dos dashboards mantidos pela UAE/SGP. Os colaborativos sincronizam edições em tempo real; os estáticos são retratos de consulta.</p>
+  </div>
+</header>
 
-// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey:            "AIzaSyCybE6ghe_F8Rdr6vha3QQaDQLrDMK4uVQ",
-  authDomain:        "demandas-trt-17.firebaseapp.com",
-  projectId:         "demandas-trt-17",
-  storageBucket:     "demandas-trt-17.firebasestorage.app",
-  messagingSenderId: "72728505894",
-  appId:             "1:72728505894:web:c2289011bdf6ac9dfb40e7",
-};
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-const STATE_DOC = doc(db, 'estado', 'alocacao_uae');
+<main class="wrap">
+  <div class="grid">
 
-// ── DADOS ─────────────────────────────────────────────────────────────────────
-const NAV = '#1B3A6B';
+    <a class="card" href="dashboard_colegiados.html">
+      <div class="ct"><h2>Mapa de Alocação — Colegiados Temáticos</h2><span class="tag live">Colaborativo</span></div>
+      <div class="desc">Alocação de servidores da UAE/SGP nos colegiados temáticos, com edição compartilhada.</div>
+      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
+    </a>
 
-const STAFF=[
-  {id:'ALLINE',   nc:'Alline Andrade',      unit:'CODOP'  },
-  {id:'ALINNE',   nc:'Alinne Venturi',       unit:'SGP'    },
-  {id:'ARTHUR',   nc:'Arthur Salles',         unit:'SEINFO' },
-  {id:'CASSIO',   nc:'Cassio Faé',            unit:'DIPROF' },
-  {id:'CLEIDE',   nc:'Cleide Reisen',         unit:'SGP'    },
-  {id:'FRANCHA',  nc:'Franchá Oliveira',      unit:'COREP'  },
-  {id:'GIOVANNA', nc:'Giovanna Peyneau',      unit:'SELIR'  },
-  {id:'HELIO',    nc:'Hélio Nascimento',      unit:'COLEP'  },
-  {id:'HELENA',   nc:'Helena Mendes',         unit:'SEINFO' },
-  {id:'HENRIQUE', nc:'Henrique Oliveira',     unit:'SEINFO' },
-  {id:'JAQUELINE',nc:'Jaqueline Ramos',       unit:'SEGEDE' },
-  {id:'JULIANA',  nc:'Juliana Sesana',        unit:'SESES'  },
-  {id:'JUSSANA',  nc:'Jussana Weimer',        unit:'SECOBE' },
-  {id:'KATIA',    nc:'Kátia Negreiros',       unit:'CODOP'  },
-  {id:'LAVINIA',  nc:'Lavínia Castro',        unit:'DIPROF' },
-  {id:'LEONARDO', nc:'Leonardo Di Donato',    unit:'NUPROG' },
-  {id:'MARA',     nc:'Mara Bromonschenkel',   unit:'DIPROF' },
-  {id:'NARA',     nc:'Nara Ribon',            unit:'SECOBE' },
-  {id:'NOELMA',   nc:'Noelma Silva',          unit:'SELEP'  },
-  {id:'PEDRO',    nc:'Pedro Azul',            unit:'SESES'  },
-  {id:'RAFAEL',   nc:'Rafael Araújo',         unit:'DIPROF' },
-  {id:'RAPHAEL',  nc:'Raphael Batista',       unit:'SEINFO' },
-  {id:'RENATHA',  nc:'Renatha Campana',       unit:'DIPROF' },
-  {id:'RICARDO',  nc:'Ricardo Dias',          unit:'SESES'  },
-  {id:'ROBERTA',  nc:'Roberta Gomes',         unit:'SEGECOP'},
-  {id:'RODOLFO',  nc:'Rodolfo Pereira',       unit:'SEGEDE' },
-  {id:'RODRIGO',  nc:'Rodrigo Tononi',        unit:'SELEP'  },
-  {id:'THAISE',   nc:'Thaíse Maroneze',       unit:'SEGECOP'},
-  {id:'YURI',     nc:'Yuri Guimarães',        unit:'SELIR'  },
-];
+    <a class="card" href="dashboard_demandas_correcionais.html">
+      <div class="ct"><h2>Demandas Correcionais — CGJT 2026</h2><span class="tag live">Colaborativo</span></div>
+      <div class="desc">As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</div>
+      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
+    </a>
 
-const UAE_INIT=[
-  {id:'SUBCOTELE', sigla:'SUBCOTELE', nome:'Subcomitê de Teletrabalho',                                         uaeId:'ALLINE'   },
-  {id:'SUBCOPERGD',sigla:'SUBCOPERGD',nome:'Subcomitê Gestor de Equidade de Raça, Gênero e Diversidade',        uaeId:'ALINNE'   },
-  {id:'SUBCOGPC',  sigla:'SUBCOGPC',  nome:'Subcomitê Regional de Gestão de Pessoas por Competências',          uaeId:'ALLINE'   },
-  {id:'SUBCOAD',   sigla:'SUBCOAD',   nome:'Subcomitê de Avaliação de Desempenho',                              uaeId:'JAQUELINE'},
-  {id:'COP',       sigla:'COP',       nome:'Comitê de Pessoas',                                                 uaeId:'LEONARDO' },
-  {id:'SUBPEAMS',  sigla:'SUBPEAMS',  nome:'Subcomitê de Prevenção e Enfrentamento ao Assédio Moral e Sexual',  uaeId:'ALINNE'   },
-  {id:'SUBCOIPFE', sigla:'SUBCOIPFE', nome:'Subcomitê de Incentivo à Participação Institucional Feminina',      uaeId:'CLEIDE'   },
-  {id:'SUBCOSIGEP',sigla:'SUBCOSIGEP',nome:'Subcomitê do SIGEP-JT',                                             uaeId:'FRANCHA'  },
-  {id:'SUBCOIDOSO',sigla:'SUBCOIDOSO',nome:'Subcomitê Regional de Atenção às Pessoas Idosas',                   uaeId:'CLEIDE'   },
-  {id:'GTCPS',     sigla:'GTCPS',     nome:'GT 7º Concurso Público para Servidores',                            uaeId:'LEONARDO' },
-];
+    <a class="card" href="dashboard_pendencias_colegiados.html">
+      <div class="ct"><h2>Pendências — SUBPEAMS / SUBCOPERGD</h2><span class="tag live">Colaborativo</span></div>
+      <div class="desc">Checklist de pendências dos colegiados, com marcação salva automaticamente.</div>
+      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
+    </a>
 
-const PART=[
-  {s:'ALINNE',   t:'M', c:'SUBPEAMS — Prevenção ao Assédio Moral e Sexual'},
-  {s:'ALLINE',   t:'M', c:'SUBCOASA — Aposentadoria e Suporte aos Aposentados'},
-  {s:'ALLINE',   t:'VC',c:'SUBCOAD — Avaliação de Desempenho'},
-  {s:'ALLINE',   t:'M', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'ALLINE',   t:'VC',c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'ARTHUR',   t:'M', c:'GTSIGEP — GT Gestão de Passivos do SIGEP'},
-  {s:'CLEIDE',   t:'M', c:'COEI — Comitê de Ética e Integridade'},
-  {s:'CLEIDE',   t:'M', c:'COGE — Comitê de Governança e Estratégia'},
-  {s:'CLEIDE',   t:'M', c:'COORFI — Comitê de Orçamento e Finanças'},
-  {s:'CLEIDE',   t:'M', c:'COP — Comitê de Pessoas'},
-  {s:'CLEIDE',   t:'M', c:'CSIPD — Comitê de Segurança da Informação e Proteção de Dados'},
-  {s:'CLEIDE',   t:'M', c:'GTPCO — GT Pesquisa de Clima Organizacional'},
-  {s:'CLEIDE',   t:'M', c:'GTGECJ — GT Monitoramento do GECJ'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOPI — Política de Inovação'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOACE — Acessibilidade e Inclusão'},
-  {s:'CLEIDE',   t:'C', c:'SUBCOAD — Avaliação de Desempenho'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOGERIS — Gestão de Riscos'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOIPFE — Participação Institucional Feminina'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOREADM — Reestruturação Administrativa'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOSAUDE — Saúde'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOSUS — Sustentabilidade'},
-  {s:'CLEIDE',   t:'VC',c:'SUBCOTELE — Teletrabalho'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOPAE — Processo Administrativo Eletrônico'},
-  {s:'CLEIDE',   t:'C', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'CLEIDE',   t:'M', c:'SUBCOIDOSO — Atenção às Pessoas Idosas'},
-  {s:'CLEIDE',   t:'C', c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'FRANCHA',  t:'C', c:'GTSIGEP — GT Gestão de Passivos do SIGEP'},
-  {s:'FRANCHA',  t:'M', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'GIOVANNA', t:'M', c:'SUBCOMEDTRAB — Engenharia de Segurança e Medicina do Trabalho'},
-  {s:'GIOVANNA', t:'M', c:'SUBCOSAUDE — Saúde'},
-  {s:'GIOVANNA', t:'M', c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'HELIO',    t:'M', c:'SUBCOASA — Aposentadoria e Suporte aos Aposentados'},
-  {s:'HELIO',    t:'M', c:'SUBCOAD — Avaliação de Desempenho'},
-  {s:'HELIO',    t:'M', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'JAQUELINE',t:'M', c:'SUBCOACE — Acessibilidade e Inclusão'},
-  {s:'JAQUELINE',t:'M', c:'SUBCOAD — Avaliação de Desempenho'},
-  {s:'JAQUELINE',t:'M', c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'LEONARDO', t:'C', c:'GTPCO — GT Pesquisa de Clima Organizacional'},
-  {s:'LEONARDO', t:'M', c:'GTCPS — GT 7º Concurso Público'},
-  {s:'LEONARDO', t:'M', c:'GTSGI — GT Governança Institucional Fases 01/02'},
-  {s:'LEONARDO', t:'M', c:'GTMGR — GT Gestão de Riscos do TRT17'},
-  {s:'LEONARDO', t:'M', c:'SUBCOLGPD — Apoio ao Encarregado da LGPD'},
-  {s:'LEONARDO', t:'M', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'LEONARDO', t:'M', c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'NARA',     t:'M', c:'COP — Comitê de Pessoas'},
-  {s:'NARA',     t:'M', c:'SUBCOCANDE — Apoio a Candidatos com Deficiência'},
-  {s:'RAFAEL',   t:'M', c:'GTSIGEP — GT Gestão de Passivos do SIGEP'},
-  {s:'RAPHAEL',  t:'M', c:'SUBCOEGESTÃO — E-Gestão e Datajud'},
-  {s:'RENATHA',  t:'VC',c:'GTSIGEP — GT Gestão de Passivos do SIGEP'},
-  {s:'RENATHA',  t:'M', c:'SUBCOSIGEP — SIGEP-JT'},
-  {s:'ROBERTA',  t:'M', c:'GTPCO — GT Pesquisa de Clima Organizacional'},
-  {s:'ROBERTA',  t:'M', c:'SUBCOGPC — Gestão de Pessoas por Competências'},
-  {s:'RODOLFO',  t:'M', c:'SUBCOCANDE — Apoio a Candidatos com Deficiência'},
-];
+    <a class="card" href="dashboard-aderencia-funcional-trt17.html">
+      <div class="ct"><h2>Aderência Funcional</h2><span class="tag static">Consulta</span></div>
+      <div class="desc">Painel de aderência funcional no âmbito do TRT-17.</div>
+      <div class="meta">somente leitura <span class="arrow">→</span></div>
+    </a>
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let S = {
-  tab: 0, cols: JSON.parse(JSON.stringify(UAE_INIT)),
-  sel: null, search: '',
-  // sync
-  syncStatus: 'connecting', // connecting | synced | saving | error
-  dirty: false,             // mudanças locais não salvas
-  lastSaved: null,          // ISO string do último save
-  remoteWhileDirty: null,   // snapshot remoto recebido enquanto dirty=true
-};
+    <a class="card" href="dashboard_expediente_tribunais_copa.html">
+      <div class="ct"><h2>Expediente dos Tribunais — Copa 2026</h2><span class="tag static">Consulta</span></div>
+      <div class="desc">Regime de funcionamento dos tribunais no jogo Brasil × Japão, segunda 29/06.</div>
+      <div class="meta">somente leitura <span class="arrow">→</span></div>
+    </a>
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function lc(n){return n===0?'#94a3b8':n<=3?'#22c55e':n<=7?'#f59e0b':n<=12?'#f97316':'#ef4444';}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtDate(iso){try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch{return '';}}
-function computeLoads(){
-  const l={};STAFF.forEach(s=>{l[s.id]={uae:[],part:[]};});
-  S.cols.forEach(c=>{if(c.uaeId&&l[c.uaeId])l[c.uaeId].uae.push(c.nome);});
-  PART.forEach(p=>{if(l[p.s])l[p.s].part.push({t:p.t,c:p.c});});
-  return l;
-}
-function tot(id,ld){return(ld[id]?.uae.length||0)+(ld[id]?.part.length||0);}
-function pillS(n){const c=n>0?lc(n):'#F1F5F9';const tx=n>0?'white':'#94a3b8';return`background:${c};color:${tx};border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700;display:inline-block;`;}
+  </div>
 
-let _toastTimer=null;
-function toast(msg,bg,ms=3500){
-  const el=document.getElementById('toast');
-  el.textContent=msg;el.style.background=bg||NAV;el.style.color='white';
-  el.style.opacity='1';clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>{el.style.opacity='0';},ms);
-}
-
-// ── FIRESTORE ─────────────────────────────────────────────────────────────────
-function applyRemoteData(data){
-  S.cols      = data.cols;
-  S.lastSaved = data.savedAt?.toDate?.()?.toISOString() || null;
-  S.dirty     = false;
-  S.remoteWhileDirty = null;
-  S.syncStatus = 'synced';
-}
-
-// Listener em tempo real
-onSnapshot(STATE_DOC,
-  (snap) => {
-    if(!snap.exists()){
-      // Documento ainda não existe no Firestore — usa defaults
-      S.syncStatus = 'synced';
-      render(); return;
-    }
-    const data = snap.data();
-    if(!data.cols){S.syncStatus='synced';render();return;}
-
-    if(S.dirty){
-      // Há edições locais não salvas — não sobrescreve, mas avisa
-      S.remoteWhileDirty = data;
-      toast('⚠ Outra versão foi salva remotamente. Salve suas edições ou clique "↓ Sincronizar" para descartar.','#F59E0B',8000);
-    } else {
-      applyRemoteData(data);
-    }
-    render();
-  },
-  (err) => {
-    console.error(err);
-    S.syncStatus = 'error';
-    toast('Erro de conexão com o banco de dados.','#EF4444');
-    render();
-  }
-);
-
-async function fsSave(){
-  S.syncStatus='saving'; render();
-  try{
-    await setDoc(STATE_DOC,{cols:S.cols, savedAt:serverTimestamp()});
-    S.dirty=false; S.remoteWhileDirty=null;
-    S.syncStatus='synced'; S.lastSaved=new Date().toISOString();
-    toast('Salvo ✓','#22C55E');
-  }catch(e){
-    S.syncStatus='error';
-    toast('Erro ao salvar: '+e.message,'#EF4444');
-  }
-  render();
-}
-
-function fsSync(){
-  if(S.remoteWhileDirty){
-    if(S.dirty && !confirm('Descartar suas edições locais e carregar a versão mais recente?'))return;
-    applyRemoteData(S.remoteWhileDirty);
-    render();
-    toast('Sincronizado.','#3B82F6');
-  }
-}
-
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function render(){
-  const ld=computeLoads();
-  const sorted=[...STAFF].sort((a,b)=>tot(b.id,ld)-tot(a.id,ld));
-  const selS=S.sel?STAFF.find(s=>s.id===S.sel):null;
-
-  // Sync indicator
-  const syncUI={
-    connecting: {dot:'<span class="spin">⟳</span>', label:'conectando…',    color:'rgba(255,255,255,0.5)'},
-    synced:     {dot:'●',                            label: S.lastSaved?'salvo '+fmtDate(S.lastSaved):'sincronizado', color:'#86EFAC'},
-    saving:     {dot:'<span class="spin">⟳</span>', label:'salvando…',      color:'#FDE68A'},
-    error:      {dot:'●',                            label:'erro de conexão', color:'#FCA5A5'},
-  }[S.syncStatus]||{dot:'',label:'',color:'white'};
-
-  const dirtyBanner = S.dirty
-    ? `<div style="background:#FEF9C3;border-bottom:1px solid #FDE68A;padding:6px 18px;font-size:12px;color:#92400E;display:flex;align-items:center;gap:10px;">
-         <span>✏ Edições não salvas</span>
-         ${S.remoteWhileDirty?`<span style="font-weight:700;">· versão remota mais recente disponível</span>
-           <button onclick="window._fsSync()" style="background:#F59E0B;color:white;border:none;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;">↓ Sincronizar</button>`:''}
-       </div>`
-    : '';
-
-  const tabBtns=['Alocação UAE','Mapa de Participações','Dashboard de Carga'].map((lbl,i)=>`
-    <button onclick="window._setTab(${i})" style="background:${S.tab===i?'white':'transparent'};color:${S.tab===i?NAV:'rgba(255,255,255,0.7)'};border:none;border-radius:6px 6px 0 0;padding:7px 14px;cursor:pointer;font-size:12px;font-weight:${S.tab===i?700:500};">${lbl}</button>
-  `).join('');
-
-  let body='';
-  if(S.tab===0)body=tab0(ld,sorted,selS);
-  if(S.tab===1)body=tab1(ld,sorted);
-  if(S.tab===2)body=tab2(ld,sorted);
-
-  document.getElementById('root').innerHTML=`
-    <div style="font-family:system-ui,-apple-system,sans-serif;background:#F1F5F9;min-height:100vh;">
-      <div style="background:${NAV};">
-        <div style="padding:14px 18px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-            <div>
-              <div style="color:rgba(255,255,255,0.5);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">TRT-17 · Secretaria de Gestão de Pessoas</div>
-              <div style="color:white;font-size:16px;font-weight:700;">Mapa de Alocação — Colegiados Temáticos</div>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;justify-content:flex-end;">
-              <span style="font-size:11px;color:${syncUI.color};display:flex;align-items:center;gap:4px;">${syncUI.dot} ${syncUI.label}</span>
-              <button onclick="window._fsSave()" style="background:#22C55E;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;">↑ Salvar</button>
-              <button onclick="window._doReset()" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.25);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;">↺ Resetar</button>
-            </div>
-          </div>
-          <div style="display:flex;gap:2px;">${tabBtns}</div>
-        </div>
-      </div>
-      ${dirtyBanner}
-      <div style="padding:14px;">${body}</div>
-    </div>`;
-
-  // Listeners tab 0
-  if(S.tab===0){
-    document.querySelectorAll('.staff-card').forEach(el=>{
-      el.addEventListener('click',()=>{const id=el.dataset.id;S.sel=S.sel===id?null:id;render();});
-    });
-    const inp=document.getElementById('sinp');
-    if(inp)inp.addEventListener('input',e=>{S.search=e.target.value;render();});
-    document.querySelectorAll('.abtn').forEach(el=>{
-      el.addEventListener('click',()=>{
-        if(!S.sel)return;
-        S.cols=S.cols.map(c=>c.id===el.dataset.cid?{...c,uaeId:S.sel}:c);
-        S.sel=null;S.dirty=true;render();
-      });
-    });
-    document.querySelectorAll('.usel').forEach(el=>{
-      el.addEventListener('change',e=>{
-        S.cols=S.cols.map(c=>c.id===el.dataset.cid?{...c,uaeId:e.target.value||null}:c);
-        S.dirty=true;render();
-      });
-    });
-  }
-}
-
-// ── TAB 0 ─────────────────────────────────────────────────────────────────────
-function tab0(ld,sorted,selS){
-  const q=S.search.toLowerCase();
-  const fil=q.length>1?sorted.filter(s=>s.nc.toLowerCase().includes(q)||s.unit.toLowerCase().includes(q)):sorted;
-
-  const cards=fil.map(s=>{
-    const t=tot(s.id,ld);const l=ld[s.id];const isSel=S.sel===s.id;
-    const uN=l.uae.length,cN=l.part.filter(p=>p.t==='C').length,vcN=l.part.filter(p=>p.t==='VC').length,mN=l.part.filter(p=>p.t==='M').length;
-    return`<div class="staff-card${isSel?' sel':''}" data-id="${s.id}">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="min-width:0;flex:1;">
-          <div style="font-weight:600;font-size:12px;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.nc)}</div>
-          <div style="font-size:10px;color:#64748B;">${s.unit}</div>
-        </div>
-        <span style="${pillS(t)}margin-left:8px;flex-shrink:0;">${t||'—'}</span>
-      </div>
-      ${t>0?`<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;">
-        ${Array(uN).fill(0).map(()=>`<span style="background:#DBEAFE;color:#1E40AF;border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;">UAE</span>`).join('')}
-        ${Array(cN).fill(0).map(()=>`<span style="background:#FEF3C7;color:#92400E;border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;">COORD</span>`).join('')}
-        ${Array(vcN).fill(0).map(()=>`<span style="background:#F0FDF4;color:#166534;border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;">V-COORD</span>`).join('')}
-        ${Array(mN).fill(0).map(()=>`<span style="background:#F8FAFC;color:#64748B;border:1px solid #E2E8F0;border-radius:3px;padding:1px 5px;font-size:9px;">MBR</span>`).join('')}
-      </div>`:''}
-    </div>`;
-  }).join('');
-
-  const colCards=S.cols.map(c=>{
-    const uae=STAFF.find(s=>s.id===c.uaeId);
-    const ut=c.uaeId?tot(c.uaeId,ld):0;const col=lc(ut);
-    const right=S.sel
-      ?`<button class="abtn" data-cid="${c.id}" style="background:#2563EB;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">Atribuir ${selS?esc(selS.nc.split(' ')[0]):''}→</button>`
-      :`<select class="usel" data-cid="${c.id}" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E8F0;color:#64748B;background:#F8FAFC;cursor:pointer;flex-shrink:0;">
-         <option value="">— trocar —</option>
-         ${STAFF.map(s=>`<option value="${s.id}"${c.uaeId===s.id?' selected':''}>${esc(s.nc)} (${tot(s.id,ld)})</option>`).join('')}
-       </select>`;
-    return`<div class="uae-card" style="border:1.5px solid ${S.sel?'#BFDBFE':'#E2E8F0'};">
-      <div style="margin-bottom:8px;">
-        <span style="background:${NAV};color:white;border-radius:4px;padding:2px 6px;font-size:9px;font-weight:700;margin-right:6px;">${c.sigla}</span>
-        <span style="font-size:12px;font-weight:700;color:#1E293B;">${esc(c.nome)}</span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:11px;color:#94A3B8;flex-shrink:0;">UAE atual:</span>
-          ${uae?`<span style="background:${col}18;border:1.5px solid ${col};border-radius:16px;padding:3px 10px;font-size:11px;font-weight:700;color:#1E293B;display:flex;align-items:center;gap:6px;">${esc(uae.nc)}<span style="background:${col};color:white;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700;">${ut}</span></span>`
-               :`<span style="color:#EF4444;font-size:12px;font-style:italic;">não atribuído</span>`}
-        </div>
-        ${right}
-      </div>
-    </div>`;
-  }).join('');
-
-  const bb=S.sel?'#DBEAFE':'#F8FAFC';const bd=S.sel?'#93C5FD':'#E2E8F0';
-  const bann=S.sel
-    ?`<span style="color:#1E40AF;font-size:13px;font-weight:600;">✓ ${esc(selS?.nc)} — clique em "Atribuir" no colegiado desejado</span>
-      <button onclick="window._clearSel()" style="background:none;border:none;cursor:pointer;color:#3B82F6;font-size:20px;line-height:1;padding:0;">×</button>`
-    :`<span style="color:#64748B;font-size:12px;">💡 Clique em um servidor (esq.) → clique "Atribuir" no colegiado (dir.). Dropdown para atribuição direta.&ensp;<b style="color:#22c55e">●</b> 1–3&ensp;<b style="color:#f59e0b">●</b> 4–7&ensp;<b style="color:#f97316">●</b> 8–12&ensp;<b style="color:#ef4444">●</b> 13+</span>`;
-
-  return`<div>
-    <div style="background:${bb};border:1px solid ${bd};border-radius:8px;padding:8px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">${bann}</div>
-    <div class="g2">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Elenco SGP · ${STAFF.length} servidores</div>
-        <input id="sinp" placeholder="Filtrar nome ou unidade..." value="${esc(S.search)}" style="width:100%;padding:6px 10px;border:1px solid #E2E8F0;border-radius:6px;font-size:12px;margin-bottom:8px;background:white;outline:none;"/>
-        <div class="scr" style="height:530px;">${cards}</div>
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">UAE — 10 colegiados SGP</div>
-        <div class="scr" style="height:570px;">${colCards}</div>
-      </div>
+  <div class="note">
+    <b>Como ler.</b> Cada cartão abre o painel correspondente.
+    <div class="legend">
+      <span><span class="dot live"></span> <b>Colaborativo</b> — edições sincronizam entre usuários (Firestore)</span>
+      <span><span class="dot static"></span> <b>Consulta</b> — retrato estático, somente leitura</span>
     </div>
-  </div>`;
-}
+  </div>
+</main>
 
-// ── TAB 1 ─────────────────────────────────────────────────────────────────────
-function tab1(ld,sorted){
-  const TC={M:{bg:'#F8FAFC',bd:'#E2E8F0',tx:'#475569'},C:{bg:'#FEF3C7',bd:'#FDE68A',tx:'#92400E'},VC:{bg:'#F0FDF4',bd:'#BBF7D0',tx:'#166534'}};
-  const rows=sorted.map((s,i)=>{
-    const t=tot(s.id,ld);const l=ld[s.id];const bg=i%2===0?'white':'#F8FAFC';
-    const chips=[
-      ...l.uae.map(u=>`<span class="badge" style="background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;font-weight:700;">UAE — ${esc(u)}</span>`),
-      ...l.part.map(p=>{const tc=TC[p.t]||TC.M;const px=p.t==='C'?'★ ':p.t==='VC'?'◆ ':'';return`<span class="badge" style="background:${tc.bg};color:${tc.tx};border:1px solid ${tc.bd};">${px}${esc(p.c)}</span>`;})
-    ].join('');
-    return`<tr>
-      <td style="font-weight:600;color:#1E293B;white-space:nowrap;background:${bg}">${esc(s.nc)}</td>
-      <td style="font-size:11px;color:#64748B;background:${bg}">${s.unit}</td>
-      <td style="text-align:center;background:${bg}">${t>0?`<span style="${pillS(t)}">${t}</span>`:`<span style="color:#CBD5E1">—</span>`}</td>
-      <td style="background:${bg}"><div style="display:flex;flex-wrap:wrap;gap:3px;">${chips||'<span style="color:#CBD5E1;font-size:11px;font-style:italic;">sem alocação</span>'}</div></td>
-    </tr>`;
-  }).join('');
-  return`<div style="background:white;border-radius:8px;overflow:hidden;">
-    <table><thead><tr>
-      <th style="width:20%;white-space:nowrap;">Servidor</th><th style="width:7%;">Unidade</th>
-      <th style="width:6%;text-align:center;">Carga</th><th>Alocações</th>
-    </tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
-}
+<footer>UAE/SGP · TRT-17 — repositório Demandas_TRT17</footer>
 
-// ── TAB 2 ─────────────────────────────────────────────────────────────────────
-function tab2(ld,sorted){
-  const data=sorted.filter(s=>tot(s.id,ld)>0).map(s=>({name:s.nc,uae:ld[s.id].uae.length,part:ld[s.id].part.length,total:tot(s.id,ld)}));
-  const mx=Math.max(...data.map(d=>d.total),1);
-  const barH=22,gap=10,lW=150,cW=460,svgH=data.length*(barH+gap)+20;
-  const bars=data.map((d,i)=>{
-    const y=i*(barH+gap)+10,uw=(d.uae/mx)*cW,pw=(d.part/mx)*cW;
-    return`<g>
-      <text x="${lW-6}" y="${y+barH/2+4}" text-anchor="end" font-size="11" fill="#475569">${esc(d.name)}</text>
-      <rect x="${lW}" y="${y}" width="${Math.max(uw,0)}" height="${barH}" fill="#3B82F6" rx="2"/>
-      <rect x="${lW+uw}" y="${y}" width="${Math.max(pw,0)}" height="${barH}" fill="#94A3B8" rx="2"/>
-      <text x="${lW+uw+pw+5}" y="${y+barH/2+4}" font-size="12" font-weight="700" fill="#475569">${d.total}</text>
-    </g>`;
-  }).join('');
-  const ct=tot('CLEIDE',ld);
-  return`<div style="background:white;border-radius:8px;padding:18px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div style="font-size:14px;font-weight:700;color:#1E293B;">Carga total por servidor (UAE + participações)</div>
-      <div style="display:flex;gap:16px;font-size:11px;color:#64748B;">
-        <span><span style="display:inline-block;width:10px;height:10px;background:#3B82F6;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>UAE</span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:#94A3B8;border-radius:2px;margin-right:5px;vertical-align:middle;"></span>Membro/Coord.</span>
-      </div>
-    </div>
-    <div style="overflow-x:auto;">
-      <svg width="${lW+cW+60}" height="${svgH}" style="display:block;">${bars}</svg>
-    </div>
-    <div style="margin-top:16px;padding:12px 14px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;">
-      <div style="font-size:12px;color:#92400E;font-weight:700;margin-bottom:4px;">⚠ Atenção — Carga da Cleide Reisen (SGP)</div>
-      <div style="font-size:11px;color:#78350F;">Com ${ct} alocações registradas, a Cleide concentra a maior carga da SGP em colegiados. Parte disso reflete mandatos institucionais, mas é um ponto de atenção para eventual redistribuição de UAE.</div>
-    </div>
-  </div>`;
-}
-
-// ── EXPÕE FUNÇÕES PARA ONCLICK INLINE ─────────────────────────────────────────
-window._setTab  = (i)=>{ S.tab=i; S.sel=null; render(); };
-window._fsSave  = fsSave;
-window._fsSync  = fsSync;
-window._clearSel= ()=>{ S.sel=null; render(); };
-window._doReset = ()=>{
-  if(!confirm('Resetar para os valores padrão? As edições não salvas serão perdidas.'))return;
-  S.cols=JSON.parse(JSON.stringify(UAE_INIT));
-  S.sel=null;S.search='';S.dirty=true;render();
-  toast('Valores padrão restaurados. Clique "↑ Salvar" para persistir.','#64748B');
-};
-
-render();
-</script>
 </body>
 </html>
