@@ -466,5 +466,19 @@ window._doReset = ()=>{
 
 render();
 </script>
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de paineis">
+  <span class="sgp-hub-back__ic">&#9666;</span><span>HUB</span>
+</a>
+<style>
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+ font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:12px;font-weight:700;letter-spacing:.08em;
+ text-transform:uppercase;text-decoration:none;color:#e8ecff;background:rgba(11,15,42,.82);-webkit-backdrop-filter:blur(6px);
+ backdrop-filter:blur(6px);border:1px solid rgba(120,140,255,.35);border-radius:999px;padding:9px 15px 9px 13px;
+ box-shadow:0 6px 20px -6px rgba(0,0,0,.5);transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,color .18s ease}
+.sgp-hub-back:hover,.sgp-hub-back:focus-visible{outline:none;transform:translateY(-2px);border-color:#36e2ec;color:#36e2ec;
+ box-shadow:0 0 0 1px #36e2ec,0 0 18px -2px #36e2ec,0 8px 24px -8px #000}
+.sgp-hub-back__ic{font-size:14px;line-height:1}
+@media print{.sgp-hub-back{display:none}}
+</style>
 </body>
 </html>
