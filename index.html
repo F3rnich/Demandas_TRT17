@@ -3,107 +3,203 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Painéis · SGP — TRT-17</title>
+<title>PAINÉIS SGP · TRT-17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#1F4E79; --navy-d:#163a5a; --orange:#E8821E;
-    --ink:#0f1d2b; --muted:#5a6b7b; --line:#e4ebf1; --bg:#f4f7fa; --card:#fff;
-    --live:#0f9d58; --static:#8a97a3;
-    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --void:#0b0f2a; --void2:#131a44; --panel:#0f1538;
+    --cyan:#36e2ec; --magenta:#ff4d9d; --orange:#ff9e2c; --lime:#8bf752;
+    --ink:#e8ecff; --dim:#8a93c9; --line:rgba(120,140,255,.18);
+    --pixel:"Press Start 2P",ui-monospace,monospace;
+    --ui:"Chakra Petch","Segoe UI",system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.5}
-  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-
-  header{background:linear-gradient(120deg,var(--navy),var(--navy-d));color:#fff;border-bottom:3px solid var(--orange)}
-  .head-in{padding:30px 0 26px}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
-  h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em}
-  header p{margin-top:8px;color:rgba(255,255,255,.82);font-size:14.5px;max-width:640px}
-
-  main{padding:28px 0 60px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-  a.card{
-    display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;
-    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;
-    box-shadow:0 1px 2px rgba(15,29,43,.04);transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease
+  html,body{height:100%}
+  body{
+    font-family:var(--ui);background:var(--void);color:var(--ink);
+    min-height:100%;overflow-x:hidden;position:relative;
+    background-image:
+      radial-gradient(1200px 500px at 50% -10%, rgba(54,226,236,.10), transparent 60%),
+      radial-gradient(900px 500px at 50% 120%, rgba(255,77,157,.12), transparent 55%);
   }
-  a.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,29,43,.10);border-color:#cdd9e4}
-  a.card:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
-  .ct{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-  .ct h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
-  .tag{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:none}
-  .tag.live{background:#e6f6ee;color:var(--live)}
-  .tag.static{background:#eef2f5;color:var(--static)}
-  .desc{font-size:13px;color:var(--muted)}
-  .meta{font-family:var(--mono);font-size:11px;color:#90a0ad;margin-top:auto;display:flex;align-items:center;gap:6px}
-  .arrow{color:var(--navy);font-weight:700}
+  .floor{position:fixed;left:50%;bottom:0;width:200vw;height:46vh;transform:translateX(-50%) perspective(420px) rotateX(74deg);transform-origin:bottom center;pointer-events:none;z-index:0;opacity:.6}
+  .floor::before{content:"";position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(54,226,236,.45) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,77,157,.35) 1px,transparent 1px);
+    background-size:46px 46px;animation:flow 7s linear infinite}
+  .floor::after{content:"";position:absolute;left:0;right:0;top:0;height:40%;
+    background:linear-gradient(var(--void),transparent)}
+  @keyframes flow{to{background-position:0 46px,0 0}}
+  .horizon{position:fixed;left:0;right:0;bottom:46vh;height:2px;z-index:0;pointer-events:none;
+    background:linear-gradient(90deg,transparent,var(--cyan),var(--magenta),transparent);
+    box-shadow:0 0 24px 4px rgba(54,226,236,.5),0 0 60px 10px rgba(255,77,157,.25)}
+  body::after{content:"";position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:.05;
+    background:repeating-linear-gradient(transparent 0 2px,#000 2px 3px)}
 
-  .note{margin-top:22px;font-size:12.5px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:12px;padding:13px 15px}
-  .note b{color:var(--ink)}
-  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
-  .legend span{display:inline-flex;align-items:center;gap:6px}
-  .dot{width:9px;height:9px;border-radius:50%}
-  .dot.live{background:var(--live)} .dot.static{background:var(--static)}
-  footer{padding:22px 0 50px;text-align:center;font-size:12px;color:#90a0ad}
+  .wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:22px 20px 64px}
+
+  .hud{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:var(--pixel);font-size:9px;letter-spacing:.06em;color:var(--dim);
+    border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:rgba(15,21,56,.55);backdrop-filter:blur(4px)}
+  .hud .l{display:flex;align-items:center;gap:9px}
+  .led{width:9px;height:9px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px 1px var(--lime);animation:blink 1.6s steps(1) infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .hud .r{color:var(--cyan)}
+
+  .title-blk{text-align:center;margin:46px 0 8px}
+  h1{font-family:var(--ui);font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    font-size:clamp(34px,8vw,76px);line-height:.95;color:#fff;
+    text-shadow:0 0 6px #fff,0 0 18px var(--cyan),0 0 36px var(--cyan),0 2px 0 var(--magenta),4px 4px 0 rgba(255,77,157,.25);
+    animation:buzz 5s ease-in-out infinite}
+  @keyframes buzz{0%,97%,100%{opacity:1}98%{opacity:.72}99%{opacity:1}}
+  h1 .sg{color:var(--orange);text-shadow:0 0 6px #fff,0 0 20px var(--orange),0 0 40px var(--orange)}
+  .subtitle{font-family:var(--pixel);font-size:11px;color:var(--cyan);letter-spacing:.16em;margin-top:18px;
+    display:inline-flex;gap:12px;align-items:center}
+  .subtitle .br{color:var(--magenta);animation:blink 1s steps(1) infinite}
+
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px}
+  @media(max-width:840px){.stages{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.stages{grid-template-columns:1fr}}
+
+  a.stage{
+    --accent:var(--cyan);
+    position:relative;display:flex;flex-direction:column;gap:11px;text-decoration:none;color:inherit;
+    background:linear-gradient(180deg,rgba(19,26,68,.9),rgba(11,15,42,.92));
+    border:1px solid var(--line);border-radius:14px;padding:18px 17px 16px;overflow:hidden;
+    opacity:0;transform:translateY(16px);animation:boot .5s ease forwards;
+    transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease
+  }
+  @keyframes boot{to{opacity:1;transform:translateY(0)}}
+  a.stage:hover,a.stage:focus-visible{outline:none;transform:translateY(-4px);
+    border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 22px -2px var(--accent),0 14px 40px -12px #000}
+  a.stage .sweep{position:absolute;left:0;right:0;top:-40%;height:40%;pointer-events:none;
+    background:linear-gradient(transparent,color-mix(in srgb,var(--accent) 22%,transparent),transparent);opacity:0}
+  a.stage:hover .sweep,a.stage:focus-visible .sweep{animation:sweep .7s ease}
+  @keyframes sweep{0%{top:-40%;opacity:.9}100%{top:120%;opacity:0}}
+
+  .stop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .num{font-family:var(--pixel);font-size:18px;color:var(--accent);text-shadow:0 0 12px var(--accent)}
+  .status{font-family:var(--pixel);font-size:8px;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;color:var(--dim)}
+  .status .d{width:8px;height:8px;border-radius:50%}
+  .status.live{color:var(--lime)} .status.live .d{background:var(--lime);box-shadow:0 0 8px 1px var(--lime)}
+  .status.ro{color:var(--orange)} .status.ro .d{background:var(--orange);box-shadow:0 0 8px 1px var(--orange)}
+
+  .stage h2{font-family:var(--ui);font-weight:700;font-size:17px;line-height:1.15;letter-spacing:.01em}
+  .stage p{font-size:13.5px;color:var(--dim);line-height:1.45;font-weight:400}
+  .play{margin-top:auto;font-family:var(--pixel);font-size:9px;letter-spacing:.08em;color:var(--accent);display:flex;align-items:center;gap:8px;padding-top:6px}
+  .play .arr{transition:transform .15s}
+  a.stage:hover .play .arr,a.stage:focus-visible .play .arr{transform:translateX(4px)}
+
+  a.stage.c-mag{--accent:var(--magenta)}
+  a.stage.c-org{--accent:var(--orange)}
+
+  .controls{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;
+    font-family:var(--pixel);font-size:9px;color:var(--dim);letter-spacing:.06em}
+  .controls b{color:var(--ink)}
+  .key{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;color:var(--cyan);margin-right:5px}
+  footer{margin-top:30px;text-align:center;font-family:var(--pixel);font-size:8px;color:rgba(138,147,201,.6);letter-spacing:.1em}
+
+  @media(prefers-reduced-motion:reduce){
+    .floor::before,h1,.led,.subtitle .br{animation:none}
+    a.stage{opacity:1;transform:none;animation:none}
+    a.stage:hover .sweep,a.stage:focus-visible .sweep{animation:none}
+  }
+  a.stage:focus-visible{box-shadow:0 0 0 2px var(--accent),0 0 26px -2px var(--accent)}
 </style>
 </head>
 <body>
+<div class="floor"></div><div class="horizon"></div>
 
-<header>
-  <div class="wrap head-in">
-    <div class="kicker">TRT-17 · Secretaria de Gestão de Pessoas</div>
-    <h1>Painéis da SGP</h1>
-    <p>Índice dos dashboards mantidos pela UAE/SGP. Os colaborativos sincronizam edições em tempo real; os estáticos são retratos de consulta.</p>
-  </div>
-</header>
+<div class="wrap">
 
-<main class="wrap">
-  <div class="grid">
-
-    <a class="card" href="dashboard_colegiados.html">
-      <div class="ct"><h2>Mapa de Alocação — Colegiados Temáticos</h2><span class="tag live">Colaborativo</span></div>
-      <div class="desc">Alocação de servidores da UAE/SGP nos colegiados temáticos, com edição compartilhada.</div>
-      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" href="dashboard_demandas_correcionais.html">
-      <div class="ct"><h2>Demandas Correcionais — CGJT 2026</h2><span class="tag live">Colaborativo</span></div>
-      <div class="desc">As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</div>
-      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" href="dashboard_pendencias_colegiados.html">
-      <div class="ct"><h2>Pendências — SUBPEAMS / SUBCOPERGD</h2><span class="tag live">Colaborativo</span></div>
-      <div class="desc">Checklist de pendências dos colegiados, com marcação salva automaticamente.</div>
-      <div class="meta">sincroniza em tempo real <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" href="dashboard-aderencia-funcional-trt17.html">
-      <div class="ct"><h2>Aderência Funcional</h2><span class="tag static">Consulta</span></div>
-      <div class="desc">Painel de aderência funcional no âmbito do TRT-17.</div>
-      <div class="meta">somente leitura <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" href="dashboard_expediente_tribunais_copa.html">
-      <div class="ct"><h2>Expediente dos Tribunais — Copa 2026</h2><span class="tag static">Consulta</span></div>
-      <div class="desc">Regime de funcionamento dos tribunais no jogo Brasil × Japão, segunda 29/06.</div>
-      <div class="meta">somente leitura <span class="arrow">→</span></div>
-    </a>
-
+  <div class="hud">
+    <span class="l"><span class="led"></span> SISTEMA ONLINE</span>
+    <span class="r">TRT-17 · SGP</span>
   </div>
 
-  <div class="note">
-    <b>Como ler.</b> Cada cartão abre o painel correspondente.
-    <div class="legend">
-      <span><span class="dot live"></span> <b>Colaborativo</b> — edições sincronizam entre usuários (Firestore)</span>
-      <span><span class="dot static"></span> <b>Consulta</b> — retrato estático, somente leitura</span>
-    </div>
+  <div class="title-blk">
+    <h1>PAINÉIS <span class="sg">SGP</span></h1>
+    <div class="subtitle"><span class="br">&#9656;</span> SELECIONE UM PAINEL <span class="br">&#9666;</span></div>
   </div>
-</main>
 
-<footer>UAE/SGP · TRT-17 — repositório Demandas_TRT17</footer>
+  <div class="stages" id="stages">
 
+    <a class="stage" href="dashboard_colegiados.html" style="animation-delay:.05s" data-n="1">
+      <div class="sweep"></div>
+      <div class="stop"><span class="num">01</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
+      <h2>Mapa de Alocação — Colegiados</h2>
+      <p>Alocação de servidores da UAE/SGP nos colegiados temáticos, com edição compartilhada.</p>
+      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    </a>
+
+    <a class="stage c-mag" href="dashboard_demandas_correcionais.html" style="animation-delay:.12s" data-n="2">
+      <div class="sweep"></div>
+      <div class="stop"><span class="num">02</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
+      <h2>Demandas Correcionais — CGJT 2026</h2>
+      <p>As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</p>
+      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    </a>
+
+    <a class="stage" href="dashboard_pendencias_colegiados.html" style="animation-delay:.19s" data-n="3">
+      <div class="sweep"></div>
+      <div class="stop"><span class="num">03</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
+      <h2>Pendências — SUBPEAMS / SUBCOPERGD</h2>
+      <p>Checklist de pendências dos colegiados, com marcação salva automaticamente.</p>
+      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    </a>
+
+    <a class="stage c-org" href="dashboard-aderencia-funcional-trt17.html" style="animation-delay:.26s" data-n="4">
+      <div class="sweep"></div>
+      <div class="stop"><span class="num">04</span><span class="status ro"><span class="d"></span>CONSULTA</span></div>
+      <h2>Aderência Funcional</h2>
+      <p>Painel de aderência funcional no âmbito do TRT-17. Somente leitura.</p>
+      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    </a>
+
+    <a class="stage c-org" href="dashboard_expediente_tribunais_copa.html" style="animation-delay:.33s" data-n="5">
+      <div class="sweep"></div>
+      <div class="stop"><span class="num">05</span><span class="status ro"><span class="d"></span>CONSULTA</span></div>
+      <h2>Expediente dos Tribunais — Copa 2026</h2>
+      <p>Regime de funcionamento dos tribunais no jogo Brasil &#215; Japão, segunda 29/06.</p>
+      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    </a>
+
+  </div>
+
+  <div class="controls">
+    <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> navegar</span>
+    <span><span class="key">ENTER</span> abrir</span>
+    <span><span class="key">1</span>&#8211;<span class="key">5</span> ir direto</span>
+  </div>
+
+  <footer>UAE / SGP · TRT-17 — © 2026 · INSERT COIN</footer>
+</div>
+
+<script>
+(function(){
+  const cards=[...document.querySelectorAll('a.stage')];
+  if(!cards.length)return;
+  let i=0;
+  const cols=function(){
+    const top=cards[0].offsetTop; let n=0;
+    for(const c of cards){ if(c.offsetTop===top) n++; else break; }
+    return Math.max(1,n);
+  };
+  const focus=function(n){ i=(n+cards.length)%cards.length; cards[i].focus(); };
+  document.addEventListener('keydown',function(e){
+    const k=e.key;
+    if(k>='1'&&k<='9'){const idx=+k-1; if(cards[idx]){e.preventDefault(); location.href=cards[idx].href;} return;}
+    const c=cols();
+    if(k==='ArrowRight'){e.preventDefault(); focus(i+1);}
+    else if(k==='ArrowLeft'){e.preventDefault(); focus(i-1);}
+    else if(k==='ArrowDown'){e.preventDefault(); focus(i+c);}
+    else if(k==='ArrowUp'){e.preventDefault(); focus(i-c);}
+  });
+  cards.forEach(function(c,idx){c.addEventListener('focus',function(){i=idx;});});
+})();
+</script>
 </body>
 </html>
