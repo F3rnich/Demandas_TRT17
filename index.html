@@ -3,200 +3,192 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PAINÉIS SGP · TRT-17</title>
+<title>Painéis SGP · TRT-17</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{
-    --void:#0b0f2a; --void2:#131a44; --panel:#0f1538;
-    --cyan:#36e2ec; --magenta:#ff4d9d; --orange:#ff9e2c; --lime:#8bf752;
-    --ink:#e8ecff; --dim:#8a93c9; --line:rgba(120,140,255,.18);
+    --b900:#003A5C; --b800:#00466E; --b700:#005888; --b600:#0068A0; --b500:#1B8EC1;
+    --b300:#6FB7DA; --b100:#D6E8F2; --b50:#EEF5F9;
+    --y500:#FFD040; --y700:#D9A200; --y300:#FFE89C;
+    --g900:#1A1A1A; --g800:#2A2E33; --g700:#4A5159; --g600:#6B7280; --g500:#8A929C;
+    --g200:#E5E8EC; --g50:#F7F8FA; --white:#fff;
+    --focus:0 0 0 3px rgba(27,142,193,.35);
+    --sh-card:0 1px 2px rgba(0,58,92,.06),0 1px 1px rgba(0,58,92,.04);
+    --sh-hover:0 2px 6px rgba(0,58,92,.10),0 1px 2px rgba(0,58,92,.06);
     --pixel:"Press Start 2P",ui-monospace,monospace;
-    --ui:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+    --sans:"Open Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{
-    font-family:var(--ui);background:var(--void);color:var(--ink);
-    min-height:100%;overflow-x:hidden;position:relative;
-    background-image:
-      radial-gradient(1200px 500px at 50% -10%, rgba(54,226,236,.10), transparent 60%),
-      radial-gradient(900px 500px at 50% 120%, rgba(255,77,157,.12), transparent 55%);
-  }
-  .floor{position:fixed;left:50%;bottom:0;width:200vw;height:46vh;transform:translateX(-50%) perspective(420px) rotateX(74deg);transform-origin:bottom center;pointer-events:none;z-index:0;opacity:.6}
-  .floor::before{content:"";position:absolute;inset:0;
-    background-image:
-      linear-gradient(rgba(54,226,236,.45) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,77,157,.35) 1px,transparent 1px);
-    background-size:46px 46px;animation:flow 7s linear infinite}
-  .floor::after{content:"";position:absolute;left:0;right:0;top:0;height:40%;
-    background:linear-gradient(var(--void),transparent)}
-  @keyframes flow{to{background-position:0 46px,0 0}}
-  .horizon{position:fixed;left:0;right:0;bottom:46vh;height:2px;z-index:0;pointer-events:none;
-    background:linear-gradient(90deg,transparent,var(--cyan),var(--magenta),transparent);
-    box-shadow:0 0 24px 4px rgba(54,226,236,.5),0 0 60px 10px rgba(255,77,157,.25)}
-  body::after{content:"";position:fixed;inset:0;z-index:5;pointer-events:none;mix-blend-mode:overlay;opacity:.05;
-    background:repeating-linear-gradient(transparent 0 2px,#000 2px 3px)}
+  body{font-family:var(--sans);background:var(--b900);color:var(--g800);min-height:100%}
 
-  .wrap{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:22px 20px 64px}
+  /* HUD topo */
+  .hud{background:var(--b700);border-bottom:3px solid var(--y500)}
+  .hud-in{max-width:1120px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:var(--pixel);font-size:10px;letter-spacing:.06em;color:var(--b100)}
+  .hud-in .r{color:var(--white)}
+  .hud-in .led{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--y500);margin-right:8px;vertical-align:middle;animation:blink 1.4s steps(1) infinite}
+  @keyframes blink{50%{opacity:.25}}
 
-  .hud{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    font-family:var(--pixel);font-size:9px;letter-spacing:.06em;color:var(--dim);
-    border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:rgba(15,21,56,.55);backdrop-filter:blur(4px)}
-  .hud .l{display:flex;align-items:center;gap:9px}
-  .led{width:9px;height:9px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px 1px var(--lime);animation:blink 1.6s steps(1) infinite}
-  @keyframes blink{50%{opacity:.35}}
-  .hud .r{color:var(--cyan)}
+  .wrap{max-width:1120px;margin:0 auto;padding:48px 24px 64px}
 
-  .title-blk{text-align:center;margin:46px 0 8px}
-  h1{font-family:var(--ui);font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-    font-size:clamp(34px,8vw,76px);line-height:.95;color:#fff;
-    text-shadow:0 0 6px #fff,0 0 18px var(--cyan),0 0 36px var(--cyan),0 2px 0 var(--magenta),4px 4px 0 rgba(255,77,157,.25);
-    animation:buzz 5s ease-in-out infinite}
-  @keyframes buzz{0%,97%,100%{opacity:1}98%{opacity:.72}99%{opacity:1}}
-  h1 .sg{color:var(--orange);text-shadow:0 0 6px #fff,0 0 20px var(--orange),0 0 40px var(--orange)}
-  .subtitle{font-family:var(--pixel);font-size:11px;color:var(--cyan);letter-spacing:.16em;margin-top:18px;
-    display:inline-flex;gap:12px;align-items:center}
-  .subtitle .br{color:var(--magenta);animation:blink 1s steps(1) infinite}
+  /* título */
+  .eyebrow{font-family:var(--pixel);font-size:11px;letter-spacing:.12em;color:var(--y500);display:inline-flex;align-items:center;gap:10px}
+  .eyebrow .cur{color:var(--y500);animation:blink 1s steps(1) infinite}
+  h1{font-family:var(--sans);font-weight:800;font-size:clamp(32px,5vw,44px);line-height:1.2;color:var(--white);letter-spacing:-.01em;margin-top:16px}
+  .ybar{width:48px;height:4px;background:var(--y500);margin-top:16px}
+  .lead{margin-top:16px;color:var(--b100);font-size:15px;line-height:1.55;max-width:640px}
 
-  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px}
-  @media(max-width:840px){.stages{grid-template-columns:repeat(2,1fr)}}
+  /* grade de fases */
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+  @media(max-width:900px){.stages{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.stages{grid-template-columns:1fr}}
 
   a.stage{
-    --accent:var(--cyan);
-    position:relative;display:flex;flex-direction:column;gap:11px;text-decoration:none;color:inherit;
-    background:linear-gradient(180deg,rgba(19,26,68,.9),rgba(11,15,42,.92));
-    border:1px solid var(--line);border-radius:14px;padding:18px 17px 16px;overflow:hidden;
-    opacity:0;transform:translateY(16px);animation:boot .5s ease forwards;
-    transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease
-  }
-  @keyframes boot{to{opacity:1;transform:translateY(0)}}
-  a.stage:hover,a.stage:focus-visible{outline:none;transform:translateY(-4px);
-    border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 0 22px -2px var(--accent),0 14px 40px -12px #000}
-  a.stage .sweep{position:absolute;left:0;right:0;top:-40%;height:40%;pointer-events:none;
-    background:linear-gradient(transparent,color-mix(in srgb,var(--accent) 22%,transparent),transparent);opacity:0}
-  a.stage:hover .sweep,a.stage:focus-visible .sweep{animation:sweep .7s ease}
-  @keyframes sweep{0%{top:-40%;opacity:.9}100%{top:120%;opacity:0}}
+    position:relative;display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
+    background:var(--white);border:1px solid var(--g200);border-left:4px solid var(--y500);border-radius:6px;
+    padding:20px 20px 18px;box-shadow:var(--sh-card);
+    transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+  a.stage:hover{transform:translateY(-2px);box-shadow:var(--sh-hover);border-color:var(--g200);border-left-color:var(--y700)}
+  a.stage:focus-visible{outline:none;box-shadow:var(--focus);border-color:var(--b500);border-left-color:var(--y500)}
 
-  .stop{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .num{font-family:var(--pixel);font-size:18px;color:var(--accent);text-shadow:0 0 12px var(--accent)}
-  .status{font-family:var(--pixel);font-size:8px;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;color:var(--dim)}
-  .status .d{width:8px;height:8px;border-radius:50%}
-  .status.live{color:var(--lime)} .status.live .d{background:var(--lime);box-shadow:0 0 8px 1px var(--lime)}
-  .status.ro{color:var(--orange)} .status.ro .d{background:var(--orange);box-shadow:0 0 8px 1px var(--orange)}
+  .srow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .lft{display:flex;align-items:center;gap:12px}
+  .num{font-family:var(--pixel);font-size:15px;color:var(--y700)}
+  .ico{width:24px;height:24px;flex:none}
+  .ico svg{display:block;width:24px;height:24px}
+  .chip{font-family:var(--pixel);font-size:8px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:2px;border:1px solid var(--g200)}
+  .chip .d{width:7px;height:7px;border-radius:999px}
+  .chip.live{color:var(--b600);border-color:var(--b100)} .chip.live .d{background:var(--b500);animation:blink 1.4s steps(1) infinite}
+  .chip.ro{color:var(--g600)} .chip.ro .d{background:var(--g500)}
 
-  .stage h2{font-family:var(--ui);font-weight:700;font-size:17px;line-height:1.15;letter-spacing:.01em}
-  .stage p{font-size:13.5px;color:var(--dim);line-height:1.45;font-weight:400}
-  .play{margin-top:auto;font-family:var(--pixel);font-size:9px;letter-spacing:.08em;color:var(--accent);display:flex;align-items:center;gap:8px;padding-top:6px}
-  .play .arr{transition:transform .15s}
-  a.stage:hover .play .arr,a.stage:focus-visible .play .arr{transform:translateX(4px)}
+  .stage h2{font-family:var(--sans);font-weight:700;font-size:18px;line-height:1.25;color:var(--g900);letter-spacing:-.01em}
+  .stage p{font-size:14px;line-height:1.55;color:var(--g700)}
+  .play{margin-top:auto;padding-top:8px;font-family:var(--pixel);font-size:9px;letter-spacing:.06em;color:var(--b700);display:flex;align-items:center;gap:8px}
+  .play .arr{transition:transform .16s ease}
+  a.stage:hover .play .arr,a.stage:focus-visible .play .arr{transform:translateX(3px)}
 
-  a.stage.c-mag{--accent:var(--magenta)}
-  a.stage.c-org{--accent:var(--orange)}
+  /* controles */
+  .controls{margin-top:40px;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:center;
+    font-family:var(--pixel);font-size:9px;color:var(--b300);letter-spacing:.06em;align-items:center}
+  .key{display:inline-block;border:1px solid var(--b800);border-bottom-width:2px;border-radius:2px;padding:4px 7px;color:var(--b100);margin-right:5px}
 
-  .controls{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;
-    font-family:var(--pixel);font-size:9px;color:var(--dim);letter-spacing:.06em}
-  .controls b{color:var(--ink)}
-  .key{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;color:var(--cyan);margin-right:5px}
-  footer{margin-top:30px;text-align:center;font-family:var(--pixel);font-size:8px;color:rgba(138,147,201,.6);letter-spacing:.1em}
+  footer{border-top:1px solid var(--b800);margin-top:48px}
+  .foot-in{max-width:1120px;margin:0 auto;padding:20px 24px;font-family:var(--pixel);font-size:9px;color:var(--b300);letter-spacing:.08em;text-align:center}
 
   @media(prefers-reduced-motion:reduce){
-    .floor::before,h1,.led,.subtitle .br{animation:none}
-    a.stage{opacity:1;transform:none;animation:none}
-    a.stage:hover .sweep,a.stage:focus-visible .sweep{animation:none}
+    .hud-in .led,.eyebrow .cur,.chip.live .d{animation:none}
+    a.stage{transition:none}
   }
-  a.stage:focus-visible{box-shadow:0 0 0 2px var(--accent),0 0 26px -2px var(--accent)}
 </style>
 </head>
 <body>
-<div class="floor"></div><div class="horizon"></div>
+
+<div class="hud">
+  <div class="hud-in">
+    <span><span class="led"></span>SISTEMA ONLINE</span>
+    <span class="r">TRT-17 · SGP</span>
+  </div>
+</div>
 
 <div class="wrap">
 
-  <div class="hud">
-    <span class="l"><span class="led"></span> SISTEMA ONLINE</span>
-    <span class="r">TRT-17 · SGP</span>
-  </div>
-
-  <div class="title-blk">
-    <h1>PAINÉIS <span class="sg">SGP</span></h1>
-    <div class="subtitle"><span class="br">&#9656;</span> SELECIONE UM PAINEL <span class="br">&#9666;</span></div>
-  </div>
+  <div class="eyebrow"><span class="cur">&#9654;</span> SELECIONE UM PAINEL</div>
+  <h1>Painéis SGP</h1>
+  <div class="ybar"></div>
+  <p class="lead">Índice dos painéis mantidos pela UAE/SGP. Os colaborativos sincronizam edições em tempo real; os de consulta são retratos estáticos.</p>
 
   <div class="stages" id="stages">
 
-    <a class="stage" href="dashboard_colegiados.html" style="animation-delay:.05s" data-n="1">
-      <div class="sweep"></div>
-      <div class="stop"><span class="num">01</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
-      <h2>Mapa de Alocação — Colegiados</h2>
+    <a class="stage" href="dashboard_colegiados.html" data-n="1">
+      <div class="srow">
+        <div class="lft"><span class="num">01</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M16 14.2c2.2-.2 4 1.6 4 4.3"/></svg></span>
+        </div>
+        <span class="chip live"><span class="d"></span>AO VIVO</span>
+      </div>
+      <h2>Mapa de alocação — colegiados temáticos</h2>
       <p>Alocação de servidores da UAE/SGP nos colegiados temáticos, com edição compartilhada.</p>
-      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage c-mag" href="dashboard_demandas_correcionais.html" style="animation-delay:.12s" data-n="2">
-      <div class="sweep"></div>
-      <div class="stop"><span class="num">02</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
-      <h2>Demandas Correcionais — CGJT 2026</h2>
+    <a class="stage" href="dashboard_demandas_correcionais.html" data-n="2">
+      <div class="srow">
+        <div class="lft"><span class="num">02</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2.5H9z"/><path d="M8.5 13l2.3 2.3 4.3-4.8"/></svg></span>
+        </div>
+        <span class="chip live"><span class="d"></span>AO VIVO</span>
+      </div>
+      <h2>Demandas correcionais — CGJT 2026</h2>
       <p>As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</p>
-      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage" href="dashboard_pendencias_colegiados.html" style="animation-delay:.19s" data-n="3">
-      <div class="sweep"></div>
-      <div class="stop"><span class="num">03</span><span class="status live"><span class="d"></span>AO VIVO</span></div>
+    <a class="stage" href="dashboard_pendencias_colegiados.html" data-n="3">
+      <div class="srow">
+        <div class="lft"><span class="num">03</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7h10M9.5 12h10M9.5 17h10"/><path d="M4 6.6l1.3 1.3L7.3 5.6"/><path d="M4 11.6l1.3 1.3L7.3 10.6"/><path d="M4 16.6l1.3 1.3L7.3 15.6"/></svg></span>
+        </div>
+        <span class="chip live"><span class="d"></span>AO VIVO</span>
+      </div>
       <h2>Pendências — SUBPEAMS / SUBCOPERGD</h2>
       <p>Checklist de pendências dos colegiados, com marcação salva automaticamente.</p>
-      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage c-org" href="dashboard-aderencia-funcional-trt17.html" style="animation-delay:.26s" data-n="4">
-      <div class="sweep"></div>
-      <div class="stop"><span class="num">04</span><span class="status ro"><span class="d"></span>CONSULTA</span></div>
-      <h2>Aderência Funcional</h2>
+    <a class="stage" href="dashboard-aderencia-funcional-trt17.html" data-n="4">
+      <div class="srow">
+        <div class="lft"><span class="num">04</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19v-6M11 19V7M16 19v-8M20.5 19V9.5" stroke-width="1.8"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Aderência funcional</h2>
       <p>Painel de aderência funcional no âmbito do TRT-17. Somente leitura.</p>
-      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage c-org" href="dashboard_expediente_tribunais_copa.html" style="animation-delay:.33s" data-n="5">
-      <div class="sweep"></div>
-      <div class="stop"><span class="num">05</span><span class="status ro"><span class="d"></span>CONSULTA</span></div>
-      <h2>Expediente dos Tribunais — Copa 2026</h2>
-      <p>Regime de funcionamento dos tribunais no jogo Brasil &#215; Japão, segunda 29/06.</p>
-      <div class="play"><span class="arr">&#9654;</span> INICIAR</div>
+    <a class="stage" href="dashboard_expediente_tribunais_copa.html" data-n="5">
+      <div class="srow">
+        <div class="lft"><span class="num">05</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Expediente dos tribunais — Copa 2026</h2>
+      <p>Regime de funcionamento dos tribunais no jogo Brasil x Japão, segunda 29/06.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
   </div>
 
   <div class="controls">
-    <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> navegar</span>
-    <span><span class="key">ENTER</span> abrir</span>
-    <span><span class="key">1</span>&#8211;<span class="key">5</span> ir direto</span>
+    <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> NAVEGAR</span>
+    <span><span class="key">ENTER</span> ABRIR</span>
+    <span><span class="key">1</span>&#8211;<span class="key">5</span> IR DIRETO</span>
   </div>
 
-  <footer>UAE / SGP · TRT-17 — © 2026 · INSERT COIN</footer>
 </div>
+
+<footer><div class="foot-in">UAE / SGP · TRT-17 — 2026</div></footer>
 
 <script>
 (function(){
-  const cards=[...document.querySelectorAll('a.stage')];
+  var cards=[].slice.call(document.querySelectorAll('a.stage'));
   if(!cards.length)return;
-  let i=0;
-  const cols=function(){
-    const top=cards[0].offsetTop; let n=0;
-    for(const c of cards){ if(c.offsetTop===top) n++; else break; }
-    return Math.max(1,n);
-  };
-  const focus=function(n){ i=(n+cards.length)%cards.length; cards[i].focus(); };
+  var i=0;
+  function cols(){var top=cards[0].offsetTop,n=0;for(var k=0;k<cards.length;k++){if(cards[k].offsetTop===top)n++;else break;}return Math.max(1,n);}
+  function focus(n){i=(n+cards.length)%cards.length;cards[i].focus();}
   document.addEventListener('keydown',function(e){
-    const k=e.key;
-    if(k>='1'&&k<='9'){const idx=+k-1; if(cards[idx]){e.preventDefault(); location.href=cards[idx].href;} return;}
-    const c=cols();
-    if(k==='ArrowRight'){e.preventDefault(); focus(i+1);}
-    else if(k==='ArrowLeft'){e.preventDefault(); focus(i-1);}
-    else if(k==='ArrowDown'){e.preventDefault(); focus(i+c);}
-    else if(k==='ArrowUp'){e.preventDefault(); focus(i-c);}
+    var k=e.key;
+    if(k>='1'&&k<='9'){var idx=+k-1;if(cards[idx]){e.preventDefault();location.href=cards[idx].href;}return;}
+    var c=cols();
+    if(k==='ArrowRight'){e.preventDefault();focus(i+1);}
+    else if(k==='ArrowLeft'){e.preventDefault();focus(i-1);}
+    else if(k==='ArrowDown'){e.preventDefault();focus(i+c);}
+    else if(k==='ArrowUp'){e.preventDefault();focus(i-c);}
   });
   cards.forEach(function(c,idx){c.addEventListener('focus',function(){i=idx;});});
 })();
