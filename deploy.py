@@ -85,38 +85,42 @@ def latest_build():
     st, b = api("GET", f"/repos/{REPO}/pages/builds/latest")
     return b if st < 300 else {}
 
-def wait_build(expect_commit=None, since=None, timeout=240):
-    t0 = time.time()
-    last = None
+def wait_build(expect_commit, timeout=240):
+    t0 = time.time(); last = None
     while time.time() - t0 < timeout:
         b = latest_build()
         status = b.get("status"); commit = (b.get("commit") or "")
-        stamp = b.get("updated_at")
-        fresh = (expect_commit and commit.startswith(expect_commit[:7])) or \
-                (since and stamp and stamp > since)
         if status != last:
             print(f"  build: {status} ({commit[:7]})"); last = status
-        if status in ("built", "errored") and (fresh or expect_commit is None and since is None):
+        fresh = expect_commit and commit.startswith(expect_commit[:7])
+        if status in ("built", "errored") and fresh:
             return status, b
         time.sleep(4)
     return "timeout", b
 
-def request_rebuild():
-    st, r = api("POST", f"/repos/{REPO}/pages/builds")
-    print(f"  rebuild solicitado: HTTP {st}")
-    return st < 300
+def retrigger_build(message="retry: re-dispara build do Pages (commit vazio)"):
+    # Re-dispara o build com um commit VAZIO (mesma arvore). Usa so permissao de Contents,
+    # pois POST /pages/builds exige Pages:write (que o PAT pode nao ter -> 403).
+    _, ref = api("GET", f"/repos/{REPO}/git/ref/heads/{BRANCH}")
+    base = ref["object"]["sha"]
+    _, cinfo = api("GET", f"/repos/{REPO}/git/commits/{base}")
+    st, nc = api("POST", f"/repos/{REPO}/git/commits",
+                 {"message": message, "tree": cinfo["tree"]["sha"], "parents": [base]})
+    if st >= 300:
+        print(f"  falha ao re-disparar: {st} {nc}"); return None
+    api("PATCH", f"/repos/{REPO}/git/refs/heads/{BRANCH}", {"sha": nc["sha"], "force": False})
+    print(f"  re-disparado via commit vazio {nc['sha'][:7]}")
+    return nc["sha"]
 
-def ensure_deployed(expect_commit=None, retries=3):
-    since = latest_build().get("updated_at") if expect_commit is None else None
+def ensure_deployed(expect_commit, retries=3):
     for attempt in range(1, retries + 1):
-        status, b = wait_build(expect_commit=expect_commit, since=since)
+        status, b = wait_build(expect_commit=expect_commit)
         if status == "built":
             print(f"OK — publicado. {PAGES_URL}")
             return True
         print(f"  tentativa {attempt}: build '{status}'. Re-disparando...")
-        since = latest_build().get("updated_at")
-        expect_commit = None
-        if not request_rebuild():
+        expect_commit = retrigger_build()
+        if not expect_commit:
             time.sleep(5)
     print(f"FALHA — build nao ficou 'built' apos {retries} tentativas. "
           f"Provavel incidente transiente do GitHub Pages; rode  python deploy.py --rebuild  em alguns minutos.")
@@ -128,9 +132,9 @@ def main():
     if not args:
         sys.exit(__doc__)
     if args[0] == "--rebuild":
-        print("Re-disparando build do Pages (sem commit)...")
-        request_rebuild()
-        ensure_deployed(expect_commit=None)
+        print("Re-disparando build do Pages...")
+        sha = retrigger_build()
+        ensure_deployed(expect_commit=sha)
         return
     message, files = args[0], args[1:]
     if not files:
