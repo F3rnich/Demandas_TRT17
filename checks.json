@@ -1,0 +1,26 @@
+{
+  "index.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "SELECIONE UM PAINEL"],
+    "must_not_contain": []
+  },
+  "dashboard_colegiados.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back", "firebaseConfig", "alocacao_uae"],
+    "must_not_contain": []
+  },
+  "dashboard_demandas_correcionais.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back", "firebaseConfig", "demandas_correcionais_sgp"],
+    "must_not_contain": []
+  },
+  "dashboard_pendencias_colegiados.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back", "firebaseConfig", "pendencias_subpeams_subcopergd"],
+    "must_not_contain": []
+  },
+  "dashboard-aderencia-funcional-trt17.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back"],
+    "must_not_contain": []
+  },
+  "dashboard_expediente_tribunais_copa.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back"],
+    "must_not_contain": []
+  }
+}
