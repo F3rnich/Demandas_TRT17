@@ -1,0 +1,12 @@
+name: Validar integridade dos paineis
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rodar validacao contra checks.json
+        run: python3 validate_checks.py
