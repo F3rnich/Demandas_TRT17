@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equidade racial em capacitação gerencial — TRT-17</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: #F2F4F7;
+    color: #1A1A1A;
+    margin: 0;
+    padding: 0 0 3rem;
+  }
+  header {
+    background: #1F4E79;
+    color: #FFFFFF;
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 4px solid #E8821E;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  #sync-indicator {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+  header p { margin: 0; font-size: 14px; color: #CFE0EF; }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #5C6B7A;
+    margin: 2rem 0 0.75rem;
+  }
+
+  .context-card {
+    background: #FFFFFF;
+    border: 1px solid #DDE3EA;
+    border-left: 4px solid #1F4E79;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.5rem;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #33414D;
+  }
+  .context-card strong { color: #1A1A1A; }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin: 1rem 0;
+  }
+  .metric-card {
+    background: #FFFFFF;
+    border: 1px solid #DDE3EA;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+  .metric-card .label { font-size: 12px; color: #5C6B7A; margin: 0 0 4px; }
+  .metric-card .value { font-size: 26px; font-weight: 700; margin: 0; color: #1F4E79; }
+  .metric-card .value.down { color: #B91C1C; }
+  .metric-card .value.up { color: #15803D; }
+  .metric-card .sub { font-size: 11px; color: #8A97A5; margin-top: 2px; }
+
+  .analysis-card {
+    background: #FDF3EC;
+    border: 1px solid #F3D9C2;
+    border-left: 4px solid #E8821E;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #4A3520;
+  }
+  .analysis-card strong { color: #1A1A1A; }
+  .analysis-card ul { margin: 8px 0 0; padding-left: 20px; }
+  .analysis-card li { margin-bottom: 4px; }
+
+  .chart-card {
+    background: #FFFFFF;
+    border: 1px solid #DDE3EA;
+    border-radius: 8px;
+    padding: 1.25rem;
+    overflow-x: auto;
+  }
+  .legend { display: flex; gap: 18px; margin-bottom: 10px; font-size: 12px; color: #44515E; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #FFFFFF; border: 1px solid #DDE3EA; border-radius: 8px; overflow: hidden; }
+  table.data-table th, table.data-table td { padding: 9px 12px; text-align: right; border-bottom: 1px solid #EDEFF2; }
+  table.data-table th:first-child, table.data-table td:first-child { text-align: left; }
+  table.data-table th { background: #F6F8FA; color: #5C6B7A; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table td.delta-down { color: #B91C1C; font-weight: 700; }
+  table.data-table td.delta-up { color: #15803D; font-weight: 700; }
+  table.data-table tr.agg-row td { font-weight: 700; background: #FAFBFC; }
+
+  .months-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .month-card { background: #FFFFFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 1rem 1.25rem; }
+  .month-card h3 { margin: 0 0 8px; font-size: 14px; color: #1F4E79; }
+  .month-card table { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .month-card td { padding: 3px 0; }
+  .month-card td.n { text-align: right; font-weight: 700; }
+  details.audit { margin-top: 8px; }
+  details.audit summary { cursor: pointer; font-size: 12px; color: #1F4E79; }
+  details.audit ul { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: #44515E; }
+
+  .add-month-card {
+    background: #FFFFFF;
+    border: 1px dashed #C7CFD8;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+  }
+  .add-month-card summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #1F4E79; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .form-grid label { font-size: 11px; color: #5C6B7A; display: block; margin-bottom: 3px; }
+  .form-grid input {
+    width: 100%; padding: 6px 8px; border: 1px solid #C7CFD8; border-radius: 5px; font-size: 13px;
+  }
+  .btn-primary {
+    margin-top: 14px; background: #1F4E79; color: #FFFFFF; border: none; border-radius: 6px;
+    padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .btn-primary:hover { background: #163A5C; }
+  .form-msg { font-size: 12px; margin-top: 8px; }
+
+  footer { max-width: 1080px; margin: 2rem auto 0; padding: 0 2rem; font-size: 12px; color: #8A97A5; line-height: 1.6; }
+  .empty-state { text-align: center; color: #8A97A5; padding: 2rem; font-size: 14px; }
+</style>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Equidade racial em capacitação gerencial</h1>
+    <p>UAE / SGP — TRT-17 · impacto do incentivo ENAP de 01/06/2026 (ADPF 973)</p>
+  </div>
+  <span id="sync-indicator">⟳ conectando…</span>
+</header>
+
+<div class="container">
+
+  <div class="context-card">
+    Em <strong>01/06/2026</strong> a SEDCAS divulgou, por determinação da <strong>ADPF nº 973 (STF)</strong>, três cursos gerenciais da EVG/ENAP com recomendação prioritária a servidores <strong>pretos e pardos</strong> com interesse em funções de gestão. Este painel compara a participação de servidores em cursos ENAP <strong>antes</strong> (relatório de maio, cursos concluídos até 05/06) e <strong>depois</strong> (relatório de junho, cursos concluídos até 05/07) do incentivo, cruzando as matrículas com o quadro ativo da Base (930 servidores, retrato de 30/06/2026) para obter a raça de cada participante.
+  </div>
+
+  <p class="section-title">Indicadores gerais</p>
+  <div class="metrics" id="metrics"></div>
+
+  <div id="analysis"></div>
+
+  <p class="section-title">Participação por raça — % do quadro daquela raça</p>
+  <div class="chart-card">
+    <div class="legend">
+      <span><i style="background:#94A3B8"></i>Maio/2026 (antes)</span>
+      <span><i style="background:#E8821E"></i>Junho/2026 (depois)</span>
+    </div>
+    <div id="chart"></div>
+  </div>
+
+  <p class="section-title">Tabela detalhada</p>
+  <div id="table-wrap"></div>
+
+  <p class="section-title">Detalhe dos participantes por mês</p>
+  <div class="months-panel" id="months-panel"></div>
+
+  <details class="add-month-card">
+    <summary>+ Adicionar apuração de um novo mês</summary>
+    <div class="form-grid">
+      <div><label>Mês (ex: 2026-07)</label><input type="text" id="f-mes" placeholder="2026-07"></div>
+      <div><label>Rótulo (ex: Julho/2026)</label><input type="text" id="f-label" placeholder="Julho/2026"></div>
+      <div><label>Branco(a)</label><input type="number" id="f-branco" min="0" value="0"></div>
+      <div><label>Pardo(a)</label><input type="number" id="f-pardo" min="0" value="0"></div>
+      <div><label>Preto(a)</label><input type="number" id="f-preto" min="0" value="0"></div>
+      <div><label>Amarelo(a)</label><input type="number" id="f-amarelo" min="0" value="0"></div>
+      <div><label>Indígena</label><input type="number" id="f-indigena" min="0" value="0"></div>
+      <div><label>Não informado</label><input type="number" id="f-naoinf" min="0" value="0"></div>
+    </div>
+    <button class="btn-primary" id="btn-add-mes">Salvar apuração</button>
+    <p class="form-msg" id="form-msg"></p>
+  </details>
+
+</div>
+
+<footer>
+  Metodologia: participação = servidores distintos (por matrícula) com ao menos um curso concluído reportado pela ENAP no período, cruzados com a raça informada na Base de servidores (retrato de 30/06/2026). Os relatórios ENAP não são filtrados por categoria de curso — todo curso reportado é considerado capacitação computável. Os percentuais usam como denominador o quadro atual por raça (930 servidores); apurações de meses futuros herdam o mesmo quadro, salvo atualização manual. Dados sincronizados em tempo real via Firebase Firestore.
+</footer>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCybE6ghe_F8Rdr6vha3QQaDQLrDMK4uVQ",
+  authDomain:        "demandas-trt-17.firebaseapp.com",
+  projectId:         "demandas-trt-17",
+  storageBucket:     "demandas-trt-17.firebasestorage.app",
+  messagingSenderId: "72728505894",
+  appId:             "1:72728505894:web:c2289011bdf6ac9dfb40e7",
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const STATE_DOC = doc(db, 'estado', 'equidade_racial_capacitacao_enap');
+
+const RACAS = [
+  {key:'BRANCO(A)',       label:'Branco(a)',      color:'#64748B'},
+  {key:'NEGRO(A) - PARDO(A)', label:'Pardo(a)',   color:'#B45309'},
+  {key:'NEGRO(A) - PRETO(A)', label:'Preto(a)',   color:'#292524'},
+  {key:'AMARELO(A)',      label:'Amarelo(a)',     color:'#CA8A04'},
+  {key:'INDÍGENA',        label:'Indígena',       color:'#166534'},
+  {key:'NAO_INFORMADO',   label:'Não informado',  color:'#9CA3AF'},
+];
+
+const DEFAULT_DATA = {
+  quadroAtual: {'BRANCO(A)':651, 'NEGRO(A) - PARDO(A)':231, 'NEGRO(A) - PRETO(A)':28, 'AMARELO(A)':13, 'INDÍGENA':3, 'NAO_INFORMADO':4},
+  totalQuadro: 930,
+  meses: [{"mes": "2026-05", "label": "Maio/2026", "participantesPorRaca": {"BRANCO(A)": 25, "NEGRO(A) - PARDO(A)": 9, "NEGRO(A) - PRETO(A)": 2, "AMARELO(A)": 0, "INDÍGENA": 1, "NAO_INFORMADO": 0}, "totalParticipantes": 37, "detalhe": [{"matricula": "123722", "nome": "ALAN BRANDÃO EGGERT", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Serviços de Infraestrutura", "n_cursos": 6}, {"matricula": "647", "nome": "ALEXANDRE PEREIRA GUSMÃO", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "2ª Vara do Trabalho de Cachoeiro de Itapemirim", "n_cursos": 1}, {"matricula": "124680", "nome": "ALINE ASSIS PEDRONI", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete da Desembargadora Ana Paula Tauceda Branco", "n_cursos": 1}, {"matricula": "1473", "nome": "ALOIR PEREIRA DO ROSÁRIO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Vara do Trabalho de Linhares", "n_cursos": 1}, {"matricula": "19690", "nome": "ANNA CAROLINA SIQUEIRA FÉLIX", "raca": "INDÍGENA", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "10ª Vara do Trabalho de Vitória", "n_cursos": 1}, {"matricula": "7420", "nome": "ANTÔNIO ROGÉRIO CARDOSO DA COSTA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Secretaria de Auditoria", "n_cursos": 1}, {"matricula": "5908", "nome": "AUGUSTO CÉLIO RODRIGUES DE SOUZA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Secretaria de Administração", "n_cursos": 2}, {"matricula": "22969", "nome": "CLARISSA DOS SANTOS MATOS", "raca": "NEGRO(A) - PRETO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Vara do Trabalho de Linhares", "n_cursos": 2}, {"matricula": "21741", "nome": "DÉBORA FABRIS BARCELLOS ZANON", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete da Desembargadora Wanda Lúcia Costa Leite França Decuzzi", "n_cursos": 3}, {"matricula": "123854", "nome": "FRANCO BRAGATO SCÁRDUA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete de Juiz Convocado", "n_cursos": 3}, {"matricula": "7633", "nome": "GEORGE LUIZ BARCELOS SANTOS", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Polícia Judicial", "n_cursos": 2}, {"matricula": "21229", "nome": "GIOVANA DE JESUS PONTINI RODRIGUES", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Grupo de Assistentes de Juízes do Trabalho Substitutos", "n_cursos": 2}, {"matricula": "1147", "nome": "GIOVANNA REGINA MERLO DE PIANTI", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Precatórios", "n_cursos": 3}, {"matricula": "20362", "nome": "HUMBERTO KOHLERT BOLDT", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Orçamento e Contratações de TIC", "n_cursos": 2}, {"matricula": "21547", "nome": "INALDO NASCIMENTO CONCEIÇÃO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Arquivo", "n_cursos": 2}, {"matricula": "8931", "nome": "JULIO CESAR DUARTE PORTUGAL", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": null, "n_cursos": 1}, {"matricula": "125776", "nome": "JUSSANA WEIMER", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Contratos e Benefícios", "n_cursos": 5}, {"matricula": "22322", "nome": "JÉSSICA DUARTE DE OLIVEIRA CARREIRA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete da Desembargadora Daniele Correa Santa Catarina", "n_cursos": 2}, {"matricula": "20206", "nome": "KAROLINA PIRES POLICIANO", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete do Desembargador Mário Ribeiro Cantarino Neto", "n_cursos": 5}, {"matricula": "19984", "nome": "LARISSA SALVIATO RODRIGUES", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "12ª Vara do Trabalho de Vitória", "n_cursos": 3}, {"matricula": "15822", "nome": "LEANDRA GUARNIER FIM", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete da Desembargadora Wanda Lúcia Costa Leite França Decuzzi", "n_cursos": 3}, {"matricula": "23019", "nome": "LEONARDO FELIPE DI DONATO", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Núcleo de Projetos e Governança de Pessoas", "n_cursos": 1}, {"matricula": "19828", "nome": "LUCIANO MAGNO BRAMBILA", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Secretaria de Governança e Gestão Estratégica", "n_cursos": 1}, {"matricula": "18384", "nome": "LUCIANO MARCHEZI ROSARIO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Coordenadoria de Planejamento e Apoio à Gestão de TIC", "n_cursos": 1}, {"matricula": "1104", "nome": "MARCELO CALIMAN PIMENTEL", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Secretaria da Corregedoria Regional", "n_cursos": 1}, {"matricula": "16241", "nome": "NATHÁLIA ROTSEN DE MELO LUZ", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Central de Mandados", "n_cursos": 1}, {"matricula": "22829", "nome": "OTTO CARREIRA COUTINHO SILVA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Análise e Inteligência de Negócio", "n_cursos": 2}, {"matricula": "817", "nome": "PAULO HENRIQUE BARRETO", "raca": "NEGRO(A) - PRETO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção da 1ª Turma", "n_cursos": 1}, {"matricula": "22390", "nome": "PHILIPE VALLI BARROS", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete do Desembargador Marcello Maciel Mancilha", "n_cursos": 4}, {"matricula": "19860", "nome": "RICARDO VIEIRA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Auditoria de Tecnologia da Informação", "n_cursos": 1}, {"matricula": "18880", "nome": "SIMONE PIMENTEL JORGE DE SOUZA", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete do Desembargador Mário Ribeiro Cantarino Neto", "n_cursos": 1}, {"matricula": "16721", "nome": "SUZANA CRISTINA DE LIMA LAUF", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Vara do Trabalho de Colatina", "n_cursos": 1}, {"matricula": "125806", "nome": "TAYNAH BORSOI DE SIQUEIRA", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Sustentabilidade e Acessibilidade", "n_cursos": 1}, {"matricula": "10812", "nome": "VANDA PEREIRA DA COSTA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção da 3ª Turma", "n_cursos": 3}, {"matricula": "125504", "nome": "VINICIUS CARVALHO MUNIZ", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": null, "n_cursos": 2}, {"matricula": "123790", "nome": "VINÍCIUS BORTOLOTI PETERLE", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Núcleo de Saúde", "n_cursos": 2}, {"matricula": "11320", "nome": "WANDERLEY DE SOUZA BELONIA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Polícia Judicial", "n_cursos": 8}]}, {"mes": "2026-06", "label": "Junho/2026", "participantesPorRaca": {"BRANCO(A)": 25, "NEGRO(A) - PARDO(A)": 7, "NEGRO(A) - PRETO(A)": 1, "AMARELO(A)": 0, "INDÍGENA": 0, "NAO_INFORMADO": 0}, "totalParticipantes": 33, "detalhe": [{"matricula": "22403", "nome": "ALLINE BERNARDINO GALAZZI ANDRADE", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Desenvolvimento Organizacional de Pessoas", "n_cursos": 1}, {"matricula": "5908", "nome": "AUGUSTO CÉLIO RODRIGUES DE SOUZA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Secretaria de Administração", "n_cursos": 4}, {"matricula": "23248", "nome": "CAMILA MATTEDI DALVI", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Desenvolvimento e Capacitação de Magistrados", "n_cursos": 1}, {"matricula": "23345", "nome": "CLAUDIA COSTA FERNANDES", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "12ª Vara do Trabalho de Vitória", "n_cursos": 3}, {"matricula": "124419", "nome": "DIRCEU BISPO DE CARVALHO", "raca": "NEGRO(A) - PRETO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "2ª  Vara do Trabalho de Vitória", "n_cursos": 1}, {"matricula": "124354", "nome": "EDUARDO FREITAS SANTANA FILHO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Núcleo de Gestão de Riscos e Projetos Institucionais", "n_cursos": 2}, {"matricula": "123900", "nome": "ESTEVÃO OSCAR MOGNATTO JUNIOR", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Desenvolvimento de Sistemas", "n_cursos": 3}, {"matricula": "1910", "nome": "FERNANDO ANTÔNIO BERSAN PINHEIRO", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Secretaria-Geral da Presidência", "n_cursos": 1}, {"matricula": "123854", "nome": "FRANCO BRAGATO SCÁRDUA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete de Juiz Convocado", "n_cursos": 1}, {"matricula": "7633", "nome": "GEORGE LUIZ BARCELOS SANTOS", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Polícia Judicial", "n_cursos": 2}, {"matricula": "20230", "nome": "GIOVANNA DE DEUS CORDEIRO PEYNEAU", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Ingresso, Lotação e Remoção", "n_cursos": 1}, {"matricula": "21679", "nome": "GIULLIANI RIGAMONT GOMES VALADÃO", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "1ª  Vara do Trabalho de Vitória", "n_cursos": 1}, {"matricula": "124010", "nome": "HELDER BRITO NASCIMENTO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Análise e Inteligência de Negócio", "n_cursos": 1}, {"matricula": "21547", "nome": "INALDO NASCIMENTO CONCEIÇÃO", "raca": "NEGRO(A) - PARDO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Arquivo", "n_cursos": 1}, {"matricula": "20206", "nome": "KAROLINA PIRES POLICIANO", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete do Desembargador Mário Ribeiro Cantarino Neto", "n_cursos": 3}, {"matricula": "16705", "nome": "LIVIA DE FREITAS WANDEKOKEM", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Precatórios", "n_cursos": 1}, {"matricula": "21024", "nome": "LORENA GUIDI SANTOS", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete do Desembargador Mário Ribeiro Cantarino Neto", "n_cursos": 1}, {"matricula": "17655", "nome": "LUCIANA PADILHA LEITE LEÃO DA SILVA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Grupo de Assistentes de Juízes do Trabalho Substitutos", "n_cursos": 2}, {"matricula": "11940", "nome": "MARCELO BATISTA PIMENTEL", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Secretaria-Geral Judiciária", "n_cursos": 1}, {"matricula": "125822", "nome": "MARTHA SCHMIDT", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": null, "n_cursos": 4}, {"matricula": "123765", "nome": "MATHEUS BARBOSA DE OLIVEIRA E SILVA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Divisão de Governança de Contratações", "n_cursos": 1}, {"matricula": "16241", "nome": "NATHÁLIA ROTSEN DE MELO LUZ", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Central de Mandados", "n_cursos": 2}, {"matricula": "10154", "nome": "PAULO CÉSAR DE OLIVEIRA MONJARDIM", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Assessoria de Revista", "n_cursos": 5}, {"matricula": "22390", "nome": "PHILIPE VALLI BARROS", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete do Desembargador Marcello Maciel Mancilha", "n_cursos": 9}, {"matricula": "124150", "nome": "RAPHAEL GASPARINI BATISTA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Informações Funcionais", "n_cursos": 1}, {"matricula": "671", "nome": "REGINA ENDLICH SILVEIRA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "13ª Vara do Trabalho de Vitória", "n_cursos": 3}, {"matricula": "11495", "nome": "RENATA ANDRÉA FORTE CAVALCANTE", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete da Desembargadora Daniele Correa Santa Catarina", "n_cursos": 1}, {"matricula": "16276", "nome": "RENATA BOLSANELLO SOARES PINTO", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "5ª  Vara do Trabalho de Vitória", "n_cursos": 2}, {"matricula": "1350", "nome": "ROSANNE FORMIGA MARROCOS PIMENTA", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Gabinete do Desembargador Marcello Maciel Mancilha", "n_cursos": 1}, {"matricula": "18880", "nome": "SIMONE PIMENTEL JORGE DE SOUZA", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Gabinete do Desembargador Mário Ribeiro Cantarino Neto", "n_cursos": 1}, {"matricula": "125806", "nome": "TAYNAH BORSOI DE SIQUEIRA", "raca": "BRANCO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Seção de Sustentabilidade e Acessibilidade", "n_cursos": 2}, {"matricula": "17981", "nome": "VANESSA CARVALHO AMARAL", "raca": "BRANCO(A)", "cargo": "ANALISTA JUDICIÁRIO", "unidade": "Seção de Planejamento e Execução Orçamentária", "n_cursos": 1}, {"matricula": "11320", "nome": "WANDERLEY DE SOUZA BELONIA", "raca": "NEGRO(A) - PARDO(A)", "cargo": "TÉCNICO JUDICIÁRIO", "unidade": "Coordenadoria de Polícia Judicial", "n_cursos": 2}]}]
+};
+
+let state = null;
+let syncReady = false;
+
+onSnapshot(STATE_DOC,
+  async snap => {
+    if (snap.exists()) {
+      state = snap.data();
+    } else {
+      state = DEFAULT_DATA;
+      try { await setDoc(STATE_DOC, { ...DEFAULT_DATA, updatedAt: serverTimestamp() }); } catch(e) { console.error(e); }
+    }
+    syncReady = true;
+    setSyncIndicator('ok');
+    renderAll();
+  },
+  err => { console.error(err); setSyncIndicator('error'); }
+);
+
+function setSyncIndicator(s) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  if (s === 'ok')     { el.textContent = '● sincronizado'; el.style.color = '#22C55E'; }
+  if (s === 'saving') { el.textContent = '⟳ salvando…';   el.style.color = '#F59E0B'; }
+  if (s === 'error')  { el.textContent = '✗ erro';         el.style.color = '#EF4444'; }
+}
+
+function pct(n, d) { return d > 0 ? (n / d * 100) : 0; }
+function fmtPct(n, d) { return pct(n, d).toFixed(2) + '%'; }
+
+function renderMetrics() {
+  const meses = state.meses;
+  const first = meses[0], last = meses[meses.length - 1];
+  const negroFirst = (first.participantesPorRaca['NEGRO(A) - PARDO(A)']||0) + (first.participantesPorRaca['NEGRO(A) - PRETO(A)']||0);
+  const negroLast  = (last.participantesPorRaca['NEGRO(A) - PARDO(A)']||0) + (last.participantesPorRaca['NEGRO(A) - PRETO(A)']||0);
+  const quadroNegro = (state.quadroAtual['NEGRO(A) - PARDO(A)']||0) + (state.quadroAtual['NEGRO(A) - PRETO(A)']||0);
+  const deltaPP = pct(negroLast, quadroNegro) - pct(negroFirst, quadroNegro);
+  const deltaClass = deltaPP > 0 ? 'up' : (deltaPP < 0 ? 'down' : '');
+  const arrow = deltaPP > 0 ? '▲' : (deltaPP < 0 ? '▼' : '—');
+
+  const metrics = [
+    {label: 'Quadro ativo (30/06/2026)', value: state.totalQuadro},
+    {label: `Participantes — ${first.label}`, value: first.totalParticipantes, sub: 'antes do incentivo'},
+    {label: `Participantes — ${last.label}`, value: last.totalParticipantes, sub: 'depois do incentivo'},
+    {label: 'Pretos+Pardos: variação', value: `${arrow} ${Math.abs(deltaPP).toFixed(2)} p.p.`, cls: deltaClass, sub: `${negroFirst}→${negroLast} participantes`},
+  ];
+  document.getElementById('metrics').innerHTML = metrics.map(m =>
+    `<div class="metric-card"><p class="label">${m.label}</p><p class="value${m.cls ? ' '+m.cls : ''}">${m.value}</p>${m.sub ? `<p class="sub">${m.sub}</p>` : ''}</div>`
+  ).join('');
+}
+
+function renderAnalysis() {
+  const meses = state.meses;
+  const first = meses[0], last = meses[meses.length - 1];
+  const negroFirst = (first.participantesPorRaca['NEGRO(A) - PARDO(A)']||0) + (first.participantesPorRaca['NEGRO(A) - PRETO(A)']||0);
+  const negroLast  = (last.participantesPorRaca['NEGRO(A) - PARDO(A)']||0) + (last.participantesPorRaca['NEGRO(A) - PRETO(A)']||0);
+  const quadroNegro = (state.quadroAtual['NEGRO(A) - PARDO(A)']||0) + (state.quadroAtual['NEGRO(A) - PRETO(A)']||0);
+  const rFirst = pct(negroFirst, quadroNegro), rLast = pct(negroLast, quadroNegro);
+  const piorou = rLast < rFirst;
+
+  document.getElementById('analysis').innerHTML = `
+    <div class="analysis-card">
+      <strong>${piorou ? 'A comparação entre os dois meses não mostra melhora — a participação de pretos e pardos caiu.' : 'A comparação entre os dois meses mostra melhora na participação de pretos e pardos.'}</strong>
+      <ul>
+        <li>Pretos+pardos: ${negroFirst} participantes em ${first.label} (${rFirst.toFixed(2)}% do grupo) → ${negroLast} em ${last.label} (${rLast.toFixed(2)}%).</li>
+        <li>Amostra pequena (quadro de pretos+pardos = ${quadroNegro} pessoas): cada participante a mais ou a menos desloca o percentual em mais de 0,3 p.p., então o resultado é sensível a poucos casos isolados.</li>
+        <li>Defasagem temporal: cursos ENAP levam de 3 a 8 semanas para concluir. Parte dos cursos do relatório de junho foi iniciada antes do e-mail de 01/06, e quem começou um curso depois do incentivo pode só aparecer no relatório de julho ou agosto.</li>
+        <li>Recomenda-se acompanhar mais 1 a 2 meses antes de concluir se o incentivo teve efeito — use o formulário abaixo para lançar as próximas apurações.</li>
+      </ul>
+    </div>`;
+}
+
+function renderChart() {
+  const meses = state.meses;
+  const first = meses[0], last = meses[meses.length - 1];
+  const barH = 16, gap = 6, groupGap = 22, lW = 110, cW = 420;
+  const maxPct = Math.max(1, ...RACAS.map(r => Math.max(
+    pct(first.participantesPorRaca[r.key]||0, state.quadroAtual[r.key]||1),
+    pct(last.participantesPorRaca[r.key]||0, state.quadroAtual[r.key]||1)
+  ))) * 1.15;
+
+  let y = 10;
+  const bars = [];
+  RACAS.forEach(r => {
+    const qf = state.quadroAtual[r.key] || 0;
+    if (qf === 0) return;
+    const pFirst = pct(first.participantesPorRaca[r.key]||0, qf);
+    const pLast  = pct(last.participantesPorRaca[r.key]||0, qf);
+    const wFirst = (pFirst / maxPct) * cW;
+    const wLast  = (pLast / maxPct) * cW;
+    bars.push(`<text x="${lW-8}" y="${y+barH+2}" text-anchor="end" font-size="11" fill="#33414D" font-weight="600">${r.label}</text>`);
+    bars.push(`<rect x="${lW}" y="${y}" width="${Math.max(wFirst,1)}" height="${barH}" fill="#94A3B8" rx="2"/>`);
+    bars.push(`<text x="${lW+wFirst+6}" y="${y+barH-3}" font-size="10" fill="#5C6B7A">${pFirst.toFixed(1)}%</text>`);
+    y += barH + gap;
+    bars.push(`<rect x="${lW}" y="${y}" width="${Math.max(wLast,1)}" height="${barH}" fill="#E8821E" rx="2"/>`);
+    bars.push(`<text x="${lW+wLast+6}" y="${y+barH-3}" font-size="10" fill="#5C6B7A">${pLast.toFixed(1)}%</text>`);
+    y += barH + groupGap;
+  });
+  const svgH = y;
+  document.getElementById('chart').innerHTML =
+    `<svg width="${lW+cW+70}" height="${svgH}" style="display:block;">${bars.join('')}</svg>`;
+}
+
+function renderTable() {
+  const meses = state.meses;
+  const first = meses[0], last = meses[meses.length - 1];
+  let rows = '';
+  let aggFirst = 0, aggLast = 0, aggQuadro = 0;
+  RACAS.forEach(r => {
+    const q = state.quadroAtual[r.key] || 0;
+    if (q === 0) return;
+    const nf = first.participantesPorRaca[r.key] || 0;
+    const nl = last.participantesPorRaca[r.key] || 0;
+    const pf = pct(nf, q), pl = pct(nl, q);
+    const delta = pl - pf;
+    const dCls = delta > 0 ? 'delta-up' : (delta < 0 ? 'delta-down' : '');
+    const arrow = delta > 0 ? '▲' : (delta < 0 ? '▼' : '—');
+    rows += `<tr>
+      <td>${r.label}</td>
+      <td>${q}</td>
+      <td>${nf} (${pf.toFixed(2)}%)</td>
+      <td>${nl} (${pl.toFixed(2)}%)</td>
+      <td class="${dCls}">${arrow} ${Math.abs(delta).toFixed(2)} p.p.</td>
+    </tr>`;
+    if (r.key === 'NEGRO(A) - PARDO(A)' || r.key === 'NEGRO(A) - PRETO(A)') {
+      aggFirst += nf; aggLast += nl; aggQuadro += q;
+    }
+  });
+  const pfAgg = pct(aggFirst, aggQuadro), plAgg = pct(aggLast, aggQuadro);
+  const dAgg = plAgg - pfAgg;
+  const dClsAgg = dAgg > 0 ? 'delta-up' : (dAgg < 0 ? 'delta-down' : '');
+  const arrowAgg = dAgg > 0 ? '▲' : (dAgg < 0 ? '▼' : '—');
+  rows += `<tr class="agg-row">
+    <td>Pretos + pardos (agregado)</td>
+    <td>${aggQuadro}</td>
+    <td>${aggFirst} (${pfAgg.toFixed(2)}%)</td>
+    <td>${aggLast} (${plAgg.toFixed(2)}%)</td>
+    <td class="${dClsAgg}">${arrowAgg} ${Math.abs(dAgg).toFixed(2)} p.p.</td>
+  </tr>`;
+
+  document.getElementById('table-wrap').innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Raça</th><th>Quadro atual</th><th>${first.label}</th><th>${last.label}</th><th>Variação</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderMonthsPanel() {
+  document.getElementById('months-panel').innerHTML = state.meses.map(m => {
+    const rows = RACAS.filter(r => (state.quadroAtual[r.key]||0) > 0).map(r =>
+      `<tr><td>${r.label}</td><td class="n">${m.participantesPorRaca[r.key]||0}</td></tr>`
+    ).join('');
+    const audit = (m.detalhe && m.detalhe.length) ? `
+      <details class="audit">
+        <summary>Ver ${m.detalhe.length} participantes</summary>
+        <ul>${m.detalhe.map(d => `<li>${d.nome} — ${d.unidade || ''} (${d.n_cursos} curso${d.n_cursos>1?'s':''})</li>`).join('')}</ul>
+      </details>` : '';
+    return `<div class="month-card">
+      <h3>${m.label} — total ${m.totalParticipantes}</h3>
+      <table>${rows}</table>
+      ${audit}
+    </div>`;
+  }).join('');
+}
+
+function renderAll() {
+  if (!state) return;
+  renderMetrics();
+  renderAnalysis();
+  renderChart();
+  renderTable();
+  renderMonthsPanel();
+}
+
+document.getElementById('btn-add-mes').addEventListener('click', async () => {
+  const mes = document.getElementById('f-mes').value.trim();
+  const label = document.getElementById('f-label').value.trim();
+  const msgEl = document.getElementById('form-msg');
+  if (!mes || !label) { msgEl.textContent = 'Preencha mês e rótulo.'; msgEl.style.color = '#B91C1C'; return; }
+  if (state.meses.some(m => m.mes === mes)) { msgEl.textContent = 'Já existe uma apuração para esse mês.'; msgEl.style.color = '#B91C1C'; return; }
+
+  const novoMes = {
+    mes, label,
+    participantesPorRaca: {
+      'BRANCO(A)': Number(document.getElementById('f-branco').value) || 0,
+      'NEGRO(A) - PARDO(A)': Number(document.getElementById('f-pardo').value) || 0,
+      'NEGRO(A) - PRETO(A)': Number(document.getElementById('f-preto').value) || 0,
+      'AMARELO(A)': Number(document.getElementById('f-amarelo').value) || 0,
+      'INDÍGENA': Number(document.getElementById('f-indigena').value) || 0,
+      'NAO_INFORMADO': Number(document.getElementById('f-naoinf').value) || 0,
+    },
+    detalhe: []
+  };
+  novoMes.totalParticipantes = Object.values(novoMes.participantesPorRaca).reduce((a,b)=>a+b,0);
+
+  const meses = [...state.meses, novoMes].sort((a,b) => a.mes.localeCompare(b.mes));
+  setSyncIndicator('saving');
+  try {
+    await setDoc(STATE_DOC, { ...state, meses, updatedAt: serverTimestamp() });
+    msgEl.textContent = 'Apuração salva.';
+    msgEl.style.color = '#15803D';
+  } catch(e) {
+    console.error(e);
+    msgEl.textContent = 'Erro ao salvar.';
+    msgEl.style.color = '#B91C1C';
+  }
+});
+</script>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de paineis">
+  <span class="sgp-hub-back__ic">&#9666;</span><span>HUB</span>
+</a>
+<style>
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+ font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:12px;font-weight:700;letter-spacing:.08em;
+ text-transform:uppercase;text-decoration:none;color:#e8ecff;background:rgba(11,15,42,.82);-webkit-backdrop-filter:blur(6px);
+ backdrop-filter:blur(6px);border:1px solid rgba(120,140,255,.35);border-radius:999px;padding:9px 15px 9px 13px;
+ box-shadow:0 6px 20px -6px rgba(0,0,0,.5);transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,color .18s ease}
+.sgp-hub-back:hover,.sgp-hub-back:focus-visible{outline:none;transform:translateY(-2px);border-color:#36e2ec;color:#36e2ec;
+ box-shadow:0 0 0 1px #36e2ec,0 0 18px -2px #36e2ec,0 8px 24px -8px #000}
+.sgp-hub-back__ic{font-size:14px;line-height:1}
+@media print{.sgp-hub-back{display:none}}
+</style>
+</body>
+</html>

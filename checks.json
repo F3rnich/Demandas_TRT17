@@ -22,5 +22,9 @@
   "dashboard_expediente_tribunais_copa.html": {
     "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back"],
     "must_not_contain": []
+  },
+  "dashboard_equidade_racial_capacitacao.html": {
+    "must_contain": ["<html", "</html>", "favicon.svg", "sgp-hub-back", "firebaseConfig", "equidade_racial_capacitacao_enap"],
+    "must_not_contain": []
   }
 }
