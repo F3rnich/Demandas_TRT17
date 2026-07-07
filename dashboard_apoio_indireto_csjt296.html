@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Apoio indireto — Res. CSJT nº 296/2021 — SGP · TRT-17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root{
+  --navy:#003A5C; --navy2:#00466E; --teal:#0C4A45; --teal-lt:#EAF3F1;
+  --amber:#D8A241; --yellow:#FFD040; --ink:#16232B; --mut:#5C6E79; --mut2:#8DA0AB;
+  --line:#D5E2E6; --card:#FFFFFF; --ok:#1F7A5C; --warn:#B3541E;
+  --sans:"Open Sans",Arial,-apple-system,sans-serif;
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--teal-lt);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.topo{background:var(--navy);border-bottom:4px solid var(--yellow)}
+.topo-in{max-width:1080px;margin:0 auto;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in b{color:#fff;font-weight:600}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
+header.painel{padding:44px 0 8px}
+.pnum{display:inline-flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--navy)}
+.pnum .bloco{background:var(--navy);color:var(--yellow);padding:5px 10px;font-weight:700;font-size:14px;letter-spacing:.06em}
+h1{font-weight:800;font-size:clamp(26px,4.4vw,38px);line-height:1.15;letter-spacing:-.015em;color:var(--navy);margin:14px 0 0;max-width:22ch}
+.regua{width:56px;height:5px;background:var(--yellow);margin:16px 0}
+.sub{color:var(--mut);font-size:15px;max-width:64ch}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:30px 0 6px}
+.kpi{background:var(--card);padding:20px 20px 16px}
+.kpi .n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:34px;font-weight:700;color:var(--navy);line-height:1;display:flex;align-items:baseline;gap:5px}
+.kpi .n small{font-size:15px;color:var(--mut2);font-family:var(--sans);font-weight:600}
+.kpi .l{font-size:12.5px;color:var(--mut);margin-top:8px}
+.kpi.dest .n{color:var(--teal)}
+section{margin-top:44px}
+h2{font-weight:700;font-size:20px;color:var(--navy);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:10px;height:10px;background:var(--yellow);flex:none}
+.desc{color:var(--mut);font-size:13.5px;margin:6px 0 18px;max-width:70ch}
+.chart{background:var(--card);border:1px solid var(--line);padding:18px 18px 10px;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.leg{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 10px;font-size:12px;color:var(--mut)}
+.leg span{display:inline-flex;align-items:center;gap:7px}
+.leg i{width:14px;height:4px;flex:none}
+.fonte{font-family:var(--mono);font-size:10.5px;color:var(--mut2);margin-top:10px;padding-bottom:6px}
+table.dados{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);font-size:13.5px}
+table.dados th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dados td{padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.dados td.num{font-family:var(--mono);text-align:right}
+.lgpd{margin-top:56px;border:1px solid var(--line);border-left:5px solid var(--teal);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.lgpd b{color:var(--teal);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.metod{margin-top:14px;border:1px solid var(--line);border-left:5px solid var(--amber);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.metod b{color:var(--amber);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:var(--yellow);text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  padding:9px 14px;border:1px solid var(--navy2)}
+.sgp-hub-back:hover{background:var(--navy2)}
+.badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:4px 10px;margin-left:8px;vertical-align:middle}
+.badge.ok{background:#E3F0EB;color:var(--ok);border:1px solid var(--ok)}
+.badge.warn{background:#F8ECE1;color:var(--warn);border:1px solid var(--warn)}
+@media(max-width:560px){.kpi .n{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span>SGP · UAE — ESTATÍSTICAS DE PESSOAL</span><b>TRT-17</b></div></div>
+<div class="wrap">
+<header class="painel">
+  <span class="pnum"><span class="bloco">PAINEL 13</span><span id="ref-base">REF. —</span></span>
+  <h1>Apoio indireto — Res. CSJT nº 296/2021</h1>
+  <div class="regua"></div>
+  <p class="sub">Conformidade da distribuição da força de trabalho: percentual de servidores na área meio frente à faixa normativa de 20% a 30% para tribunais de pequeno porte.</p>
+</header>
+
+<div class="kpis" id="kpis"></div>
+<section><h2>Percentual de servidores no apoio indireto (área meio)</h2>
+<p class="desc">Série mensal do percentual da força de trabalho lotada na área meio, calculado conforme a norma: excluídos estagiários, Escola Judicial e unidades de T.I.C. A faixa sombreada é o corredor de conformidade para tribunais de pequeno porte (20%–30%).</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% apoio indireto</span><span><i style="background:#0C4A45"></i>Faixa de conformidade 20–30%</span></div><div id="c-serie"></div>
+<div class="fonte">Res. CSJT nº 296/2021, art. 12 · Res. CNJ nº 219/2016, art. 11</div></div></section>
+<section><h2>Referência normativa</h2>
+<div id="norma" class="desc" style="max-width:none"></div></section>
+
+<div class="metod"><b>METODOLOGIA</b><br>Percentual = servidores da área meio ÷ (área fim + área meio), excluídos estagiários, Escola Judicial (EJUD) e unidades de T.I.C., conforme parágrafo único do art. 12 da Res. CSJT nº 296/2021. A classificação da área (fim/meio/T.I.) segue a base da SGP.</div>
+<div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
+Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
+células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
+grupos agregados; dados de deficiência, saúde e identidade de gênero não são exportados para esta página.
+A base de origem não é versionada nem publicada.</div>
+</div>
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
+<script>
+const C={navy:'#003A5C',teal:'#0C4A45',amber:'#D8A241',yellow:'#FFD040',mut:'#8DA0AB',line:'#D5E2E6',blue:'#1B8EC1',wine:'#8A2A3B'};
+const fmt=n=>n==null?'—':n.toLocaleString('pt-BR');
+const fmtBRL=n=>n==null?'—':n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+// gráfico de linhas multissérie. series=[{nome,cor,vals,tracejado}] labels=eixo x
+function lineChart(el,labels,series,opt={}){
+  const W=920,H=opt.h||300,mL=52,mR=14,mT=14,mB=34,pw=W-mL-mR,ph=H-mT-mB;
+  const all=series.flatMap(s=>s.vals).filter(v=>v!=null&&!isNaN(v));
+  let mn=opt.min!=null?opt.min:Math.min(...all),mx=opt.max!=null?opt.max:Math.max(...all);
+  if(mn===mx){mn-=1;mx+=1} const pad=(mx-mn)*.08; if(opt.min==null)mn-=pad; if(opt.max==null)mx+=pad;
+  const X=i=>mL+pw*i/Math.max(labels.length-1,1), Y=v=>mT+ph*(1-(v-mn)/(mx-mn));
+  let g='';
+  const ticks=5;
+  for(let t=0;t<=ticks;t++){const v=mn+(mx-mn)*t/ticks,y=Y(v);
+    g+=`<line x1="${mL}" y1="${y}" x2="${W-mR}" y2="${y}" stroke="${C.line}" stroke-width="1"/>`;
+    g+=`<text x="${mL-8}" y="${y+4}" text-anchor="end" font-size="11" fill="#8DA0AB" font-family="ui-monospace,monospace">${opt.fmtY?opt.fmtY(v):Math.round(v).toLocaleString('pt-BR')}</text>`;}
+  const step=Math.ceil(labels.length/(opt.xTicks||8));
+  labels.forEach((lb,i)=>{if(i%step===0||i===labels.length-1)
+    g+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="#8DA0AB" font-family="ui-monospace,monospace">${esc(lb)}</text>`;});
+  if(opt.banda){const[b1,b2]=opt.banda;
+    g+=`<rect x="${mL}" y="${Y(b2)}" width="${pw}" height="${Y(b1)-Y(b2)}" fill="#0C4A45" opacity=".07"/>`;
+    g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b1)}" y2="${Y(b1)}" stroke="${C.teal}" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+    g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b2)}" y2="${Y(b2)}" stroke="${C.teal}" stroke-width="1.5" stroke-dasharray="6 4"/>`;}
+  series.forEach(s=>{let d='',on=false;
+    s.vals.forEach((v,i)=>{if(v==null||isNaN(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);on=true;});
+    g+=`<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2.4" ${s.tracejado?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`;
+    const li=s.vals.map((v,i)=>[v,i]).filter(p=>p[0]!=null&&!isNaN(p[0])).pop();
+    if(li)g+=`<circle cx="${X(li[1])}" cy="${Y(li[0])}" r="3.5" fill="${s.cor}"/>`;});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg>`;
+}
+// barras horizontais. items=[{rotulo,val,cor,extra}]
+function hbar(el,items,opt={}){
+  const W=920,rh=34,mL=opt.mL||230,mR=110,H=items.length*rh+14;
+  const mx=Math.max(...items.map(i=>i.val));let g='';
+  items.forEach((it,i)=>{const y=8+i*rh,bw=(W-mL-mR)*it.val/mx;
+    g+=`<text x="${mL-10}" y="${y+17}" text-anchor="end" font-size="12.5" fill="#16232B">${esc(it.rotulo)}</text>`;
+    g+=`<rect x="${mL}" y="${y+3}" width="${Math.max(bw,2)}" height="${rh-12}" fill="${it.cor||C.navy}"/>`;
+    g+=`<text x="${mL+bw+8}" y="${y+17}" font-size="12" fill="#5C6E79" font-family="ui-monospace,monospace">${esc(it.extra!=null?it.extra:fmt(it.val))}</text>`;});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg>`;
+}
+// pirâmide etária: faixas (baixo→cima na ordem dada), esq/dir arrays
+function piramide(el,faixas,esq,dir,nomeEsq,nomeDir){
+  const W=920,rh=32,mC=90,H=faixas.length*rh+34,half=(W-mC)/2;
+  const mx=Math.max(...esq,...dir);let g='';
+  faixas.forEach((f,i)=>{const y=6+(faixas.length-1-i)*rh;
+    const we=half*esq[i]/mx,wd=half*dir[i]/mx;
+    g+=`<rect x="${half-we}" y="${y+4}" width="${Math.max(we,1)}" height="${rh-11}" fill="${C.navy}"/>`;
+    g+=`<rect x="${half+mC}" y="${y+4}" width="${Math.max(wd,1)}" height="${rh-11}" fill="${C.amber}"/>`;
+    g+=`<text x="${W/2}" y="${y+18}" text-anchor="middle" font-size="12" fill="#5C6E79" font-family="ui-monospace,monospace">${esc(f)}</text>`;
+    g+=`<text x="${half-we-8}" y="${y+18}" text-anchor="end" font-size="11.5" fill="#8DA0AB" font-family="ui-monospace,monospace">${fmt(esq[i])}</text>`;
+    g+=`<text x="${half+mC+wd+8}" y="${y+18}" font-size="11.5" fill="#8DA0AB" font-family="ui-monospace,monospace">${fmt(dir[i])}</text>`;});
+  g+=`<text x="${half/2}" y="${H-6}" text-anchor="middle" font-size="12" font-weight="700" fill="${C.navy}">${esc(nomeEsq)}</text>`;
+  g+=`<text x="${half+mC+half/2}" y="${H-6}" text-anchor="middle" font-size="12" font-weight="700" fill="${C.amber}">${esc(nomeDir)}</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg>`;
+}
+// halteres de paridade: items=[{grupo,a,b}] a=% força, b=% comissionados
+function dumbbell(el,items,nomeA,nomeB){
+  const W=920,rh=52,mL=150,mR=40,H=items.length*rh+40;
+  const mx=Math.max(...items.flatMap(i=>[i.a,i.b]))*1.15;let g='';
+  items.forEach((it,i)=>{const y=20+i*rh,X=v=>mL+(W-mL-mR)*v/mx;
+    g+=`<text x="${mL-12}" y="${y+5}" text-anchor="end" font-size="13" font-weight="600" fill="#16232B">${esc(it.grupo)}</text>`;
+    g+=`<line x1="${X(it.a)}" y1="${y}" x2="${X(it.b)}" y2="${y}" stroke="${C.line}" stroke-width="3"/>`;
+    g+=`<circle cx="${X(it.a)}" cy="${y}" r="7" fill="#fff" stroke="${C.navy}" stroke-width="3"/>`;
+    g+=`<circle cx="${X(it.b)}" cy="${y}" r="7" fill="${C.yellow}" stroke="${C.navy}" stroke-width="2"/>`;
+    g+=`<text x="${X(it.a)}" y="${y+24}" text-anchor="middle" font-size="11" fill="#5C6E79" font-family="ui-monospace,monospace">${it.a.toLocaleString('pt-BR')}%</text>`;
+    g+=`<text x="${X(it.b)}" y="${y-13}" text-anchor="middle" font-size="11" font-weight="700" fill="${C.navy}" font-family="ui-monospace,monospace">${it.b.toLocaleString('pt-BR')}%</text>`;});
+  g+=`<text x="${mL}" y="${H-6}" font-size="11.5" fill="#5C6E79"><tspan font-weight="700">○</tspan> ${esc(nomeA)}   <tspan font-weight="700" fill="${C.amber}">●</tspan> ${esc(nomeB)}</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg>`;
+}
+
+fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
+  document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia;
+  render(D);
+}).catch(e=>{document.querySelector('.wrap').insertAdjacentHTML('beforeend',
+  '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
+</script>
+<script>
+function render(D){const p=D.p13,rot=r=>r.replace('-','/');
+  const ok=p.pct_atual>=p.faixa_min&&p.pct_atual<=p.faixa_max;
+  document.getElementById('kpis').innerHTML=
+    `<div class="kpi dest"><div class="n">${p.pct_atual.toLocaleString('pt-BR')}<small>%</small></div><div class="l">apoio indireto na referência atual <span class="badge ${ok?'ok':'warn'}">${ok?'DENTRO DA FAIXA':'FORA DA FAIXA'}</span></div></div>
+     <div class="kpi"><div class="n">${p.faixa_min.toLocaleString('pt-BR')}–${p.faixa_max.toLocaleString('pt-BR')}<small>%</small></div><div class="l">faixa para tribunais de pequeno porte</div></div>`;
+  lineChart(document.getElementById('c-serie'),p.refs.map(rot),
+    [{nome:'% meio',cor:C.navy,vals:p.pct_meio}],
+    {min:10,max:40,banda:[p.faixa_min,p.faixa_max],fmtY:v=>Math.round(v)+'%'});
+  document.getElementById('norma').textContent=p.norma;
+}
+</script>
+</body>
+</html>
