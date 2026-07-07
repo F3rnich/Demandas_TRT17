@@ -49,6 +49,7 @@ h2::before{content:"";width:10px;height:10px;background:var(--yellow);flex:none}
 .fonte{font-family:var(--mono);font-size:10.5px;color:var(--mut2);margin-top:10px;padding-bottom:6px}
 table.dados{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);font-size:13.5px}
 table.dados th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dados th:not(:first-child){text-align:right}
 table.dados td{padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 table.dados td.num{font-family:var(--mono);text-align:right}
 .lgpd{margin-top:56px;border:1px solid var(--line);border-left:5px solid var(--teal);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
@@ -128,7 +129,14 @@ function lineChart(el,labels,series,opt={}){
 }
 // barras horizontais. items=[{rotulo,val,cor,extra}]
 function hbar(el,items,opt={}){
-  const W=920,rh=34,mL=opt.mL||230,mR=110,H=items.length*rh+14;
+  const W=920,rh=34;
+  // margens calculadas a partir do texto real (evita corte de rótulo/valor)
+  const medir=(s,fpx)=>String(s).length*fpx*0.62;
+  const maxRotulo=Math.max(...items.map(i=>medir(i.rotulo,12.5)));
+  const maxExtra=Math.max(...items.map(i=>medir(i.extra!=null?i.extra:fmt(i.val),12)));
+  const mL=Math.max(opt.mL||120,Math.ceil(maxRotulo)+24);
+  const mR=Math.max(70,Math.ceil(maxExtra)+20);
+  const H=items.length*rh+14;
   const mx=Math.max(...items.map(i=>i.val));let g='';
   items.forEach((it,i)=>{const y=8+i*rh,bw=(W-mL-mR)*it.val/mx;
     g+=`<text x="${mL-10}" y="${y+17}" text-anchor="end" font-size="12.5" fill="#16232B">${esc(it.rotulo)}</text>`;
