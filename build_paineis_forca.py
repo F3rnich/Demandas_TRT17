@@ -245,16 +245,76 @@ def main(path):
                                                 "ESCOLARIDADE"].isin(pos).mean(), 1),
     }
 
-    # ---------------- P13 — Res. CSJT 296/2021 (apoio indireto) ----------------
-    base13 = ft[(ft["AREA"] != "T.I.") & (ft["ESFERA"] != "EJUD")]
-    pm = base13.groupby("ref").apply(
-        lambda g: round(100 * (g["AREA"] == "Meio").mean(), 1), include_groups=False)
+    # ---------------- P13 — Conformidade estrutural Res. CSJT 296/2021 ----------------
+    # Força de trabalho = lotação ativa no TRT-17 (exclui estagiários e "Removido para")
+    ativos = df[(~est) & (df["SITUACAO_FUNCIONAL"] != "Removido para")].copy()
+    ativos["ref"] = ativos["REFERENCIA"].dt.strftime("%Y-%m")
+    _EJUD = r"Escola Judicial|Capacita[çc][ãa]o de Magistrado|Capacita[çc][ãa]o de Servidor"
+    ativos["ejud"] = ativos["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
+    ativos["tem_com"] = ativos["CODIGO_COMISSAO"].replace("", pd.NA).notna()
+    ativos["is_mag"] = ativos["CARGO"].str.contains("JUIZ|DESEMBARGADOR", case=False, na=False)
+    gult = ativos[ativos["ref"] == ult_ref]
+
+    def _ser(fn):
+        return [fn(ativos[ativos["ref"] == r]) for r in refs]
+
+    def _a5(g):
+        return round(100 * g["TIPO_SERVIDOR"].isin(["Requisitado", "Sem vínculo efetivo"]).sum() / len(g), 2) if len(g) else None
+    art5 = {"pct": _ser(_a5), "teto": 20.0,
+            "n_atual": int(gult["TIPO_SERVIDOR"].isin(["Requisitado", "Sem vínculo efetivo"]).sum()),
+            "pct_atual": _a5(gult), "forca_atual": int(len(gult))}
+
+    def _a6(g):
+        efet = (g["TIPO_SERVIDOR"] == "Cargo efetivo").sum()
+        return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
+    com_u = gult[gult["tem_com"]]
+    niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
+    por_nivel = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
+    por_nivel = [x for x in por_nivel if x["n"] > 0]
+    art6 = {"pct": _ser(_a6), "teto": 80.0, "pct_atual": _a6(gult),
+            "n_com": int(len(com_u)), "n_efet": int((gult["TIPO_SERVIDOR"] == "Cargo efetivo").sum()),
+            "n_cj": int(com_u["CODIGO_COMISSAO"].str.startswith("CJ", na=False).sum()),
+            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()),
+            "por_nivel": por_nivel}
+
+    def _a12(g):
+        b = g[(g["AREA"] != "T.I.") & (~g["ejud"])]
+        d = b["AREA"].isin(["Meio", "Fim"]).sum()
+        return round(100 * (b["AREA"] == "Meio").sum() / d, 2) if d else None
+    b12u = gult[(gult["AREA"] != "T.I.") & (~gult["ejud"])]
+    art12 = {"pct": _ser(_a12), "faixa_min": 20.0, "faixa_max": 30.0, "pct_atual": _a12(gult),
+             "n_meio": int((b12u["AREA"] == "Meio").sum()), "n_fim": int((b12u["AREA"] == "Fim").sum()),
+             "n_tic": int((gult["AREA"] == "T.I.").sum()), "n_ejud": int(gult["ejud"].sum())}
+
+    def _a14(g):
+        return round(100 * g["ejud"].sum() / len(g), 3) if len(g) else None
+    art14 = {"pct": _ser(_a14), "faixa_min": 0.7, "faixa_max": 1.0, "pct_atual": _a14(gult),
+             "n_ejud": int(gult["ejud"].sum()), "publico_alvo": int(len(gult)),
+             "n_magistrados": int(gult["is_mag"].sum()),
+             "faixa_n_min": round(0.007 * len(gult), 1), "faixa_n_max": round(0.010 * len(gult), 1)}
+
+    # Art. 7 (descritivo): distribuição do apoio direto por grau, via Base de unidades
+    try:
+        bu = pd.read_excel(path, sheet_name="Base unidades")
+        gmap = dict(zip(bu["UNIDADE ADMINISTRATIVA"].astype(str).str.strip().str.upper(), bu["GRAU"]))
+    except Exception:
+        gmap = {}
+    fim_u = gult[gult["AREA"] == "Fim"].copy()
+    fim_u["grau"] = fim_u["UNIDADE_ADMINISTRATIVA"].astype(str).str.strip().str.upper().map(gmap)
+    g1 = int((fim_u["grau"] == "1º").sum()); g2 = int((fim_u["grau"] == "2º").sum())
+    art7 = {"grau1": g1, "grau2": g2, "nd": int(len(fim_u) - g1 - g2), "total": int(len(fim_u))}
+
     out["p13"] = {
-        "refs": refs,
-        "pct_meio": [float(pm.get(r, np.nan)) for r in refs],
-        "pct_atual": float(pm.get(ult_ref, np.nan)),
-        "faixa_min": 20.0, "faixa_max": 30.0,
-        "norma": "Res. CSJT nº 296/2021, art. 12 (tribunal de pequeno porte: 20%–30%); Res. CNJ nº 219/2016, art. 11 (teto de 30%). Base exclui estagiários, Escola Judicial e T.I.C.",
+        "refs": refs, "ultima_referencia": ult_ref, "forca_atual": int(len(gult)),
+        "art5": art5, "art6": art6, "art12": art12, "art14": art14, "art7": art7,
+        "notas": {
+            "forca": "Força de trabalho = servidores com lotação ativa no TRT-17 (exclui estagiários e servidores removidos para outros órgãos).",
+            "art5": "Fora das carreiras judiciárias federais = requisitados de outros órgãos + comissionados sem vínculo. Teto de 20% (art. 5º).",
+            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ocupados ÷ cargos efetivos providos com lotação ativa. Teto de 80% (art. 6º). Proxy sobre postos ocupados: a base não distingue vagos.",
+            "art12": "Servidores da área meio ÷ (área fim + meio), excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). Faixa 20%–30% para tribunais de pequeno porte.",
+            "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
+            "art7": "DESCRITIVO — distribuição da força de apoio direto (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
+        },
     }
 
     with open("dados_paineis_forca.json", "w", encoding="utf-8") as f:

@@ -1,206 +1,209 @@
 {
-  "index.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "SELECIONE UM PAINEL",
-      "dashboard_evolucao_forca_trabalho.html",
-      "dashboard_apoio_indireto_csjt296.html",
-      "dashboard_equidade_comissionamentos.html"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_colegiados.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "firebaseConfig",
-      "alocacao_uae"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_demandas_correcionais.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "firebaseConfig",
-      "demandas_correcionais_sgp"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_pendencias_colegiados.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "firebaseConfig",
-      "pendencias_subpeams_subcopergd"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard-aderencia-funcional-trt17.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_expediente_tribunais_copa.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_equidade_racial_capacitacao.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "firebaseConfig",
-      "equidade_racial_capacitacao_enap"
-    ],
-    "must_not_contain": []
-  },
-  "dashboard_evolucao_forca_trabalho.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "c-total",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_envelhecimento_demografico.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "c-pir",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_equidade_comissionamentos.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "indice_paridade",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_tempo_primeira_comissao.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "curva_geral",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_custo_comissionamentos.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "c-custo",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_qualificacao_cargo.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "c-esc",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dashboard_apoio_indireto_csjt296.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "PROTEÇÃO DE DADOS",
-      "dados_paineis_forca.json",
-      "c-serie",
-      "render(D)"
-    ],
-    "must_not_contain": [
-      "CPF"
-    ]
-  },
-  "dados_paineis_forca.json": {
-    "must_contain": [
-      "p07",
-      "p08",
-      "p09",
-      "p10",
-      "p11",
-      "p12",
-      "p13",
-      "k_anonimato"
-    ],
-    "must_not_contain": [
-      "CPF",
-      "MATRICULA",
-      "NASCIMENTO",
-      "\"NOME\""
-    ]
-  },
-  "build_paineis_forca.py": {
-    "must_contain": [
-      "K_MIN = 5",
-      "A BASE NUNCA ENTRA NO REPOSITÓRIO"
-    ],
-    "must_not_contain": []
-  }
+ "index.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "SELECIONE UM PAINEL",
+   "dashboard_evolucao_forca_trabalho.html",
+   "dashboard_apoio_indireto_csjt296.html",
+   "dashboard_equidade_comissionamentos.html"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_colegiados.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "firebaseConfig",
+   "alocacao_uae"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_demandas_correcionais.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "firebaseConfig",
+   "demandas_correcionais_sgp"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_pendencias_colegiados.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "firebaseConfig",
+   "pendencias_subpeams_subcopergd"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard-aderencia-funcional-trt17.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_expediente_tribunais_copa.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_equidade_racial_capacitacao.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "firebaseConfig",
+   "equidade_racial_capacitacao_enap"
+  ],
+  "must_not_contain": []
+ },
+ "dashboard_evolucao_forca_trabalho.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "c-total",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_envelhecimento_demografico.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "c-pir",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_equidade_comissionamentos.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "indice_paridade",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_tempo_primeira_comissao.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "curva_geral",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_custo_comissionamentos.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "c-custo",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_qualificacao_cargo.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "c-esc",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dashboard_apoio_indireto_csjt296.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_paineis_forca.json",
+   "c-serie",
+   "c-art6",
+   "c-art14",
+   "render(D)",
+   "Conformidade estrutural"
+  ],
+  "must_not_contain": [
+   "CPF"
+  ]
+ },
+ "dados_paineis_forca.json": {
+  "must_contain": [
+   "p07",
+   "p08",
+   "p09",
+   "p10",
+   "p11",
+   "p12",
+   "p13",
+   "k_anonimato"
+  ],
+  "must_not_contain": [
+   "CPF",
+   "MATRICULA",
+   "NASCIMENTO",
+   "\"NOME\""
+  ]
+ },
+ "build_paineis_forca.py": {
+  "must_contain": [
+   "K_MIN = 5",
+   "A BASE NUNCA ENTRA NO REPOSITÓRIO"
+  ],
+  "must_not_contain": []
+ }
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>Apoio indireto — Res. CSJT nº 296/2021 — SGP · TRT-17</title>
+<title>Conformidade estrutural — Res. CSJT nº 296/2021 — SGP · TRT-17</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -70,26 +70,46 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="topo"><div class="topo-in"><span>SGP · UAE — ESTATÍSTICAS DE PESSOAL</span><b>TRT-17</b></div></div>
 <div class="wrap">
 <header class="painel">
-  <span class="pnum"><span class="bloco">PAINEL 13</span><span id="ref-base">REF. —</span></span>
-  <h1>Apoio indireto — Res. CSJT nº 296/2021</h1>
+  <span class="pnum"><span class="bloco">PAINEL 12</span><span id="ref-base">REF. —</span></span>
+  <h1>Conformidade estrutural — Res. CSJT nº 296/2021</h1>
   <div class="regua"></div>
-  <p class="sub">Conformidade da distribuição da força de trabalho: percentual de servidores na área meio frente à faixa normativa de 20% a 30% para tribunais de pequeno porte.</p>
+  <p class="sub">Aderência da distribuição da força de trabalho aos limites estruturais da Resolução: composição de carreiras (art. 5º), comissionamentos (art. 6º), apoio indireto (art. 12) e lotação da Escola Judicial (art. 14). Série mensal de jan/2015 à referência atual.</p>
 </header>
 
 <div class="kpis" id="kpis"></div>
-<section><h2>Percentual de servidores no apoio indireto (área meio)</h2>
-<p class="desc">Série mensal do percentual da força de trabalho lotada na área meio, calculado conforme a norma: excluídos estagiários, Escola Judicial e unidades de T.I.C. A faixa sombreada é o corredor de conformidade para tribunais de pequeno porte (20%–30%).</p>
-<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% apoio indireto</span><span><i style="background:#0C4A45"></i>Faixa de conformidade 20–30%</span></div><div id="c-serie"></div>
-<div class="fonte">Res. CSJT nº 296/2021, art. 12 · Res. CNJ nº 219/2016, art. 11</div></div></section>
-<section><h2>Referência normativa</h2>
+
+<section><h2>Art. 12 — Apoio indireto (área meio)</h2>
+<p class="desc">Percentual da força de trabalho lotada na área meio, excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). A faixa sombreada é o corredor de conformidade para tribunais de pequeno porte (20%–30%).</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% apoio indireto</span><span><i style="background:#0C4A45"></i>faixa 20–30%</span></div><div id="c-serie"></div>
+<div id="a12-stats" class="fonte"></div></div></section>
+
+<section><h2>Art. 6º — Comissionamentos sobre cargos efetivos</h2>
+<p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ocupados como proporção dos cargos efetivos providos com lotação ativa. Teto de 80% (art. 6º). Leitura sobre postos ocupados — a base não distingue cargos vagos.</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC) ÷ efetivos</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
+<div class="fonte">Res. CSJT nº 296/2021, art. 6º</div></div>
+<div style="margin-top:14px"><table class="dados" id="t-art6"><thead><tr><th>Nível</th><th>Ocupados</th></tr></thead><tbody></tbody></table></div></section>
+
+<section><h2>Art. 5º — Servidores fora das carreiras judiciárias federais</h2>
+<p class="desc">Requisitados de outros órgãos e comissionados sem vínculo efetivo, como proporção da força de trabalho. Teto de 20% (art. 5º); acima disso, o Tribunal não pode solicitar novas cessões.</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% fora de carreira</span><span><i style="background:#B3541E"></i>teto 20%</span></div><div id="c-art5"></div>
+<div class="fonte">Res. CSJT nº 296/2021, art. 5º</div></div></section>
+
+<section><h2>Art. 14 — Lotação da Escola Judicial</h2>
+<p class="desc">Servidores lotados na Escola Judicial (SEDCAM, SEDCAS e Secretaria) como proporção do público-alvo (magistrados providos + força de servidores). Faixa de 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% Escola Judicial</span><span><i style="background:#0C4A45"></i>faixa 0,7–1,0%</span></div><div id="c-art14"></div>
+<div class="fonte">Res. CSJT nº 296/2021, art. 14, caput, III · Anexo IV</div></div></section>
+
+<section><h2>Art. 7º — Distribuição do apoio direto por grau <span class="badge warn">DESCRITIVO</span></h2>
+<p class="desc"><b>Não é aferição de conformidade.</b> O art. 7º exige que a força de apoio direto seja proporcional à média de casos novos por grau no último triênio — dado não presente nesta base. Exibe-se apenas a distribuição observada da força de apoio direto (área fim) entre 1º e 2º graus, no snapshot atual, por unidade de lotação.</p>
+<div class="chart"><div id="c-art7"></div>
+<div class="fonte">Distribuição descritiva · grau derivado da unidade de lotação (Base de unidades da SGP)</div></div></section>
+
+<section><h2>Referência normativa e notas metodológicas</h2>
 <div id="norma" class="desc" style="max-width:none"></div></section>
 
-<div class="metod"><b>METODOLOGIA</b><br>Percentual = servidores da área meio ÷ (área fim + área meio), excluídos estagiários, Escola Judicial (EJUD) e unidades de T.I.C., conforme parágrafo único do art. 12 da Res. CSJT nº 296/2021. A classificação da área (fim/meio/T.I.) segue a base da SGP.</div>
+<div class="metod"><b>METODOLOGIA</b><br>Força de trabalho = servidores com lotação ativa no TRT-17, excluídos estagiários e servidores removidos para outros órgãos. Os quatro indicadores-farol usam essa base; o art. 6º toma como denominador os cargos efetivos providos com lotação ativa. A classificação de área (fim/meio/T.I.) e a identificação da Escola Judicial seguem a base da SGP. Percentuais nominais, sem projeção.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
-Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
-células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
-grupos agregados; dados de deficiência, saúde e identidade de gênero não são exportados para esta página.
-A base de origem não é versionada nem publicada.</div>
+Este painel exibe exclusivamente estatísticas agregadas de estrutura e lotação (Tabela de Lotação de Pessoal, art. 39 da Res.). Nenhum dado identificado ou identificável é publicado: células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); atributos sensíveis (raça, deficiência, saúde, identidade de gênero) não são exportados para esta página. A base de origem não é versionada nem publicada.</div>
 </div>
 <a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
 <script>
@@ -112,10 +132,10 @@ function lineChart(el,labels,series,opt={}){
   const step=Math.ceil(labels.length/(opt.xTicks||8));
   labels.forEach((lb,i)=>{if(i%step===0||i===labels.length-1)
     g+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="#8DA0AB" font-family="ui-monospace,monospace">${esc(lb)}</text>`;});
-  if(opt.banda){const[b1,b2]=opt.banda;
-    g+=`<rect x="${mL}" y="${Y(b2)}" width="${pw}" height="${Y(b1)-Y(b2)}" fill="#0C4A45" opacity=".07"/>`;
-    g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b1)}" y2="${Y(b1)}" stroke="${C.teal}" stroke-width="1.5" stroke-dasharray="6 4"/>`;
-    g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b2)}" y2="${Y(b2)}" stroke="${C.teal}" stroke-width="1.5" stroke-dasharray="6 4"/>`;}
+  if(opt.banda){const[b1,b2]=opt.banda;const bc=opt.bandaCor||C.teal;
+    if(b1!==b2)g+=`<rect x="${mL}" y="${Y(b2)}" width="${pw}" height="${Y(b1)-Y(b2)}" fill="${bc}" opacity=".07"/>`;
+    g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b1)}" y2="${Y(b1)}" stroke="${bc}" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+    if(b1!==b2)g+=`<line x1="${mL}" x2="${W-mR}" y1="${Y(b2)}" y2="${Y(b2)}" stroke="${bc}" stroke-width="1.5" stroke-dasharray="6 4"/>`;}
   series.forEach(s=>{let d='',on=false;
     s.vals.forEach((v,i)=>{if(v==null||isNaN(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);on=true;});
     g+=`<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2.4" ${s.tracejado?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`;
@@ -177,16 +197,48 @@ fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
   '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
 </script>
 <script>
-function render(D){const p=D.p13,rot=r=>r.replace('-','/');
-  const ok=p.pct_atual>=p.faixa_min&&p.pct_atual<=p.faixa_max;
-  document.getElementById('kpis').innerHTML=
-    `<div class="kpi dest"><div class="n">${p.pct_atual.toLocaleString('pt-BR')}<small>%</small></div><div class="l">apoio indireto na referência atual <span class="badge ${ok?'ok':'warn'}">${ok?'DENTRO DA FAIXA':'FORA DA FAIXA'}</span></div></div>
-     <div class="kpi"><div class="n">${p.faixa_min.toLocaleString('pt-BR')}–${p.faixa_max.toLocaleString('pt-BR')}<small>%</small></div><div class="l">faixa para tribunais de pequeno porte</div></div>`;
-  lineChart(document.getElementById('c-serie'),p.refs.map(rot),
-    [{nome:'% meio',cor:C.navy,vals:p.pct_meio}],
-    {min:10,max:40,banda:[p.faixa_min,p.faixa_max],fmtY:v=>Math.round(v)+'%'});
-  document.getElementById('norma').textContent=p.norma;
+function render(D){
+  const p=D.p13, rot=r=>r.replace('-','/'), br=n=>n.toLocaleString('pt-BR');
+  document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia;
+  const farol=[
+    {t:'Art. 5º', v:p.art5.pct_atual, l:'fora das carreiras judiciárias', ok:p.art5.pct_atual<=20, lim:'teto 20%'},
+    {t:'Art. 6º', v:p.art6.pct_atual, l:'comissões ÷ efetivos', ok:p.art6.pct_atual<=80, lim:'teto 80%'},
+    {t:'Art. 12', v:p.art12.pct_atual, l:'apoio indireto (meio)', ok:p.art12.pct_atual>=20&&p.art12.pct_atual<=30, lim:'faixa 20–30%'},
+    {t:'Art. 14', v:p.art14.pct_atual, l:'lotação Escola Judicial', ok:p.art14.pct_atual>=0.7&&p.art14.pct_atual<=1.0, lim:'faixa 0,7–1,0%'},
+  ];
+  document.getElementById('kpis').innerHTML=farol.map(f=>
+    `<div class="kpi${f.ok?' dest':''}"><div class="n">${br(f.v)}<small>%</small></div>`+
+    `<div class="l"><b>${f.t}</b> · ${f.l} <span class="badge ${f.ok?'ok':'warn'}">${f.ok?'DENTRO':'FORA'}</span>`+
+    `<br><span style="font-family:var(--mono);font-size:10px;letter-spacing:.04em">${f.lim}</span></div></div>`).join('');
+  const L=p.refs.map(rot);
+  // Art. 12
+  lineChart(document.getElementById('c-serie'),L,[{nome:'% meio',cor:C.navy,vals:p.art12.pct}],
+    {min:10,max:35,banda:[p.art12.faixa_min,p.art12.faixa_max],fmtY:v=>Math.round(v)+'%'});
+  document.getElementById('a12-stats').innerHTML=
+    `área meio ${br(p.art12.n_meio)} · área fim ${br(p.art12.n_fim)} · excluídos do cálculo: T.I.C. ${br(p.art12.n_tic)}, Escola Judicial ${br(p.art12.n_ejud)}`;
+  // Art. 6
+  lineChart(document.getElementById('c-art6'),L,[{nome:'%',cor:C.navy,vals:p.art6.pct}],
+    {min:60,max:85,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
+  document.querySelector('#t-art6 tbody').innerHTML=
+    p.art6.por_nivel.map(x=>`<tr><td>${x.nivel}</td><td class="num">${br(x.n)}</td></tr>`).join('')+
+    `<tr style="font-weight:700"><td>Total (CJ ${br(p.art6.n_cj)} + FC ${br(p.art6.n_fc)})</td><td class="num">${br(p.art6.n_com)}</td></tr>`+
+    `<tr><td>Cargos efetivos providos (denominador)</td><td class="num">${br(p.art6.n_efet)}</td></tr>`;
+  // Art. 5
+  lineChart(document.getElementById('c-art5'),L,[{nome:'%',cor:C.navy,vals:p.art5.pct}],
+    {min:0,max:25,banda:[p.art5.teto,p.art5.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
+  // Art. 14
+  lineChart(document.getElementById('c-art14'),L,[{nome:'%',cor:C.navy,vals:p.art14.pct}],
+    {min:0,max:1.3,banda:[p.art14.faixa_min,p.art14.faixa_max],fmtY:v=>v.toFixed(1)+'%'});
+  // Art. 7 (descritivo)
+  hbar(document.getElementById('c-art7'),[
+    {rotulo:'1º grau',val:p.art7.grau1,cor:C.navy},
+    {rotulo:'2º grau',val:p.art7.grau2,cor:C.amber},
+    {rotulo:'não classificado',val:p.art7.nd,cor:C.mut}],{mL:150});
+  // Notas
+  document.getElementById('norma').innerHTML=
+    Object.values(p.notas).map(n=>'&bull;&nbsp; '+n.replace(/&/g,'&amp;').replace(/</g,'&lt;')).join('<br><br>');
 }
 </script>
+
 </body>
 </html>
