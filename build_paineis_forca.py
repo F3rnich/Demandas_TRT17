@@ -60,6 +60,16 @@ def main(path):
     srv_ult = srv[srv["ref"] == ult_ref].copy()
     srv_dez = srv.sort_values("REFERENCIA").groupby(["ano", "MATRICULA"]).tail(1)
 
+    # GRAU por unidade administrativa (fonte confiável — mesma usada no art. 7º/P13).
+    # A coluna "GRAU" crua da aba "dados" (XLOOKUP na planilha-fonte) NÃO é usada aqui:
+    # fica sem match para praticamente todo o histórico (ver nota de bug em memória).
+    try:
+        bu = pd.read_excel(path, sheet_name="Base unidades")
+        gmap = dict(zip(bu["UNIDADE ADMINISTRATIVA"].astype(str).str.strip().str.upper(), bu["GRAU"]))
+    except Exception:
+        gmap = {}
+    srv["grau_u"] = srv["UNIDADE_ADMINISTRATIVA"].astype(str).str.strip().str.upper().map(gmap)
+
     out = {"gerado_de": "base local SGP (não versionada)",
            "ultima_referencia": ult_ref, "k_anonimato": K_MIN}
 
@@ -74,8 +84,8 @@ def main(path):
     if drop:
         por_vinc["Outros"] = por_vinc[drop].sum(axis=1)
         por_vinc = por_vinc.drop(columns=drop)
-    grau = srv[srv["GRAU"].isin(["1º", "2º"])]
-    por_grau = grau.pivot_table(index="ref", columns="GRAU", values="MATRICULA",
+    grau = srv[srv["grau_u"].isin(["1º", "2º"])]
+    por_grau = grau.pivot_table(index="ref", columns="grau_u", values="MATRICULA",
                                 aggfunc="count").fillna(0).astype(int)
     out["p07"] = {
         "refs": refs,
@@ -301,11 +311,6 @@ def main(path):
              "n_magistrados": int(pult["is_mag"].sum()),
              "faixa_n_min": round(0.007 * len(pult), 1), "faixa_n_max": round(0.010 * len(pult), 1)}
 
-    try:
-        bu = pd.read_excel(path, sheet_name="Base unidades")
-        gmap = dict(zip(bu["UNIDADE ADMINISTRATIVA"].astype(str).str.strip().str.upper(), bu["GRAU"]))
-    except Exception:
-        gmap = {}
     fim_u = sult[sult["AREA"] == "Fim"].copy()
     fim_u["grau"] = fim_u["UNIDADE_ADMINISTRATIVA"].astype(str).str.strip().str.upper().map(gmap)
     g1 = int((fim_u["grau"] == "1º").sum()); g2 = int((fim_u["grau"] == "2º").sum())
