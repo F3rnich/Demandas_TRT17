@@ -38,7 +38,8 @@
   .eyebrow .cur{color:var(--y500);animation:blink 1s steps(1) infinite}
   h1{font-family:var(--sans);font-weight:800;font-size:clamp(32px,5vw,44px);line-height:1.2;color:var(--white);letter-spacing:-.01em;margin-top:16px}
   .ybar{width:48px;height:4px;background:var(--y500);margin-top:16px}
-  .lead{margin-top:16px;color:var(--b100);font-size:15px;line-height:1.55;max-width:640px}
+  .lead{margin-top:16px;color:var(--b100);font-size:15px;line-height:1.55;max-width:100%}
+  @media(min-width:960px){.lead{white-space:nowrap}}
 
   .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
   @media(max-width:900px){.stages{grid-template-columns:repeat(2,1fr)}}
