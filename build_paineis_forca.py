@@ -50,22 +50,31 @@ def main(path):
     ult["raca_g"] = ult["RAÇA"].map(raca_grp)
     ft["raca_g"] = ft["RAÇA"].map(raca_grp)
 
+    # base "servidores com lotação ativa" = sem estagiários, sem removidos-para, sem magistrados
+    MAG = df["CARGO"].str.contains("JUIZ|DESEMBARGADOR", case=False, na=False)
+    REMPARA = df["SITUACAO_FUNCIONAL"].eq("Removido para")
+    srv = df[(~est) & (~REMPARA) & (~MAG)].copy()
+    srv["raca_g"] = srv["RAÇA"].map(raca_grp)
+    srv["ano"] = srv["REFERENCIA"].dt.year
+    anos_all = sorted(srv["ano"].unique())
+    srv_ult = srv[srv["ref"] == ult_ref].copy()
+    srv_dez = srv.sort_values("REFERENCIA").groupby(["ano", "MATRICULA"]).tail(1)
+
     out = {"gerado_de": "base local SGP (não versionada)",
            "ultima_referencia": ult_ref, "k_anonimato": K_MIN}
 
-    # ---------------- P07 — Evolução histórica ----------------
-    serie_total = ft.groupby("ref").size()
-    por_area = ft.pivot_table(index="ref", columns="AREA", values="MATRICULA",
-                              aggfunc="count").fillna(0).astype(int)
-    por_vinc = df.pivot_table(index="ref", columns="TIPO_SERVIDOR",
-                              values="MATRICULA", aggfunc="count").fillna(0).astype(int)
-    # vínculos com pico < K_MIN em toda a série → agrega em Outros
+    # ---------------- P07 — Evolução histórica (servidores) ----------------
+    serie_total = srv.groupby("ref").size()
+    por_area = srv.pivot_table(index="ref", columns="AREA", values="MATRICULA",
+                               aggfunc="count").fillna(0).astype(int)
+    por_vinc = srv.pivot_table(index="ref", columns="TIPO_SERVIDOR",
+                               values="MATRICULA", aggfunc="count").fillna(0).astype(int)
     keep = [c for c in por_vinc.columns if por_vinc[c].max() >= K_MIN]
     drop = [c for c in por_vinc.columns if c not in keep]
     if drop:
         por_vinc["Outros"] = por_vinc[drop].sum(axis=1)
         por_vinc = por_vinc.drop(columns=drop)
-    grau = ft[ft["GRAU"].isin(["1º", "2º"])]
+    grau = srv[srv["GRAU"].isin(["1º", "2º"])]
     por_grau = grau.pivot_table(index="ref", columns="GRAU", values="MATRICULA",
                                 aggfunc="count").fillna(0).astype(int)
     out["p07"] = {
@@ -109,14 +118,14 @@ def main(path):
         "total_atual": int(len(ult)),
     }
 
-    # ---------------- P09 — Equidade em comissionamentos ----------------
-    com = ult[ult["CODIGO_COMISSAO"].notna()]
+    # ---------------- P09 — Equidade em comissionamentos (força de servidores) ----------------
+    com = srv_ult[srv_ult["CODIGO_COMISSAO"].notna()]
     def paridade(col, grupos):
         r = {}
         for g in grupos:
-            n_f = int((ult[col] == g).sum()); n_c = int((com[col] == g).sum())
+            n_f = int((srv_ult[col] == g).sum()); n_c = int((com[col] == g).sum())
             if n_f < K_MIN: continue
-            pf = 100 * n_f / len(ult); pc = 100 * n_c / len(com)
+            pf = 100 * n_f / len(srv_ult); pc = 100 * n_c / len(com)
             vm = com.loc[com[col] == g, "VALOR"]
             r[g] = {"n_forca": n_f, "pct_forca": round(pf, 1),
                     "n_com": sup(n_c), "pct_com": round(pc, 1),
@@ -124,16 +133,15 @@ def main(path):
                     "valor_medio_fc": round(float(vm.mean()), 2) if len(vm) >= K_MIN else None}
         return r
     out["p09"] = {
-        "total_forca": int(len(ult)), "total_comissionados": int(len(com)),
+        "total_forca": int(len(srv_ult)), "total_comissionados": int(len(com)),
         "valor_medio_geral": round(float(com["VALOR"].mean()), 2),
         "sexo": paridade("SEXO", ["F", "M"]),
         "raca": paridade("raca_g", ["Branca", "Negra", "Outras/NI"]),
-        "nota": "Índice de paridade = %% do grupo entre comissionados ÷ %% do grupo na força de trabalho. 1,00 = proporcional.",
+        "nota": "Índice de paridade = %% do grupo entre comissionados ÷ %% do grupo na força de servidores. 1,00 = proporcional.",
     }
-    # série anual do índice de paridade (raça Negra e sexo F)
     ip_serie = {"anos": [], "F": [], "Negra": []}
-    for a in anos:
-        g = ft_dez[ft_dez["ano"] == a]
+    for a in anos_all:
+        g = srv_dez[srv_dez["ano"] == a]
         c = g[g["CODIGO_COMISSAO"].notna()]
         if len(c) < K_MIN: continue
         ip_serie["anos"].append(int(a))
@@ -246,74 +254,73 @@ def main(path):
     }
 
     # ---------------- P13 — Conformidade estrutural Res. CSJT 296/2021 ----------------
-    # Força de trabalho = lotação ativa no TRT-17 (exclui estagiários e "Removido para")
-    ativos = df[(~est) & (df["SITUACAO_FUNCIONAL"] != "Removido para")].copy()
-    ativos["ref"] = ativos["REFERENCIA"].dt.strftime("%Y-%m")
     _EJUD = r"Escola Judicial|Capacita[çc][ãa]o de Magistrado|Capacita[çc][ãa]o de Servidor"
-    ativos["ejud"] = ativos["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
-    ativos["tem_com"] = ativos["CODIGO_COMISSAO"].replace("", pd.NA).notna()
-    ativos["is_mag"] = ativos["CARGO"].str.contains("JUIZ|DESEMBARGADOR", case=False, na=False)
-    gult = ativos[ativos["ref"] == ult_ref]
+    srv["ejud"] = srv["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
+    srv["tem_com"] = srv["CODIGO_COMISSAO"].notna()
+    sult = srv[srv["ref"] == ult_ref]
+    # público-alvo do art. 14 = servidores ativos + magistrados providos ativos
+    pubalvo = df[(~est) & (~REMPARA)].copy()
+    pubalvo["ejud"] = pubalvo["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
+    pubalvo["is_mag"] = pubalvo["CARGO"].str.contains("JUIZ|DESEMBARGADOR", case=False, na=False)
+    pult = pubalvo[pubalvo["ref"] == ult_ref]
 
-    def _ser(fn):
-        return [fn(ativos[ativos["ref"] == r]) for r in refs]
+    def _serS(fn): return [fn(srv[srv["ref"] == r]) for r in refs]
+    def _serP(fn): return [fn(pubalvo[pubalvo["ref"] == r]) for r in refs]
 
     def _a5(g):
         return round(100 * g["TIPO_SERVIDOR"].isin(["Requisitado", "Sem vínculo efetivo"]).sum() / len(g), 2) if len(g) else None
-    art5 = {"pct": _ser(_a5), "teto": 20.0,
-            "n_atual": int(gult["TIPO_SERVIDOR"].isin(["Requisitado", "Sem vínculo efetivo"]).sum()),
-            "pct_atual": _a5(gult), "forca_atual": int(len(gult))}
+    art5 = {"pct": _serS(_a5), "teto": 20.0, "pct_atual": _a5(sult),
+            "n_atual": int(sult["TIPO_SERVIDOR"].isin(["Requisitado", "Sem vínculo efetivo"]).sum()),
+            "forca_atual": int(len(sult))}
 
     def _a6(g):
         efet = (g["TIPO_SERVIDOR"] == "Cargo efetivo").sum()
         return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
-    com_u = gult[gult["tem_com"]]
+    com_u = sult[sult["tem_com"]]
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
     por_nivel = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
     por_nivel = [x for x in por_nivel if x["n"] > 0]
-    art6 = {"pct": _ser(_a6), "teto": 80.0, "pct_atual": _a6(gult),
-            "n_com": int(len(com_u)), "n_efet": int((gult["TIPO_SERVIDOR"] == "Cargo efetivo").sum()),
+    art6 = {"pct": _serS(_a6), "teto": 80.0, "proxy": True, "pct_atual": _a6(sult),
+            "n_com": int(len(com_u)), "n_efet": int((sult["TIPO_SERVIDOR"] == "Cargo efetivo").sum()),
             "n_cj": int(com_u["CODIGO_COMISSAO"].str.startswith("CJ", na=False).sum()),
-            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()),
-            "por_nivel": por_nivel}
+            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()), "por_nivel": por_nivel}
 
     def _a12(g):
         b = g[(g["AREA"] != "T.I.") & (~g["ejud"])]
         d = b["AREA"].isin(["Meio", "Fim"]).sum()
         return round(100 * (b["AREA"] == "Meio").sum() / d, 2) if d else None
-    b12u = gult[(gult["AREA"] != "T.I.") & (~gult["ejud"])]
-    art12 = {"pct": _ser(_a12), "faixa_min": 20.0, "faixa_max": 30.0, "pct_atual": _a12(gult),
+    b12u = sult[(sult["AREA"] != "T.I.") & (~sult["ejud"])]
+    art12 = {"pct": _serS(_a12), "faixa_min": 20.0, "faixa_max": 30.0, "pct_atual": _a12(sult),
              "n_meio": int((b12u["AREA"] == "Meio").sum()), "n_fim": int((b12u["AREA"] == "Fim").sum()),
-             "n_tic": int((gult["AREA"] == "T.I.").sum()), "n_ejud": int(gult["ejud"].sum())}
+             "n_tic": int((sult["AREA"] == "T.I.").sum()), "n_ejud": int(sult["ejud"].sum())}
 
     def _a14(g):
         return round(100 * g["ejud"].sum() / len(g), 3) if len(g) else None
-    art14 = {"pct": _ser(_a14), "faixa_min": 0.7, "faixa_max": 1.0, "pct_atual": _a14(gult),
-             "n_ejud": int(gult["ejud"].sum()), "publico_alvo": int(len(gult)),
-             "n_magistrados": int(gult["is_mag"].sum()),
-             "faixa_n_min": round(0.007 * len(gult), 1), "faixa_n_max": round(0.010 * len(gult), 1)}
+    art14 = {"pct": _serP(_a14), "faixa_min": 0.7, "faixa_max": 1.0, "pct_atual": _a14(pult),
+             "n_ejud": int(pult["ejud"].sum()), "publico_alvo": int(len(pult)),
+             "n_magistrados": int(pult["is_mag"].sum()),
+             "faixa_n_min": round(0.007 * len(pult), 1), "faixa_n_max": round(0.010 * len(pult), 1)}
 
-    # Art. 7 (descritivo): distribuição do apoio direto por grau, via Base de unidades
     try:
         bu = pd.read_excel(path, sheet_name="Base unidades")
         gmap = dict(zip(bu["UNIDADE ADMINISTRATIVA"].astype(str).str.strip().str.upper(), bu["GRAU"]))
     except Exception:
         gmap = {}
-    fim_u = gult[gult["AREA"] == "Fim"].copy()
+    fim_u = sult[sult["AREA"] == "Fim"].copy()
     fim_u["grau"] = fim_u["UNIDADE_ADMINISTRATIVA"].astype(str).str.strip().str.upper().map(gmap)
     g1 = int((fim_u["grau"] == "1º").sum()); g2 = int((fim_u["grau"] == "2º").sum())
     art7 = {"grau1": g1, "grau2": g2, "nd": int(len(fim_u) - g1 - g2), "total": int(len(fim_u))}
 
     out["p13"] = {
-        "refs": refs, "ultima_referencia": ult_ref, "forca_atual": int(len(gult)),
+        "refs": refs, "ultima_referencia": ult_ref, "forca_atual": int(len(sult)),
         "art5": art5, "art6": art6, "art12": art12, "art14": art14, "art7": art7,
         "notas": {
-            "forca": "Força de trabalho = servidores com lotação ativa no TRT-17 (exclui estagiários e servidores removidos para outros órgãos).",
+            "forca": "Força de trabalho de servidores = servidores com lotação ativa no TRT-17 (exclui estagiários, servidores removidos para outros órgãos e magistrados).",
             "art5": "Fora das carreiras judiciárias federais = requisitados de outros órgãos + comissionados sem vínculo. Teto de 20% (art. 5º).",
-            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ocupados ÷ cargos efetivos providos com lotação ativa. Teto de 80% (art. 6º). Proxy sobre postos ocupados: a base não distingue vagos.",
+            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos de servidores providos com lotação ativa. Teto de 80% (art. 6º). PROXY: a norma mede o quantitativo de cargos efetivos AUTORIZADOS (inclui vagos); a base traz apenas postos ocupados, o que superestima a razão. Não se emite veredito de conformidade.",
             "art12": "Servidores da área meio ÷ (área fim + meio), excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). Faixa 20%–30% para tribunais de pequeno porte.",
-            "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
-            "art7": "DESCRITIVO — distribuição da força de apoio direto (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
+            "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores, conforme Anexo IV). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
+            "art7": "DESCRITIVO — distribuição da força de apoio direto de servidores (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
         },
     }
 

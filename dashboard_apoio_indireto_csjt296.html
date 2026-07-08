@@ -84,7 +84,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div id="a12-stats" class="fonte"></div></div></section>
 
 <section><h2>Art. 6º — Comissionamentos sobre cargos efetivos</h2>
-<p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ocupados como proporção dos cargos efetivos providos com lotação ativa. Teto de 80% (art. 6º). Leitura sobre postos ocupados — a base não distingue cargos vagos.</p>
+<p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ÷ cargos efetivos de servidores providos com lotação ativa. A linha tracejada marca o teto de 80% do art. 6º. <b>Indicador por aproximação:</b> a norma mede o quantitativo de cargos efetivos <i>autorizados</i> (inclui vagos); esta base traz apenas postos ocupados, o que superestima a razão. Não se emite veredito de conformidade.</p>
 <div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC) ÷ efetivos</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
 <div class="fonte">Res. CSJT nº 296/2021, art. 6º</div></div>
 <div style="margin-top:14px"><table class="dados" id="t-art6"><thead><tr><th>Nível</th><th>Ocupados</th></tr></thead><tbody></tbody></table></div></section>
@@ -202,14 +202,17 @@ function render(D){
   document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia;
   const farol=[
     {t:'Art. 5º', v:p.art5.pct_atual, l:'fora das carreiras judiciárias', ok:p.art5.pct_atual<=20, lim:'teto 20%'},
-    {t:'Art. 6º', v:p.art6.pct_atual, l:'comissões ÷ efetivos', ok:p.art6.pct_atual<=80, lim:'teto 80%'},
+    {t:'Art. 6º', v:p.art6.pct_atual, l:'comissões ÷ efetivos', proxy:true, lim:'teto 80% · proxy'},
     {t:'Art. 12', v:p.art12.pct_atual, l:'apoio indireto (meio)', ok:p.art12.pct_atual>=20&&p.art12.pct_atual<=30, lim:'faixa 20–30%'},
     {t:'Art. 14', v:p.art14.pct_atual, l:'lotação Escola Judicial', ok:p.art14.pct_atual>=0.7&&p.art14.pct_atual<=1.0, lim:'faixa 0,7–1,0%'},
   ];
-  document.getElementById('kpis').innerHTML=farol.map(f=>
-    `<div class="kpi${f.ok?' dest':''}"><div class="n">${br(f.v)}<small>%</small></div>`+
-    `<div class="l"><b>${f.t}</b> · ${f.l} <span class="badge ${f.ok?'ok':'warn'}">${f.ok?'DENTRO':'FORA'}</span>`+
-    `<br><span style="font-family:var(--mono);font-size:10px;letter-spacing:.04em">${f.lim}</span></div></div>`).join('');
+  document.getElementById('kpis').innerHTML=farol.map(f=>{
+    const chip=f.proxy
+      ? `<span class="badge" style="background:#EEF3F5;color:#5C6E79;border:1px solid #C4D3D9">PROXY · VER RESSALVA</span>`
+      : `<span class="badge ${f.ok?'ok':'warn'}">${f.ok?'DENTRO':'FORA'}</span>`;
+    return `<div class="kpi${(f.ok&&!f.proxy)?' dest':''}"><div class="n">${br(f.v)}<small>%</small></div>`+
+    `<div class="l"><b>${f.t}</b> · ${f.l} ${chip}`+
+    `<br><span style="font-family:var(--mono);font-size:10px;letter-spacing:.04em">${f.lim}</span></div></div>`;}).join('');
   const L=p.refs.map(rot);
   // Art. 12
   lineChart(document.getElementById('c-serie'),L,[{nome:'% meio',cor:C.navy,vals:p.art12.pct}],
@@ -218,7 +221,7 @@ function render(D){
     `área meio ${br(p.art12.n_meio)} · área fim ${br(p.art12.n_fim)} · excluídos do cálculo: T.I.C. ${br(p.art12.n_tic)}, Escola Judicial ${br(p.art12.n_ejud)}`;
   // Art. 6
   lineChart(document.getElementById('c-art6'),L,[{nome:'%',cor:C.navy,vals:p.art6.pct}],
-    {min:60,max:85,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
+    {min:60,max:90,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
   document.querySelector('#t-art6 tbody').innerHTML=
     p.art6.por_nivel.map(x=>`<tr><td>${x.nivel}</td><td class="num">${br(x.n)}</td></tr>`).join('')+
     `<tr style="font-weight:700"><td>Total (CJ ${br(p.art6.n_cj)} + FC ${br(p.art6.n_fc)})</td><td class="num">${br(p.art6.n_com)}</td></tr>`+
