@@ -70,7 +70,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="topo"><div class="topo-in"><span>SGP · UAE — ESTATÍSTICAS DE PESSOAL</span><b>TRT-17</b></div></div>
 <div class="wrap">
 <header class="painel">
-  <span class="pnum"><span class="bloco">PAINEL 08</span><span id="ref-base">REF. —</span></span>
+  <span class="pnum"><span class="bloco">PAINEL 07</span><span id="ref-base">REF. —</span></span>
   <h1>Envelhecimento e risco demográfico</h1>
   <div class="regua"></div>
   <p class="sub">Estrutura etária da força de trabalho e sua evolução — onde está o risco de perda de conhecimento por aposentadoria nos próximos anos.</p>
@@ -103,10 +103,12 @@ const fmtBRL=n=>n==null?'—':n.toLocaleString('pt-BR',{style:'currency',currenc
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 // gráfico de linhas multissérie. series=[{nome,cor,vals,tracejado}] labels=eixo x
 function lineChart(el,labels,series,opt={}){
-  const W=920,H=opt.h||300,mL=52,mR=14,mT=14,mB=34,pw=W-mL-mR,ph=H-mT-mB;
+  const W=920,H=opt.h||300,mL=52,mR=34,mT=14,mB=34,pw=W-mL-mR,ph=H-mT-mB;
   const all=series.flatMap(s=>s.vals).filter(v=>v!=null&&!isNaN(v));
-  let mn=opt.min!=null?opt.min:Math.min(...all),mx=opt.max!=null?opt.max:Math.max(...all);
+  const rawMin=Math.min(...all);
+  let mn=opt.min!=null?opt.min:rawMin,mx=opt.max!=null?opt.max:Math.max(...all);
   if(mn===mx){mn-=1;mx+=1} const pad=(mx-mn)*.08; if(opt.min==null)mn-=pad; if(opt.max==null)mx+=pad;
+  if(opt.min==null&&rawMin>=0)mn=Math.max(mn,0);
   const X=i=>mL+pw*i/Math.max(labels.length-1,1), Y=v=>mT+ph*(1-(v-mn)/(mx-mn));
   let g='';
   const ticks=5;
