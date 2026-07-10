@@ -180,15 +180,48 @@ def main(path):
                      "sexo": atrib.loc[m, "SEXO"], "raca": raca_grp(atrib.loc[m, "RAÇA"])})
     co = pd.DataFrame(rows)
     sem_fc_inicial = co[~co["chegou"]]
-    def km_curve(sub):
-        """% acumulado que recebeu FC até t anos (incidência simples entre observados ≥ t)."""
-        pts = []
-        for t in [x / 2 for x in range(0, 21)]:  # 0 a 10 anos, passo 0,5
-            risco = sub[(sub["t_obs"] >= t) | (sub["evento"] & (sub["t"] <= t))]
-            if len(risco) < K_MIN: pts.append(None); continue
-            ev = ((risco["evento"]) & (risco["t"] <= t)).sum()
-            pts.append(round(100 * ev / len(risco), 1))
-        return pts
+    EIXO_ANOS = [x / 2 for x in range(0, 21)]  # 0 a 10 anos, passo 0,5
+
+    def km_curve(sub, return_n=False):
+        """% acumulado que recebeu FC/CJ até t anos — Kaplan-Meier (produto-limite).
+
+        Cada indivíduo contribui com (tempo, evento): tempo = tempo até a 1a comissao
+        se o evento ocorreu, ou tempo observado sem comissao (censura à direita) caso
+        contrário. O risco é atualizado incrementalmente a cada tempo de evento
+        (n_i = quem ainda estava em observação e sem evento até ali), em vez de
+        excluir em bloco quem não atingiu t anos de observação — o método anterior
+        ("incidência simples entre observados ≥ t") inflava a cauda da curva porque
+        removia do denominador, à medida que t crescia, justamente quem saiu do
+        quadro sem nunca ter recebido comissão (censura potencialmente informativa:
+        mediana de tempo até 1a comissão, entre quem recebe, é < 1 ano — indício de
+        que quem não é promovido rápido tende também a sair do tribunal).
+        """
+        tempos = [(float(r["t"]), 1) if r["evento"] else (float(r["t_obs"]), 0)
+                  for _, r in sub.iterrows()]
+        n_total = len(tempos)
+        event_times = sorted({t for t, e in tempos if e == 1})
+        km_steps = []  # (tempo_evento, sobrevivencia_apos, n_risco_no_evento)
+        surv = 1.0
+        for t_i in event_times:
+            n_i = sum(1 for t, e in tempos if t >= t_i)
+            d_i = sum(1 for t, e in tempos if t == t_i and e == 1)
+            if n_i >= K_MIN:
+                surv *= (1 - d_i / n_i)
+            km_steps.append((t_i, surv, n_i))
+        pts, n_pts = [], []
+        for t in EIXO_ANOS:
+            n_risco_t = sum(1 for tt, e in tempos if tt >= t)
+            n_pts.append(n_risco_t)
+            if n_risco_t < K_MIN:
+                pts.append(None); continue
+            s_t = 1.0
+            for t_i, surv, n_i in km_steps:
+                if t_i <= t and n_i >= K_MIN:
+                    s_t = surv
+                elif t_i > t:
+                    break
+            pts.append(round(100 * (1 - s_t), 1))
+        return (pts, n_pts) if return_n else pts
     def mediana_grp(col, grupos):
         r = {}
         for g in grupos:
@@ -196,6 +229,8 @@ def main(path):
             r[g] = {"n": sup(len(s)),
                     "mediana_anos": round(float(s.median()), 1) if len(s) >= K_MIN else None}
         return r
+    curva_geral, n_risco_geral = km_curve(sem_fc_inicial, return_n=True)
+    n_risco_geral = [sup(n) for n in n_risco_geral]
     out["p10"] = {
         "n_coorte": int(len(co)),
         "n_chegou_com_fc": int(co["chegou"].sum()),
@@ -203,8 +238,9 @@ def main(path):
         "n_conquistou_depois": int(sem_fc_inicial["evento"].sum()),
         "mediana_geral_anos": round(float(
             sem_fc_inicial[sem_fc_inicial["evento"]]["t"].median()), 1),
-        "eixo_anos": [x / 2 for x in range(0, 21)],
-        "curva_geral": km_curve(sem_fc_inicial),
+        "eixo_anos": EIXO_ANOS,
+        "curva_geral": curva_geral,
+        "n_risco_geral": n_risco_geral,
         "curva_sexo": {g: km_curve(sem_fc_inicial[sem_fc_inicial["sexo"] == g]) for g in ["F", "M"]},
         "curva_raca": {g: km_curve(sem_fc_inicial[sem_fc_inicial["raca"] == g])
                        for g in ["Branca", "Negra"]},
