@@ -73,12 +73,12 @@ table.dados td.num{font-family:var(--mono);text-align:right}
   <span class="pnum"><span class="bloco">PAINEL 09</span><span id="ref-base">REF. —</span></span>
   <h1>Tempo até a primeira comissão</h1>
   <div class="regua"></div>
-  <p class="sub">Quanto tempo um servidor leva, desde o ingresso, até receber a primeira função comissionada — e se esse tempo difere por sexo e raça/cor.</p>
+  <p class="sub">Quanto tempo um servidor leva, desde o ingresso, até receber a primeira comissão (FC ou CJ) — e se esse tempo difere por sexo e raça/cor.</p>
 </header>
 
 <div class="kpis" id="kpis"></div>
-<section><h2>Percentual acumulado que recebeu FC, por tempo de casa</h2>
-<p class="desc">Entre os servidores que ingressaram sem função, quantos já haviam recebido uma FC após X anos no Tribunal. Trechos ausentes indicam pontos com menos de 5 servidores em observação.</p>
+<section><h2>Percentual acumulado que recebeu FC ou CJ, por tempo de casa</h2>
+<p class="desc">Entre os servidores que ingressaram sem função, quantos já haviam recebido uma FC ou CJ após X anos no Tribunal. Trechos ausentes indicam pontos com menos de 5 servidores em observação.</p>
 <div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>Geral</span></div><div id="c-geral"></div>
 <div class="fonte">Fonte: base de pessoal SGP · coorte de entrada observável</div></div></section>
 <section><h2>Por sexo</h2>
@@ -207,8 +207,8 @@ function render(D){const p=D.p10;
   document.getElementById('kpis').innerHTML=
     `<div class="kpi"><div class="n">${fmt(p.n_coorte)}</div><div class="l">servidores com entrada observável (desde ${p.coorte_desde})</div></div>
      <div class="kpi"><div class="n">${fmt(p.n_chegou_com_fc)}</div><div class="l">já chegaram comissionados</div></div>
-     <div class="kpi"><div class="n">${fmt(p.n_conquistou_depois)}<small>/ ${fmt(p.n_entrou_sem_fc)}</small></div><div class="l">entraram sem função e receberam FC depois</div></div>
-     <div class="kpi dest"><div class="n">${p.mediana_geral_anos.toLocaleString('pt-BR')}<small>anos</small></div><div class="l">mediana até a primeira FC</div></div>`;
+     <div class="kpi"><div class="n">${fmt(p.n_conquistou_depois)}<small>/ ${fmt(p.n_entrou_sem_fc)}</small></div><div class="l">entraram sem função e receberam FC ou CJ depois</div></div>
+     <div class="kpi dest"><div class="n">${p.mediana_geral_anos.toLocaleString('pt-BR')}<small>anos</small></div><div class="l">mediana até a primeira FC ou CJ</div></div>`;
   const lb=p.eixo_anos.map(v=>v.toLocaleString('pt-BR'));
   const op={min:0,max:100,fmtY:v=>Math.round(v)+'%',xTicks:11};
   lineChart(document.getElementById('c-geral'),lb,[{nome:'Geral',cor:C.navy,vals:p.curva_geral}],op);
@@ -216,7 +216,7 @@ function render(D){const p=D.p10;
     [{nome:'F',cor:C.navy,vals:p.curva_sexo.F},{nome:'M',cor:C.amber,vals:p.curva_sexo.M}],op);
   lineChart(document.getElementById('c-raca'),lb,
     [{nome:'Brancas',cor:C.navy,vals:p.curva_raca.Branca},{nome:'Negras',cor:C.amber,vals:p.curva_raca.Negra}],op);
-  let t='<table class="dados"><tr><th>Grupo</th><th>Receberam FC (n)</th><th>Mediana até a 1ª FC (anos)</th></tr>';
+  let t='<table class="dados"><tr><th>Grupo</th><th>Receberam FC ou CJ (n)</th><th>Mediana até a 1ª FC ou CJ (anos)</th></tr>';
   [['Mulheres',p.mediana_sexo.F],['Homens',p.mediana_sexo.M],
    ['Pessoas brancas',p.mediana_raca.Branca],['Pessoas negras',p.mediana_raca.Negra]]
     .forEach(([g,d])=>{t+=`<tr><td>${g}</td><td class="num">${d.n!=null?fmt(d.n):'< 5 (suprimido)'}</td><td class="num">${d.mediana_anos!=null?d.mediana_anos.toLocaleString('pt-BR'):'—'}</td></tr>`});
