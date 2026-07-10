@@ -89,7 +89,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="fonte">Fonte: base de pessoal SGP</div></div></section>
 <section><h2>Medianas</h2><div id="tbl"></div></section>
 
-<div class="metod"><b>METODOLOGIA</b><br>Coorte restrita a servidores cujo ingresso é observável na base (primeira aparição após jan/2015); quem já estava no quadro em jan/2015 é excluído (censura à esquerda). Quem chega comissionado no primeiro mês é contabilizado à parte. A curva considera apenas servidores observados por tempo maior ou igual a cada ponto do eixo.</div>
+<div class="metod"><b>METODOLOGIA</b><br>Coorte restrita a servidores cujo ingresso é observável na base (primeira aparição após jan/2015); quem já estava no quadro em jan/2015 é excluído (censura à esquerda). Quem chega comissionado no primeiro mês é contabilizado à parte. A curva usa o estimador de Kaplan-Meier (produto-limite): quem ainda não recebeu FC/CJ até o fim da observação é tratado como censura à direita (não como "nunca vai receber"), e o risco é recalculado a cada tempo de evento observado — não apenas entre quem já completou o tempo do eixo inteiro.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
 células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
