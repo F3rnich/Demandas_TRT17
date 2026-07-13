@@ -7,7 +7,8 @@
    "SELECIONE UM PAINEL",
    "dashboard_evolucao_forca_trabalho.html",
    "dashboard_apoio_indireto_csjt296.html",
-   "dashboard_equidade_comissionamentos.html"
+   "dashboard_equidade_comissionamentos.html",
+   "dashboard_afastamentos.html"
   ],
   "must_not_contain": []
  },
@@ -196,5 +197,35 @@
    "A BASE NUNCA ENTRA NO REPOSITÓRIO"
   ],
   "must_not_contain": []
+ },
+ "dashboard_afastamentos.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "PROTEÇÃO DE DADOS",
+   "dados_afastamentos.json",
+   "c-anual",
+   "render(D)"
+  ],
+  "must_not_contain": [
+   "MATRICULA",
+   "\"NOME\""
+  ]
+ },
+ "dados_afastamentos.json": {
+  "must_contain": [
+   "kpis",
+   "serie_anual",
+   "top_tipos",
+   "por_cargo",
+   "k_anonimato"
+  ],
+  "must_not_contain": [
+   "CPF",
+   "MATRICULA",
+   "\"NOME\""
+  ]
  }
 }

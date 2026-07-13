@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Afastamentos — panorama institucional — SGP · TRT-17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root{
+  --navy:#003A5C; --navy2:#00466E; --teal:#0C4A45; --teal-lt:#EAF3F1;
+  --amber:#D8A241; --yellow:#FFD040; --ink:#16232B; --mut:#5C6E79; --mut2:#8DA0AB;
+  --line:#D5E2E6; --card:#FFFFFF; --ok:#1F7A5C; --warn:#B3541E;
+  --sans:"Open Sans",Arial,-apple-system,sans-serif;
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--teal-lt);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.topo{background:var(--navy);border-bottom:4px solid var(--yellow)}
+.topo-in{max-width:1080px;margin:0 auto;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in b{color:#fff;font-weight:600}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
+header.painel{padding:44px 0 8px}
+.pnum{display:inline-flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--navy)}
+.pnum .bloco{background:var(--navy);color:var(--yellow);padding:5px 10px;font-weight:700;font-size:14px;letter-spacing:.06em}
+h1{font-weight:800;font-size:clamp(26px,4.4vw,38px);line-height:1.15;letter-spacing:-.015em;color:var(--navy);margin:14px 0 0;max-width:100%}
+.regua{width:56px;height:5px;background:var(--yellow);margin:16px 0}
+.sub{color:var(--mut);font-size:15px;max-width:100%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:30px 0 6px}
+.kpi{background:var(--card);padding:20px 20px 16px}
+.kpi .n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:34px;font-weight:700;color:var(--navy);line-height:1;display:flex;align-items:baseline;gap:5px}
+.kpi .n small{font-size:15px;color:var(--mut2);font-family:var(--sans);font-weight:600}
+.kpi .l{font-size:12.5px;color:var(--mut);margin-top:8px}
+.kpi.dest .n{color:var(--teal)}
+section{margin-top:44px}
+h2{font-weight:700;font-size:20px;color:var(--navy);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:10px;height:10px;background:var(--yellow);flex:none}
+.desc{color:var(--mut);font-size:13.5px;margin:6px 0 18px;max-width:100%}
+.chart{background:var(--card);border:1px solid var(--line);padding:18px 18px 10px;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.leg{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 10px;font-size:12px;color:var(--mut)}
+.leg span{display:inline-flex;align-items:center;gap:7px}
+.leg i{width:14px;height:4px;flex:none}
+.fonte{font-family:var(--mono);font-size:10.5px;color:var(--mut2);margin-top:10px;padding-bottom:6px}
+table.dados{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);font-size:13.5px}
+table.dados th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dados th:not(:first-child){text-align:right}
+table.dados td{padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.dados td.num{font-family:var(--mono);text-align:right}
+.lgpd{margin-top:56px;border:1px solid var(--line);border-left:5px solid var(--teal);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.lgpd b{color:var(--teal);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.metod{margin-top:14px;border:1px solid var(--line);border-left:5px solid var(--amber);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.metod b{color:var(--amber);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:var(--yellow);text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  padding:9px 14px;border:1px solid var(--navy2)}
+.sgp-hub-back:hover{background:var(--navy2)}
+@media(max-width:560px){.kpi .n{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span>SGP · UAE — ESTATÍSTICAS DE PESSOAL</span><b>TRT-17</b></div></div>
+<div class="wrap">
+<header class="painel">
+  <span class="pnum"><span class="bloco">PAINEL 13</span><span id="ref-base">2010—2026</span></span>
+  <h1>Afastamentos — panorama institucional</h1>
+  <div class="regua"></div>
+  <p class="sub">Volume, composição e sazonalidade dos afastamentos de pessoal — o que cresce, o que é sazonal e onde está concentrada a licença saúde.</p>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<section><h2>Evolução anual — total de afastamentos e licença saúde</h2>
+<p class="desc">Série 2010–2026. A partir de 2018 o volume total cresce de forma sustentada, mas a participação da licença saúde no total vem caindo — o crescimento é puxado por outras modalidades (eleitoral, treinamento, folgas), não por saúde.</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>Total de afastamentos</span><span><i style="background:#D8A241"></i>Licença saúde</span></div><div id="c-anual"></div>
+<div class="fonte">Fonte: SGP · registros de afastamento por início · dados anteriores a 2010 são esparsos e não entram na série</div></div></section>
+
+<section><h2>Sazonalidade mensal — participação da licença saúde</h2>
+<p class="desc">Média 2018–2025. Licença saúde responde por 40–50% dos afastamentos entre fevereiro e agosto, mas cai para 25–32% em setembro–dezembro, quando eleitoral e recesso dominam o volume. Padrão estrutural, não ruído.</p>
+<div class="chart"><div id="c-mes"></div>
+<div class="fonte">Fonte: SGP · % de registros classificados como licença saúde sobre o total do mês, por início do afastamento</div></div></section>
+
+<section><h2>Composição por tipo de afastamento</h2>
+<p class="desc">12 tipos mais frequentes, do total do período. Licença saúde do servidor RPPS é isoladamente o maior volume — quase metade de todos os registros.</p>
+<div class="chart"><div id="c-tipos"></div>
+<div class="fonte">Fonte: SGP · contagem de registros por tipo de afastamento, período completo</div></div></section>
+
+<section><h2>Duração média por tipo</h2>
+<p class="desc">Dias corridos entre início e fim, excluídos registros com duração acima de 10 anos (indeterminados sem data de fim real, tratados como outlier).</p>
+<div class="chart"><table class="dados" id="tbl-tipos"></table></div></section>
+
+<section><h2>Licença saúde por cargo</h2>
+<p class="desc">Participação da licença saúde no total de afastamentos de cada cargo. Auxiliar e Técnico Judiciário têm proporção bem mais alta que Analista e magistrados.</p>
+<div class="chart"><div id="c-cargo"></div>
+<div class="fonte">Fonte: SGP · % de registros de licença saúde sobre o total de afastamentos do cargo</div></div></section>
+
+<div class="metod"><b>METODOLOGIA</b><br>
+Base bruta com 50.869 registros de afastamento (eventos, não pessoas — a base não tem identificador único de servidor, portanto não é possível contar quantas pessoas distintas foram afastadas, apenas quantos eventos ocorreram).
+Duração calculada como (fim − início + 1) dias corridos; registros com duração acima de 3.650 dias (10 anos) foram excluídos do cálculo de duração média por serem indeterminados sem data de encerramento real, mas permanecem nas contagens de volume.
+Série anual restrita a 2010–2026 por baixa cobertura em anos anteriores. "Licença saúde" agrega as variantes RPPS, RGPS, magistrado e gestante.
+</div>
+<div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
+Este painel exibe exclusivamente estatísticas agregadas por tipo, cargo, ano e mês. Nenhum campo identificador (nome, matrícula, CPF) existe na base de origem, e nenhuma unidade administrativa individual é exibida — evita-se cruzamento com gabinetes de lotação unipessoal, que poderiam permitir reidentificação mesmo sem nome. A base de origem não é versionada nem publicada.</div>
+</div>
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
+<script>
+const C={navy:'#003A5C',teal:'#0C4A45',amber:'#D8A241',yellow:'#FFD040',mut:'#8DA0AB',line:'#D5E2E6',blue:'#1B8EC1',wine:'#8A2A3B'};
+const fmt=n=>n==null?'—':n.toLocaleString('pt-BR');
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function lineChart(el,labels,series,opt={}){
+  const W=920,H=opt.h||300,mL=52,mR=34,mT=14,mB=34,pw=W-mL-mR,ph=H-mT-mB;
+  const all=series.flatMap(s=>s.vals).filter(v=>v!=null&&!isNaN(v));
+  const rawMin=Math.min(...all);
+  let mn=opt.min!=null?opt.min:rawMin,mx=opt.max!=null?opt.max:Math.max(...all);
+  if(mn===mx){mn-=1;mx+=1} const pad=(mx-mn)*.08; if(opt.min==null)mn-=pad; if(opt.max==null)mx+=pad;
+  if(opt.min==null&&rawMin>=0)mn=Math.max(mn,0);
+  const X=i=>mL+pw*i/Math.max(labels.length-1,1), Y=v=>mT+ph*(1-(v-mn)/(mx-mn));
+  let g='';
+  const ticks=5;
+  for(let t=0;t<=ticks;t++){const v=mn+(mx-mn)*t/ticks,y=Y(v);
+    g+=`<line x1="${mL}" y1="${y}" x2="${W-mR}" y2="${y}" stroke="${C.line}" stroke-width="1"/>`;
+    g+=`<text x="${mL-8}" y="${y+4}" text-anchor="end" font-size="11" fill="#8DA0AB" font-family="ui-monospace,monospace">${opt.fmtY?opt.fmtY(v):Math.round(v).toLocaleString('pt-BR')}</text>`;}
+  labels.forEach((lb,i)=>{
+    g+=`<line x1="${X(i)}" y1="${mT}" x2="${X(i)}" y2="${mT+ph}" stroke="#C7D6DB" stroke-width="1" stroke-dasharray="2 3"/>`;
+    g+=`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${C.navy}" font-family="ui-monospace,monospace">${esc(lb)}</text>`;});
+  series.forEach(s=>{let d='',on=false;
+    s.vals.forEach((v,i)=>{if(v==null||isNaN(v)){on=false;return}d+=(on?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);on=true;});
+    g+=`<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="2.4" ${s.tracejado?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`;
+    s.vals.forEach((v,i)=>{if(v==null||isNaN(v))return;g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="2.6" fill="${s.cor}"/>`;});
+    const li=s.vals.map((v,i)=>[v,i]).filter(p=>p[0]!=null&&!isNaN(p[0])).pop();
+    if(li)g+=`<circle cx="${X(li[1])}" cy="${Y(li[0])}" r="4" fill="${s.cor}"/>`;});
+  g+=`<line class="hov" x1="0" y1="${mT}" x2="0" y2="${mT+ph}" stroke="${C.mut}" stroke-width="1" opacity="0" pointer-events="none"/>`;
+  el.innerHTML=`<div style="position:relative"><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg><div class="tt" style="position:absolute;display:none;pointer-events:none;background:${C.navy};color:#fff;font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;padding:7px 10px;white-space:nowrap;z-index:10;box-shadow:0 3px 10px rgba(0,0,0,.3)"></div></div>`;
+  const svgEl=el.querySelector('svg'),tt=el.querySelector('.tt'),hov=el.querySelector('.hov');
+  svgEl.addEventListener('mousemove',e=>{
+    const r=svgEl.getBoundingClientRect();
+    const svgX=(e.clientX-r.left)/r.width*W;
+    let i=Math.round((svgX-mL)/pw*Math.max(labels.length-1,1));
+    i=Math.max(0,Math.min(labels.length-1,i));
+    hov.setAttribute('x1',X(i));hov.setAttribute('x2',X(i));hov.setAttribute('opacity','1');
+    const linhas=series.filter(s=>s.vals[i]!=null&&!isNaN(s.vals[i]))
+      .map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="width:8px;height:8px;background:${s.cor};display:inline-block;flex:none"></span>${esc(s.nome)}: <b>${opt.fmtY?opt.fmtY(s.vals[i]):fmt(s.vals[i])}</b></div>`).join('');
+    tt.innerHTML=`<div style="font-weight:700;margin-bottom:3px;color:${C.yellow}">${esc(labels[i])}</div>${linhas}`;
+    tt.style.display='block';
+    let left=(X(i)/W)*r.width+14,top=8;
+    if(left+170>r.width)left=(X(i)/W)*r.width-170-14;
+    tt.style.left=left+'px';tt.style.top=top+'px';
+  });
+  svgEl.addEventListener('mouseleave',()=>{tt.style.display='none';hov.setAttribute('opacity','0');});
+}
+function hbar(el,items,opt={}){
+  const W=920,rh=34;
+  const medir=(s,fpx)=>String(s).length*fpx*0.62;
+  const maxRotulo=Math.max(...items.map(i=>medir(i.rotulo,12.5)));
+  const maxExtra=Math.max(...items.map(i=>medir(i.extra!=null?i.extra:fmt(i.val),12)));
+  const mL=Math.max(opt.mL||120,Math.ceil(maxRotulo)+24);
+  const mR=Math.max(70,Math.ceil(maxExtra)+20);
+  const H=items.length*rh+14;
+  const mx=Math.max(...items.map(i=>i.val));let g='';
+  items.forEach((it,i)=>{const y=8+i*rh,bw=(W-mL-mR)*it.val/mx;
+    g+=`<text x="${mL-10}" y="${y+17}" text-anchor="end" font-size="12.5" fill="#16232B">${esc(it.rotulo)}</text>`;
+    g+=`<rect x="${mL}" y="${y+3}" width="${Math.max(bw,2)}" height="${rh-12}" fill="${it.cor||C.navy}"/>`;
+    g+=`<text x="${mL+bw+8}" y="${y+17}" font-size="12" fill="#5C6E79" font-family="ui-monospace,monospace">${esc(it.extra!=null?it.extra:fmt(it.val))}</text>`;});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${g}</svg>`;
+}
+
+fetch('dados_afastamentos.json').then(r=>r.json()).then(D=>{render(D);})
+.catch(e=>{document.querySelector('.wrap').insertAdjacentHTML('beforeend',
+  '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_afastamentos.json.</p>');console.error(e)});
+
+function render(D){
+  const k=D.kpis;
+  document.getElementById('kpis').innerHTML=
+    `<div class="kpi"><div class="n">${fmt(k.total_registros)}</div><div class="l">afastamentos registrados no período (1969–2027)</div></div>
+     <div class="kpi dest"><div class="n">${k.pct_saude_geral.toLocaleString('pt-BR')}<small>%</small></div><div class="l">são licença saúde (todas as variantes)</div></div>
+     <div class="kpi"><div class="n">${k.duracao_media_dias.toLocaleString('pt-BR')}<small>dias</small></div><div class="l">duração média por afastamento</div></div>
+     <div class="kpi"><div class="n">${fmt(k.dias_totais_periodo)}</div><div class="l">dias de afastamento acumulados no período</div></div>`;
+
+  const sa=D.serie_anual;
+  lineChart(document.getElementById('c-anual'), sa.anos.map(String),
+    [{nome:'Total', cor:C.navy, vals:sa.total},
+     {nome:'Licença saúde', cor:C.amber, vals:sa.saude}]);
+
+  const sm=D.sazonalidade_mensal;
+  const nomesMes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  lineChart(document.getElementById('c-mes'), nomesMes,
+    [{nome:'% licença saúde no total do mês', cor:C.teal, vals:sm.pct_saude}],
+    {fmtY:v=>Math.round(v)+'%', min:0, max:60});
+
+  const tipos=D.top_tipos;
+  hbar(document.getElementById('c-tipos'),
+    tipos.map(t=>({rotulo:t.tipo, val:t.n, cor:C.navy, extra:fmt(t.n)})), {mL:340});
+
+  let rowsHtml=tipos.map(t=>`<tr><td>${esc(t.tipo)}</td><td class="num">${fmt(t.n)}</td><td class="num">${fmt(t.dias_totais)}</td><td class="num">${t.duracao_media.toLocaleString('pt-BR')}</td></tr>`).join('');
+  document.getElementById('tbl-tipos').innerHTML=
+    `<thead><tr><th>Tipo de afastamento</th><th>Ocorrências</th><th>Dias totais</th><th>Duração média (dias)</th></tr></thead><tbody>${rowsHtml}</tbody>`;
+
+  const pc=D.por_cargo;
+  hbar(document.getElementById('c-cargo'),
+    pc.map(c=>({rotulo:c.cargo, val:c.pct_saude, cor:C.amber, extra:c.pct_saude.toLocaleString('pt-BR')+'%  (n='+fmt(c.n)+')'})), {mL:220});
+}
+</script>
+</body>
+</html>
