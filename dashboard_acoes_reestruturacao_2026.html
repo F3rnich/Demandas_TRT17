@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Ações SGP — Reestruturação Administrativa 2026</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    background: #F2F4F7;
+    color: #1A1A1A;
+    margin: 0;
+    padding: 0 0 3rem;
+  }
+  header {
+    background: #1F4E79;
+    color: #FFFFFF;
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 4px solid #E8821E;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+  header p { margin: 0; font-size: 14px; color: #CFE0EF; }
+  #sync-indicator { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); margin-top: 4px; white-space: nowrap; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 1.5rem 0; }
+  .metric-card { background: #FFFFFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 1rem 1.25rem; }
+  .metric-card .label { font-size: 12px; color: #5C6B7A; margin: 0 0 4px; }
+  .metric-card .value { font-size: 26px; font-weight: 700; margin: 0; color: #1F4E79; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 1rem 0; flex-wrap: wrap; }
+  .search-box { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid #C7CFD8; border-radius: 6px; font-size: 13px; }
+  .btn-add {
+    background: #1F4E79; color: #fff; border: none; border-radius: 6px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .btn-add:hover { background: #163A5C; }
+  .filters-group { margin: 0.5rem 0; }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.5rem; }
+  .filter-btn {
+    border: 1px solid #C7CFD8; background: #FFFFFF; color: #1A1A1A;
+    font-size: 13px; padding: 6px 14px; border-radius: 16px; cursor: pointer;
+  }
+  .filter-btn:hover { border-color: #1F4E79; }
+  .filter-btn.active { background: #1F4E79; color: #FFFFFF; border-color: #1F4E79; }
+  #cards { display: flex; flex-direction: column; gap: 12px; margin-top: 0.75rem; }
+  .card { background: #FFFFFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 1rem 1.25rem; border-left: 4px solid #1F4E79; }
+  .card[data-status="andamento"] { border-left-color: #E8821E; }
+  .card[data-status="concluida"] { border-left-color: #2E6B2E; background: #F7FAF7; }
+  .card[data-status="bloqueada"] { border-left-color: #B3261E; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .card-tags { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .tag.setor { background: #EEF2F6; color: #1F4E79; }
+  .status-select {
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 12px; border: none;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .status-select[data-status="pendente"] { background: #EEF2F6; color: #1F4E79; }
+  .status-select[data-status="andamento"] { background: #FCEEDD; color: #B3541E; }
+  .status-select[data-status="concluida"] { background: #E1F0E1; color: #2E6B2E; }
+  .status-select[data-status="bloqueada"] { background: #FBE4E2; color: #B3261E; }
+  .card-title { font-size: 15px; font-weight: 700; margin: 0 0 6px; color: #1A1A1A; }
+  .card-text { font-size: 14px; color: #44515E; margin: 0 0 10px; line-height: 1.5; white-space: pre-wrap; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; border-top: 1px solid #EDEFF2; padding-top: 10px; font-size: 13px; }
+  .meta-grid .meta-label { color: #8A97A5; font-size: 11px; text-transform: uppercase; display: block; }
+  .card-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .icon-btn {
+    background: none; border: 1px solid #C7CFD8; border-radius: 6px; color: #5C6B7A;
+    font-size: 12px; padding: 5px 12px; cursor: pointer;
+  }
+  .icon-btn:hover { border-color: #1F4E79; color: #1F4E79; }
+  .icon-btn.danger:hover { border-color: #B3261E; color: #B3261E; }
+  .empty-state { text-align: center; color: #8A97A5; padding: 2rem; font-size: 14px; }
+  footer { max-width: 1000px; margin: 2rem auto 0; padding: 0 2rem; font-size: 12px; color: #8A97A5; }
+
+  /* formulário de edição / criação */
+  .edit-form { display: flex; flex-direction: column; gap: 8px; }
+  .edit-form label { font-size: 11px; color: #8A97A5; text-transform: uppercase; margin-bottom: -4px; }
+  .edit-form input, .edit-form textarea, .edit-form select {
+    font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid #C7CFD8; border-radius: 6px; width: 100%;
+  }
+  .edit-form textarea { min-height: 70px; resize: vertical; }
+  .edit-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .edit-form .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-save { background: #1F4E79; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-cancel { background: #fff; color: #5C6B7A; border: 1px solid #C7CFD8; border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+  .new-card-wrap { background: #FFFFFF; border: 1px dashed #1F4E79; border-radius: 8px; padding: 1rem 1.25rem; margin-top: 0.75rem; }
+
+  .sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+   font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:12px;font-weight:700;letter-spacing:.08em;
+   text-transform:uppercase;text-decoration:none;color:#e8ecff;background:rgba(11,15,42,.82);-webkit-backdrop-filter:blur(6px);
+   backdrop-filter:blur(6px);border:1px solid rgba(120,140,255,.35);border-radius:999px;padding:9px 15px 9px 13px;
+   box-shadow:0 6px 20px -6px rgba(0,0,0,.5);transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,color .18s ease}
+  .sgp-hub-back:hover,.sgp-hub-back:focus-visible{outline:none;transform:translateY(-2px);border-color:#36e2ec;color:#36e2ec;
+   box-shadow:0 0 0 1px #36e2ec,0 0 18px -2px #36e2ec,0 8px 24px -8px #000}
+  .sgp-hub-back__ic{font-size:14px;line-height:1}
+  @media print{.sgp-hub-back{display:none}}
+</style>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Ações SGP — Reestruturação Administrativa 2026</h1>
+    <p>UAE / SGP — TRT-17 · minuta de RA pós-correição, triênio 2023–2025 · painel editável</p>
+  </div>
+  <span id="sync-indicator">⟳ conectando…</span>
+</header>
+
+<div class="container">
+  <div class="metrics" id="metrics"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search" class="search-box" placeholder="Filtrar por unidade, título ou texto...">
+    <button class="btn-add" id="btn-new">+ Nova ação</button>
+  </div>
+
+  <div class="filters-group">
+    <div class="filter-row" id="filters-status"></div>
+  </div>
+
+  <div id="new-card-slot"></div>
+  <div id="cards"></div>
+</div>
+
+<footer>
+  Base: Minuta de Resolução Administrativa — Reestruturação 2026 (pós-correição, triênio 2023–2025) e levantamento prévio da SGP. Sincronização em tempo real via Firebase Firestore — qualquer alteração feita por um usuário aparece automaticamente para os demais. Painel de gestão interna: nomes de servidores mantidos apenas quando expressamente indicados na análise original.
+</footer>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCybE6ghe_F8Rdr6vha3QQaDQLrDMK4uVQ",
+  authDomain:        "demandas-trt-17.firebaseapp.com",
+  projectId:         "demandas-trt-17",
+  storageBucket:     "demandas-trt-17.firebasestorage.app",
+  messagingSenderId: "72728505894",
+  appId:             "1:72728505894:web:c2289011bdf6ac9dfb40e7",
+};
+const app       = initializeApp(firebaseConfig);
+const db        = getFirestore(app);
+const STATE_DOC = doc(db, 'estado', 'acoes_reestruturacao_2026');
+const SCHEMA_VERSION = 1;
+
+const STATUS_LABELS = {
+  pendente:  'Pendente',
+  andamento: 'Em andamento',
+  concluida: 'Concluída',
+  bloqueada: 'Bloqueada',
+};
+const STATUS_ORDER = ['pendente', 'andamento', 'concluida', 'bloqueada'];
+
+const DEFAULT_DATA = [
+  {id:'acao-1', setor:'CEJUSC1 / CEJUSC2 / SECOR / SEACI / SEGEST', titulo:'Processo seletivo de remoção interna — CEJUSC1, CEJUSC2, SECOR, SEACI e SEGEST',
+   texto:'Elaborar processo seletivo de remoção interna para preenchimento das 5 novas FCs (Conciliador FC-4 no CEJUSC1 e no CEJUSC2, Assistente Especializado FC-5 na SECOR, Chefe de Seção FC-5 na SEACI, Assistente Técnico FC-4 na SEGEST).\n\nRegras propostas: a remoção fica condicionada à anuência da chefia quando o setor de origem for crítico; a anuência é dispensável quando a unidade de origem estiver com lotação acima do paradigma. Definir limite percentual máximo de remoção por unidade (parâmetro usado na reestruturação anterior). Usar a matriz de competência como critério de seleção.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-2', setor:'Varas do Trabalho', titulo:'Consulta às Varas do Trabalho sobre liberação de servidor por lotação acima do paradigma',
+   texto:'Somente após concluído o processo seletivo (ação anterior), consultar as Varas do Trabalho sobre qual servidor deverá ser liberado, em razão de lotação superior ao paradigma. Observar a situação das Varas com muitos servidores requisitados; havendo liberação de requisitado, avaliar o retorno ao órgão de origem.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-3', setor:'SETIC', titulo:'SETIC — definição dos servidores para as novas FCs',
+   texto:'Consultar a SETIC sobre quais servidores assumirão as funções recebidas: 4 FCs de Assistente (FC-3) na SETIC, 1 FC de Chefe de Núcleo (FC-6) no NUATE (ex-SEATE) e 1 FC de Chefe de Seção (FC-5) no SELABI (Laboratório de Inovação, migrado da SEGEST).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-4', setor:'SGP / CODOP / COLEP', titulo:'SGP — definição dos servidores para CODOP e COLEP',
+   texto:'Definir internamente na SGP quem assumirá as FCs de Assistente (FC-3) recebidas pela CODOP e pela COLEP (uma para cada unidade).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-5', setor:'SEAUD', titulo:'SEAUD — troca da função comissionada',
+   texto:'Trocar a função comissionada de Maria Aparecida (SEAUD): extinção da FC de Assistente (FC-3) e criação da FC de Assistente Técnico (FC-4) na mesma unidade.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-6', setor:'15ª VT Vitória', titulo:'15ª VT de Vitória — definição dos servidores para as 3 novas FCs',
+   texto:'Verificar na 15ª Vara do Trabalho de Vitória quem assumirá as 3 FCs criadas: Calculista (FC-4), Assistente de Gabinete de 1º Grau (FC-4) e Assistente de Juiz (FC-5).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-7', setor:'GAJUS / SECOR', titulo:'GAJUS — dispensa de função comissionada',
+   texto:'Dispensar o servidor que hoje ocupa a função comissionada do GAJUS, extinta pela reestruturação (Assistente de Juiz, FC-5). Candidatos apontados: Thiago, Dante e Karla Galvão.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-8', setor:'DOUVID', titulo:'DOUVID — definição do servidor para a nova FC',
+   texto:'Consultar a DOUVID sobre quem ocupará a FC criada (Assistente, FC-3).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-9', setor:'CCOM', titulo:'CCOM — definição do servidor para a nova FC',
+   texto:'Consultar a CCOM sobre quem ocupará a FC criada (Assistente, FC-3).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-10', setor:'COPJUD / SEGECO', titulo:'SEGECO (COPJUD) — definição do servidor para a nova FC',
+   texto:'Consultar a COPJUD sobre quem ocupará a FC criada na SEGECO — Seção de Gestão Administrativa e de Contratações (Chefe de Seção, FC-5).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-11', setor:'SETRI', titulo:'SETRI — troca de função comissionada',
+   texto:'Fazer a troca da FC na SETRI — Assistente Especializado (FC-5).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-12', setor:'SETRI / COGEPAC', titulo:'COGEPAC — definição do servidor para a FC-3',
+   texto:'Consultar a COGEPAC sobre quem ocupará a FC de Assistente (FC-3) criada.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-13', setor:'SECTUR', titulo:'SECTUR — troca de função comissionada',
+   texto:'Fazer a troca da FC na SECTUR — Assistente Especializado (FC-5).',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-14', setor:'NULIC', titulo:'NULIC — troca de função comissionada',
+   texto:'Fazer a troca da FC no NULIC.',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-15', setor:'Varas do Trabalho (18 unidades)', titulo:'Dispensa da FC de Assistente de Secretaria extinta em 18 Varas do Trabalho',
+   texto:'A reestruturação extingue a FC de Assistente de Secretaria (FC-4) em 18 posições: 1ª a 14ª Varas do Trabalho de Vitória, 1ª e 2ª Varas do Trabalho de Cachoeiro de Itapemirim, Vara do Trabalho de Guarapari e Vara do Trabalho de Colatina. Definir o procedimento de dispensa e a comunicação aos titulares atuais antes da publicação da RA.\n\n[identificado na leitura da minuta — não constava no levantamento prévio]',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-16', setor:'CITFOR', titulo:'CITFOR — definição do servidor para a nova FC',
+   texto:'Definir quem assumirá a nova FC de Chefe de Seção (FC-5) criada no Fórum Trabalhista de Cachoeiro de Itapemirim (CITFOR).\n\n[identificado na leitura da minuta — não constava no levantamento prévio]',
+   status:'pendente', responsavel:'A definir', notas:''},
+  {id:'acao-17', setor:'VT Nova Venécia', titulo:'VT Nova Venécia — definição do servidor para a nova FC',
+   texto:'Definir quem assumirá a nova FC de Assistente de Secretaria (FC-4) criada na Vara do Trabalho de Nova Venécia.\n\n[identificado na leitura da minuta — não constava no levantamento prévio]',
+   status:'pendente', responsavel:'A definir', notas:''},
+];
+
+let acoes = [];
+let syncReady = false;
+let activeStatus = 'Todas';
+let searchTerm = '';
+let editingId = null;
+let showNewForm = false;
+let nextIdCounter = DEFAULT_DATA.length + 1;
+
+onSnapshot(STATE_DOC,
+  snap => {
+    if (snap.exists() && Array.isArray(snap.data().acoes)) {
+      acoes = snap.data().acoes;
+    } else {
+      acoes = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, acoes, updatedAt: serverTimestamp() }).catch(e => console.error(e));
+    }
+    const maxNum = acoes.reduce((m, a) => {
+      const n = parseInt(String(a.id).replace('acao-', ''), 10);
+      return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    nextIdCounter = maxNum + 1;
+    syncReady = true;
+    setSyncIndicator('ok');
+    renderAll();
+  },
+  err => {
+    console.error(err);
+    setSyncIndicator('error');
+  }
+);
+
+function setSyncIndicator(state) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  if (state === 'ok')     { el.textContent = '● sincronizado'; el.style.color = '#22C55E'; }
+  if (state === 'saving') { el.textContent = '⟳ salvando…';   el.style.color = '#F59E0B'; }
+  if (state === 'error')  { el.textContent = '✗ erro';         el.style.color = '#EF4444'; }
+}
+
+async function saveState() {
+  setSyncIndicator('saving');
+  try {
+    await setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, acoes, updatedAt: serverTimestamp() });
+    setSyncIndicator('ok');
+  } catch(e) {
+    console.error(e);
+    setSyncIndicator('error');
+  }
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderMetrics() {
+  const counts = { pendente: 0, andamento: 0, concluida: 0, bloqueada: 0 };
+  acoes.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+  const metrics = [
+    {label: 'Total de ações', value: acoes.length},
+    {label: 'Pendentes', value: counts.pendente},
+    {label: 'Em andamento', value: counts.andamento},
+    {label: 'Concluídas', value: counts.concluida},
+    {label: 'Bloqueadas', value: counts.bloqueada},
+  ];
+  document.getElementById('metrics').innerHTML = metrics.map(m =>
+    `<div class="metric-card"><p class="label">${m.label}</p><p class="value">${m.value}</p></div>`
+  ).join('');
+}
+
+function renderFilters() {
+  const options = ['Todas', ...STATUS_ORDER.map(s => STATUS_LABELS[s])];
+  const el = document.getElementById('filters-status');
+  el.innerHTML = options.map(o => {
+    const cls = o === activeStatus ? 'filter-btn active' : 'filter-btn';
+    return `<button class="${cls}" data-value="${esc(o)}">${esc(o)}</button>`;
+  }).join('');
+  el.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeStatus = btn.getAttribute('data-value');
+      renderAll();
+    });
+  });
+}
+
+function statusKeyFromLabel(label) {
+  return STATUS_ORDER.find(k => STATUS_LABELS[k] === label);
+}
+
+function formHtml(action, isNew) {
+  const a = action || { setor:'', titulo:'', texto:'', status:'pendente', responsavel:'A definir', notas:'' };
+  return `
+    <div class="edit-form" data-form-for="${isNew ? 'new' : esc(a.id)}">
+      <label>Unidade / setor</label>
+      <input type="text" class="f-setor" value="${esc(a.setor)}" placeholder="Ex: SETIC">
+      <label>Título</label>
+      <input type="text" class="f-titulo" value="${esc(a.titulo)}" placeholder="Título curto da ação">
+      <label>Descrição</label>
+      <textarea class="f-texto" placeholder="Detalhamento da ação">${esc(a.texto)}</textarea>
+      <div class="row2">
+        <div>
+          <label>Status</label>
+          <select class="f-status">
+            ${STATUS_ORDER.map(s => `<option value="${s}" ${a.status===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Responsável</label>
+          <input type="text" class="f-responsavel" value="${esc(a.responsavel)}" placeholder="A definir">
+        </div>
+      </div>
+      <label>Notas</label>
+      <textarea class="f-notas" placeholder="Notas / observações">${esc(a.notas)}</textarea>
+      <div class="form-actions">
+        <button class="btn-save" data-action="save" data-id="${isNew ? '' : esc(a.id)}">Salvar</button>
+        <button class="btn-cancel" data-action="cancel">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+function attachFormHandlers(root, isNew, id) {
+  const saveBtn = root.querySelector('[data-action="save"]');
+  const cancelBtn = root.querySelector('[data-action="cancel"]');
+  saveBtn.addEventListener('click', () => {
+    const setor = root.querySelector('.f-setor').value.trim();
+    const titulo = root.querySelector('.f-titulo').value.trim();
+    const texto = root.querySelector('.f-texto').value.trim();
+    const status = root.querySelector('.f-status').value;
+    const responsavel = root.querySelector('.f-responsavel').value.trim() || 'A definir';
+    const notas = root.querySelector('.f-notas').value.trim();
+    if (!titulo) { alert('Título é obrigatório.'); return; }
+    if (isNew) {
+      const newId = `acao-${nextIdCounter++}`;
+      acoes.push({ id: newId, setor, titulo, texto, status, responsavel, notas });
+      showNewForm = false;
+    } else {
+      const idx = acoes.findIndex(a => a.id === id);
+      if (idx >= 0) acoes[idx] = { ...acoes[idx], setor, titulo, texto, status, responsavel, notas };
+      editingId = null;
+    }
+    saveState();
+    renderAll();
+  });
+  cancelBtn.addEventListener('click', () => {
+    if (isNew) showNewForm = false; else editingId = null;
+    renderAll();
+  });
+}
+
+function renderNewCardSlot() {
+  const slot = document.getElementById('new-card-slot');
+  if (!showNewForm) { slot.innerHTML = ''; return; }
+  slot.innerHTML = `<div class="new-card-wrap">${formHtml(null, true)}</div>`;
+  attachFormHandlers(slot, true, null);
+}
+
+function renderCards() {
+  const term = searchTerm.trim().toLowerCase();
+  const filtered = acoes.filter(a => {
+    const matchStatus = activeStatus === 'Todas' || a.status === statusKeyFromLabel(activeStatus);
+    const haystack = `${a.setor} ${a.titulo} ${a.texto} ${a.responsavel}`.toLowerCase();
+    const matchSearch = !term || haystack.includes(term);
+    return matchStatus && matchSearch;
+  });
+
+  const cardsEl = document.getElementById('cards');
+  if (filtered.length === 0) {
+    cardsEl.innerHTML = '<div class="empty-state">Nenhuma ação encontrada para esse filtro.</div>';
+    return;
+  }
+
+  cardsEl.innerHTML = filtered.map(a => {
+    if (editingId === a.id) {
+      return `<div class="card" data-status="${a.status}">${formHtml(a, false)}</div>`;
+    }
+    return `<div class="card" data-status="${a.status}">
+      <div class="card-header">
+        <div class="card-tags">
+          <span class="tag setor">${esc(a.setor)}</span>
+        </div>
+        <select class="status-select" data-status="${a.status}" data-id="${esc(a.id)}">
+          ${STATUS_ORDER.map(s => `<option value="${s}" ${a.status===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+        </select>
+      </div>
+      <p class="card-title">${esc(a.titulo)}</p>
+      <p class="card-text">${esc(a.texto)}</p>
+      <div class="meta-grid">
+        <div><span class="meta-label">Responsável</span>${esc(a.responsavel)}</div>
+        ${a.notas ? `<div><span class="meta-label">Notas</span>${esc(a.notas)}</div>` : ''}
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn" data-action="edit" data-id="${esc(a.id)}">Editar</button>
+        <button class="icon-btn danger" data-action="delete" data-id="${esc(a.id)}">Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  cardsEl.querySelectorAll('.status-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const id = sel.getAttribute('data-id');
+      const idx = acoes.findIndex(a => a.id === id);
+      if (idx >= 0) { acoes[idx].status = sel.value; saveState(); renderAll(); }
+    });
+  });
+
+  cardsEl.querySelectorAll('[data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', () => { editingId = btn.getAttribute('data-id'); showNewForm = false; renderAll(); });
+  });
+
+  cardsEl.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const a = acoes.find(x => x.id === id);
+      if (!a) return;
+      if (!confirm(`Excluir a ação "${a.titulo}"? Essa operação não pode ser desfeita.`)) return;
+      acoes = acoes.filter(x => x.id !== id);
+      saveState();
+      renderAll();
+    });
+  });
+
+  cardsEl.querySelectorAll('[data-form-for]').forEach(root => {
+    const id = root.getAttribute('data-form-for');
+    attachFormHandlers(root, false, id);
+  });
+}
+
+function renderAll() {
+  renderMetrics();
+  renderFilters();
+  renderNewCardSlot();
+  renderCards();
+}
+
+document.getElementById('btn-new').addEventListener('click', () => {
+  showNewForm = !showNewForm;
+  editingId = null;
+  renderAll();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchTerm = e.target.value;
+  renderCards();
+});
+
+// Não chama renderAll() aqui — o onSnapshot dispara assim que conecta
+</script>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de paineis">
+  <span class="sgp-hub-back__ic">&#9666;</span><span>HUB</span>
+</a>
+
+</body>
+</html>

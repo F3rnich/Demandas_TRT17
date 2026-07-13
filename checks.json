@@ -229,6 +229,17 @@
    "\"NOME\""
   ]
  },
+ "dashboard_acoes_reestruturacao_2026.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "firebaseConfig",
+   "acoes_reestruturacao_2026"
+  ],
+  "must_not_contain": []
+ },
  "dashboard_transformacoes_organograma.html": {
   "must_contain": [
    "<html",
