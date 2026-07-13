@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Transformações no organograma — TRT-17 (2018–2023) — SGP · TRT-17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root{
+  --navy:#003A5C; --navy2:#00466E; --teal:#0C4A45; --teal-lt:#EAF3F1;
+  --amber:#D8A241; --yellow:#FFD040; --ink:#16232B; --mut:#5C6E79; --mut2:#8DA0AB;
+  --line:#D5E2E6; --card:#FFFFFF; --ok:#1F7A5C; --warn:#B3541E; --ext:#8A3B3B;
+  --sans:"Open Sans",Arial,-apple-system,sans-serif;
+  --mono:ui-monospace,"SF Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--teal-lt);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.topo{background:var(--navy);border-bottom:4px solid var(--yellow)}
+.topo-in{max-width:1080px;margin:0 auto;padding:10px 24px;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in b{color:#fff;font-weight:600}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
+header.painel{padding:44px 0 8px}
+.pnum{display:inline-flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--navy)}
+.pnum .bloco{background:var(--navy);color:var(--yellow);padding:5px 10px;font-weight:700;font-size:14px;letter-spacing:.06em}
+h1{font-weight:800;font-size:clamp(26px,4.4vw,38px);line-height:1.15;letter-spacing:-.015em;color:var(--navy);margin:14px 0 0;max-width:100%}
+.regua{width:56px;height:5px;background:var(--yellow);margin:16px 0}
+.sub{color:var(--mut);font-size:15px;max-width:100%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:30px 0 6px}
+.kpi{background:var(--card);padding:20px 20px 16px}
+.kpi .n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:34px;font-weight:700;color:var(--navy);line-height:1;display:flex;align-items:baseline;gap:5px}
+.kpi .n small{font-size:15px;color:var(--mut2);font-family:var(--sans);font-weight:600}
+.kpi .l{font-size:12.5px;color:var(--mut);margin-top:8px}
+section{margin-top:44px}
+h2{font-weight:700;font-size:20px;color:var(--navy);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:10px;height:10px;background:var(--yellow);flex:none}
+.desc{color:var(--mut);font-size:13.5px;margin:6px 0 18px;max-width:100%}
+
+/* linha do tempo */
+.tl{position:relative;padding-left:34px}
+.tl::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:3px;background:var(--line)}
+.stop{position:relative;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);
+  padding:16px 18px 14px;margin-bottom:16px}
+.stop::before{content:"";position:absolute;left:-33px;top:20px;width:15px;height:15px;border-radius:999px;
+  background:var(--yellow);border:3px solid var(--navy)}
+.stop.ext{border-left-color:var(--ext)}
+.stop.ext::before{background:#fff;border-color:var(--ext)}
+.stop.reg{border-left-color:var(--amber)}
+.stop.reg::before{background:var(--amber)}
+.stop-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;justify-content:space-between}
+.stop-ato{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--mut)}
+.stop-ano{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--navy)}
+.stop h3{font-size:15.5px;font-weight:700;color:var(--ink);margin-top:6px}
+.stop ul{margin:10px 0 2px 18px;font-size:13.5px;color:var(--ink)}
+.stop li{margin-bottom:6px}
+.stop li .tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;padding:1px 6px;margin-right:6px;
+  border-radius:2px;vertical-align:1px}
+.tag.criacao{background:#E3F0EB;color:var(--ok);border:1px solid var(--ok)}
+.tag.elevacao{background:#FDF2DC;color:var(--warn);border:1px solid var(--warn)}
+.tag.extincao{background:#F5E4E4;color:var(--ext);border:1px solid var(--ext)}
+.tag.renom{background:#E7EEF3;color:var(--navy2);border:1px solid var(--navy2)}
+.tag.regua{background:#F8ECE1;color:var(--amber);border:1px solid var(--amber)}
+
+/* comparação de régua hierárquica */
+.regua-cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.regua-cmp{grid-template-columns:1fr}}
+.regua-col{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+.regua-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--mut);margin-bottom:12px}
+.regua-col ol{list-style:none;counter-reset:niv}
+.regua-col li{counter-increment:niv;display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+.regua-col li:first-child{border-top:none}
+.regua-col li::before{content:counter(niv);font-family:var(--mono);font-size:10px;width:20px;height:20px;flex:none;
+  display:flex;align-items:center;justify-content:center;background:var(--navy);color:var(--yellow)}
+.regua-col li b{font-family:var(--mono);font-size:11px;color:var(--mut2);margin-left:auto}
+.regua-col li.novo{background:#FDF2DC}
+.regua-col li.ren{background:#E7EEF3}
+
+table.dados{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);font-size:13.5px}
+table.dados th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dados td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:top}
+table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
+
+.fonte{font-family:var(--mono);font-size:10.5px;color:var(--mut2);margin-top:10px}
+.metod{margin-top:14px;border:1px solid var(--line);border-left:5px solid var(--amber);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.metod b{color:var(--amber);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.fontes{margin-top:14px;border:1px solid var(--line);border-left:5px solid var(--navy2);background:var(--card);padding:16px 20px;font-size:12.5px;color:var(--mut)}
+.fontes b{color:var(--navy2);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+.fontes ol{margin:8px 0 0 18px}
+.fontes li{margin-bottom:3px}
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:var(--yellow);text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  padding:9px 14px;border:1px solid var(--navy2)}
+.sgp-hub-back:hover{background:var(--navy2)}
+.leg{display:flex;flex-wrap:wrap;gap:8px 16px;margin:2px 0 18px;font-size:11.5px;color:var(--mut)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:560px){.kpi .n{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span>SGP · UAE — GOVERNANÇA E ESTRUTURA ORGANIZACIONAL</span><b>TRT-17</b></div></div>
+<div class="wrap">
+<header class="painel">
+  <span class="pnum"><span class="bloco">PAINEL 14</span><span>2018 → 2023</span></span>
+  <h1>Transformações no organograma do TRT-17</h1>
+  <div class="regua"></div>
+  <p class="sub">Comparação entre os seis organogramas oficiais publicados entre 2018 e 2023 (Resoluções Administrativas e Atos da Presidência), com foco em criação, extinção, fusão e elevação de nível de Secretarias, Coordenadorias e Divisões. Mudanças em Seções/Setores isolados não foram exaustivamente mapeadas.</p>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="n">6</div><div class="l">organogramas oficiais comparados</div></div>
+  <div class="kpi"><div class="n">5<small>anos</small></div><div class="l">janela analisada (2018–2023)</div></div>
+  <div class="kpi"><div class="n">11</div><div class="l">elevações de nível identificadas</div></div>
+  <div class="kpi"><div class="n">1</div><div class="l">reforma da régua hierárquica (2022)</div></div>
+  <div class="kpi"><div class="n">1</div><div class="l">unidade criada e depois extinta (SEFO)</div></div>
+</div>
+
+<section>
+<h2>Linha do tempo das reorganizações</h2>
+<p class="desc">Cada marco lista apenas as mudanças identificadas em relação à publicação anterior. Marcadores em âmbar indicam mudança na régua de nomenclatura hierárquica; em vermelho, extinção de unidade.</p>
+<div class="leg">
+  <span><i class="tag criacao">CRIAÇÃO</i> unidade nova</span>
+  <span><i class="tag elevacao">ELEVAÇÃO</i> subiu de nível na hierarquia</span>
+  <span><i class="tag extincao">EXTINÇÃO</i> unidade removida</span>
+  <span><i class="tag renom">RENOMEAÇÃO</i> mesmo escopo, nome/sigla novos</span>
+  <span><i class="tag regua">RÉGUA</i> mudança na classificação FC/CJ</span>
+</div>
+
+<div class="tl">
+
+  <div class="stop">
+    <div class="stop-head"><span class="stop-ano">2018</span><span class="stop-ato">RESOLUÇÃO ADMINISTRATIVA Nº 01/2018 — ponto de partida da série</span></div>
+    <h3>Estrutura de referência (régua antiga)</h3>
+    <ul>
+      <li><span class="tag renom">RÉGUA</span> Setor (FC4) → Divisão/Centro (CJ1) → Coordenadoria (CJ2) → Secretaria/Assessoria (CJ3) → Diretoria/Secretaria-Geral (CJ4).</li>
+      <li>Manutenção predial e infraestrutura (DMPROJ, DISINF) ainda dentro da Secretaria de Administração (SEADM), junto com orçamento (DOF) e logística (DMLOG) — sem secretaria própria.</li>
+      <li>Controle Interno como Divisão (DCI), com 2 setores: auditoria contábil (SACTC) e auditoria de pessoal/material/patrimônio (SAPMP).</li>
+      <li>Gestão de Pessoas (SGP) com 2 divisões: DIDEP (desenvolvimento) e DIREP (registro e pagamento).</li>
+      <li>Gerenciamento de precedentes como setor simples: SEGER.</li>
+    </ul>
+  </div>
+
+  <div class="stop">
+    <div class="stop-head"><span class="stop-ano">2018</span><span class="stop-ato">ATO DA PRESIDÊNCIA Nº 94/2018 — reorganização dentro do mesmo ano</span></div>
+    <h3>Desmembramento da área de infraestrutura predial</h3>
+    <ul>
+      <li><span class="tag criacao">CRIAÇÃO</span> Secretaria de Infraestrutura, Manutenção e Serviços (SIMS): DMPROJ e DISINF saem da SEADM e passam a reportar à nova secretaria. SEADM fica só com DOF e DMLOG.</li>
+      <li><span class="tag renom">RENOMEAÇÃO</span> SEGER → SEGEPAC (Setor de Gerenciamento de Precedentes <b>e Ações Coletivas</b>) — escopo ampliado.</li>
+    </ul>
+  </div>
+
+  <div class="stop">
+    <div class="stop-head"><span class="stop-ano">2020</span><span class="stop-ato">ATO DA PRESIDÊNCIA Nº 93/2020</span></div>
+    <h3>Unidade temporária para a obra da nova sede</h3>
+    <ul>
+      <li><span class="tag criacao">CRIAÇÃO</span> Secretaria Extraordinária de Fiscalização à Obra da Futura Sede (SEFO) — unidade temporária, ligada à obra da nova sede do Tribunal.</li>
+      <li>Restante da estrutura estável em relação a 2018 (DCI, DIGEST ainda como divisões; SGP ainda com DIDEP/DIREP).</li>
+    </ul>
+  </div>
+
+  <div class="stop ext">
+    <div class="stop-head"><span class="stop-ano">2021</span><span class="stop-ato">ATO DA PRESIDÊNCIA Nº 89/2021</span></div>
+    <h3>Encerramento da unidade da obra</h3>
+    <ul>
+      <li><span class="tag extincao">EXTINÇÃO</span> SEFO removida do organograma — consistente com a conclusão/entrega da obra da nova sede.</li>
+      <li>Nomenclatura hierárquica ainda é a antiga (Setor/Divisão/Coordenadoria) — a reforma da régua vem só na publicação seguinte.</li>
+    </ul>
+  </div>
+
+  <div class="stop reg">
+    <div class="stop-head"><span class="stop-ano">2022</span><span class="stop-ato">RESOLUÇÃO ADMINISTRATIVA Nº 95/2022 — reforma de nomenclatura + onda de elevações</span></div>
+    <h3>Nova régua hierárquica e elevação de várias divisões a coordenadorias</h3>
+    <ul>
+      <li><span class="tag regua">RÉGUA</span> Setor (FC4) renomeado para Seção (FC5); criado o nível Núcleo (FC6) entre Seção e Divisão. Nova régua: Seção (FC5) → Núcleo (FC6) → Divisão (CJ1) → Coordenadoria/Centro (CJ2) → Secretaria/Assessoria (CJ3) → Diretoria/Secretaria-Geral (CJ4).</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> DCI (Divisão de Controle Interno) → Secretaria de Auditoria (SEAUD) — salta o nível Coordenadoria; ganha 3ª seção (SEAUCON, auditoria contábil/contratações), além de SEAUTI (TI) e SEAUPE (pessoal).</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> as 3 divisões técnicas da SETIC (DINFRA, DISIS, DGTIC) viram coordenadorias (COINF, COSIS, COGTIC).</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> DIDEP/DIREP (SGP) → coordenadorias CODOP/COREP.</li>
+      <li><span class="tag criacao">CRIAÇÃO</span> Núcleo de Projetos e Governança de Pessoas (NUPROG), direto sob a SGP.</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> divisões da SIMS e da SEADM viram coordenadorias: DMPROJ→CPROJ, DISINF→COSINF, DOF→COFIN, DMLOG→COMLOG.</li>
+      <li>Segurança da informação ganha estrutura própria (Divisão de Segurança da Informação — DISEGI), deixando de ser um setor dentro da divisão de sistemas.</li>
+    </ul>
+  </div>
+
+  <div class="stop">
+    <div class="stop-head"><span class="stop-ano">2023</span><span class="stop-ato">ATO DA PRESIDÊNCIA Nº 312/2023 — consolidação e novas unidades</span></div>
+    <h3>Publicação mais recente da série</h3>
+    <ul>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> SEGEPAC → Coordenadoria de Gerenciamento de Precedentes e Ações Coletivas (COGEPAC).</li>
+      <li><span class="tag criacao">CRIAÇÃO</span> CEJUSC desdobrado em CEJUSC1 (1º grau) e CEJUSC2 (2º grau).</li>
+      <li><span class="tag criacao">CRIAÇÃO</span> Coordenadoria de Polícia Judicial (COPJUD), Núcleo de Gestão de Riscos e Projetos Institucionais (NUGERP), Laboratório de Inovação, Seção de Sustentabilidade e Acessibilidade (SESAC), Núcleo de Saúde (NUSAUD).</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> Precatórios: de seção/setor (SEPREC) para Coordenadoria de Precatórios (COPREC); pesquisa patrimonial elevada a Divisão (DIPESQ).</li>
+      <li><span class="tag criacao">CRIAÇÃO</span> dentro da área de registro/pagamento da SGP: Divisão de Processamento de Folha (DIPROF) e Coordenadoria de Legislação de Pessoal (COLEP) ganham existência própria, antes eram seções soltas.</li>
+    </ul>
+  </div>
+
+</div>
+</section>
+
+<section>
+<h2>A reforma da régua hierárquica (2021 → 2022)</h2>
+<p class="desc">A mudança de nomenclatura de 2022 não é cosmética: ela redefine o piso e o teto da carreira comissionada e cria um nível intermediário novo. Compare:</p>
+<div class="regua-cmp">
+  <div class="regua-col"><h4>ATÉ 2021</h4>
+    <ol>
+      <li>Setor <b>FC4</b></li>
+      <li>Divisão/Centro <b>CJ1</b></li>
+      <li>Coordenadoria <b>CJ2</b></li>
+      <li>Secretaria/Assessoria <b>CJ3</b></li>
+      <li>Diretoria/Secretaria-Geral <b>CJ4</b></li>
+    </ol>
+  </div>
+  <div class="regua-col"><h4>A PARTIR DE 2022</h4>
+    <ol>
+      <li class="ren">Seção <b>FC5</b></li>
+      <li class="novo">Núcleo <b>FC6</b></li>
+      <li>Divisão <b>CJ1</b></li>
+      <li>Coordenadoria/Centro <b>CJ2</b></li>
+      <li>Secretaria/Assessoria <b>CJ3</b></li>
+      <li>Diretoria/Secretaria-Geral <b>CJ4</b></li>
+    </ol>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>Elevações de nível identificadas (2021 → 2022/2023)</h2>
+<table class="dados">
+<thead><tr><th>Unidade / função</th><th>Antes</th><th>Depois</th></tr></thead>
+<tbody>
+<tr><td>Controle interno / auditoria</td><td class="mono">DCI (Divisão)</td><td class="mono">SEAUD (Secretaria)</td></tr>
+<tr><td>Infraestrutura de TIC</td><td class="mono">DINFRA (Divisão)</td><td class="mono">COINF (Coordenadoria)</td></tr>
+<tr><td>Soluções e sistemas de TIC</td><td class="mono">DISIS (Divisão)</td><td class="mono">COSIS (Coordenadoria)</td></tr>
+<tr><td>Planejamento e gestão de TIC</td><td class="mono">DGTIC (Divisão)</td><td class="mono">COGTIC (Coordenadoria)</td></tr>
+<tr><td>Desenvolvimento de pessoas</td><td class="mono">DIDEP (Divisão)</td><td class="mono">CODOP (Coordenadoria)</td></tr>
+<tr><td>Registro e pagamento de pessoal</td><td class="mono">DIREP (Divisão)</td><td class="mono">COREP (Coordenadoria)</td></tr>
+<tr><td>Manutenção e projetos (SIMS)</td><td class="mono">DMPROJ (Divisão)</td><td class="mono">CPROJ (Coordenadoria)</td></tr>
+<tr><td>Serviços de infraestrutura (SIMS)</td><td class="mono">DISINF (Divisão)</td><td class="mono">COSINF (Coordenadoria)</td></tr>
+<tr><td>Orçamento e finanças (SEADM)</td><td class="mono">DOF (Divisão)</td><td class="mono">COFIN (Coordenadoria)</td></tr>
+<tr><td>Material e logística (SEADM)</td><td class="mono">DMLOG (Divisão)</td><td class="mono">COMLOG (Coordenadoria)</td></tr>
+<tr><td>Gerenciamento de precedentes</td><td class="mono">SEGEPAC (Seção)</td><td class="mono">COGEPAC (Coordenadoria)</td></tr>
+</tbody>
+</table>
+<div class="fonte">Elevação = mesma função/escopo reconhecível, subindo pelo menos um nível na régua hierárquica vigente na publicação.</div>
+</section>
+
+<div class="metod">
+<b>METODOLOGIA E LIMITAÇÕES</b><br><br>
+Comparação manual dos seis organogramas oficiais publicados no site do TRT-17, texto extraído das imagens de cada PDF. A ordem cronológica das duas publicações de 2018 (RA nº 01/2018 e RA nº 94/2018) foi inferida pela numeração sequencial do ato administrativo dentro do mesmo ano — nenhum dos PDFs traz a data de assinatura em texto extraível — então essa ordem deve ser confirmada antes de qualquer uso oficial. A análise cobre o nível macro (Secretaria, Coordenadoria/Centro, Divisão, Núcleo); mudanças isoladas em Seções/Setores individuais não foram exaustivamente mapeadas e podem existir sem constar aqui. Os organogramas de 2018–2021 não trazem NUSAUD nem alguns dos núcleos que aparecem só em 2022–2023; a ausência de uma unidade em anos anteriores foi tratada como indício de criação, não como certeza absoluta — a extração de texto de PDF de imagem pode ter perdido caixas de baixa legibilidade.
+</div>
+
+<div class="fontes">
+<b>ATOS NORMATIVOS COMPARADOS</b>
+<ol>
+<li>Resolução Administrativa nº 01/2018 — organograma TRT-17</li>
+<li>Ato da Presidência nº 94/2018 — organograma TRT-17</li>
+<li>Ato da Presidência nº 93/2020 — organograma TRT-17</li>
+<li>Ato da Presidência nº 89/2021 — organograma TRT-17</li>
+<li>Resolução Administrativa nº 95/2022 — organograma TRT-17</li>
+<li>Ato da Presidência nº 312/2023 — organograma TRT-17</li>
+</ol>
+</div>
+
+</div>
+<a class="sgp-hub-back" href="index.html">&larr; VOLTAR AO HUB</a>
+</body>
+</html>
