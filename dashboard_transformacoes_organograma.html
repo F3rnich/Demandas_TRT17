@@ -58,8 +58,10 @@ h2::before{content:"";width:10px;height:10px;background:var(--yellow);flex:none}
 .stop h3{font-size:15.5px;font-weight:700;color:var(--ink);margin-top:6px}
 .stop ul{margin:10px 0 2px 18px;font-size:13.5px;color:var(--ink)}
 .stop li{margin-bottom:6px}
-.stop li .tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;padding:1px 6px;margin-right:6px;
-  border-radius:2px;vertical-align:1px}
+.tag{display:inline-flex;align-items:center;font-style:normal;font-family:var(--mono);font-weight:700;font-size:9.5px;
+  letter-spacing:.04em;line-height:1.6;white-space:nowrap;padding:3px 8px 2px;margin-right:6px;
+  border-radius:2px;vertical-align:1px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.stop li .tag{margin-right:8px}
 .tag.criacao{background:#E3F0EB;color:var(--ok);border:1px solid var(--ok)}
 .tag.elevacao{background:#FDF2DC;color:var(--warn);border:1px solid var(--warn)}
 .tag.extincao{background:#F5E4E4;color:var(--ext);border:1px solid var(--ext)}
@@ -96,8 +98,8 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
   background:var(--navy);color:var(--yellow);text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
   padding:9px 14px;border:1px solid var(--navy2)}
 .sgp-hub-back:hover{background:var(--navy2)}
-.leg{display:flex;flex-wrap:wrap;gap:8px 16px;margin:2px 0 18px;font-size:11.5px;color:var(--mut)}
-.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg{display:flex;flex-wrap:wrap;gap:10px 22px;margin:2px 0 18px;font-size:11.5px;color:var(--mut)}
+.leg .litem{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
 @media(max-width:560px){.kpi .n{font-size:27px}}
 </style>
 </head>
@@ -114,7 +116,7 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
 <div class="kpis">
   <div class="kpi"><div class="n">6</div><div class="l">organogramas oficiais comparados</div></div>
   <div class="kpi"><div class="n">5<small>anos</small></div><div class="l">janela analisada (2018–2023)</div></div>
-  <div class="kpi"><div class="n">11</div><div class="l">elevações de nível identificadas</div></div>
+  <div class="kpi"><div class="n">12</div><div class="l">elevações de nível identificadas</div></div>
   <div class="kpi"><div class="n">1</div><div class="l">reforma da régua hierárquica (2022)</div></div>
   <div class="kpi"><div class="n">1</div><div class="l">unidade criada e depois extinta (SEFO)</div></div>
 </div>
@@ -123,11 +125,11 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
 <h2>Linha do tempo das reorganizações</h2>
 <p class="desc">Cada marco lista apenas as mudanças identificadas em relação à publicação anterior. Marcadores em âmbar indicam mudança na régua de nomenclatura hierárquica; em vermelho, extinção de unidade.</p>
 <div class="leg">
-  <span><i class="tag criacao">CRIAÇÃO</i> unidade nova</span>
-  <span><i class="tag elevacao">ELEVAÇÃO</i> subiu de nível na hierarquia</span>
-  <span><i class="tag extincao">EXTINÇÃO</i> unidade removida</span>
-  <span><i class="tag renom">RENOMEAÇÃO</i> mesmo escopo, nome/sigla novos</span>
-  <span><i class="tag regua">RÉGUA</i> mudança na classificação FC/CJ</span>
+  <span class="litem"><span class="tag criacao">CRIAÇÃO</span> unidade nova</span>
+  <span class="litem"><span class="tag elevacao">ELEVAÇÃO</span> subiu de nível na hierarquia</span>
+  <span class="litem"><span class="tag extincao">EXTINÇÃO</span> unidade removida</span>
+  <span class="litem"><span class="tag renom">RENOMEAÇÃO</span> mesmo escopo, nome/sigla novos</span>
+  <span class="litem"><span class="tag regua">RÉGUA</span> mudança na classificação FC/CJ</span>
 </div>
 
 <div class="tl">
@@ -176,6 +178,7 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
     <h3>Nova régua hierárquica e elevação de várias divisões a coordenadorias</h3>
     <ul>
       <li><span class="tag regua">RÉGUA</span> Setor (FC4) renomeado para Seção (FC5); criado o nível Núcleo (FC6) entre Seção e Divisão. Nova régua: Seção (FC5) → Núcleo (FC6) → Divisão (CJ1) → Coordenadoria/Centro (CJ2) → Secretaria/Assessoria (CJ3) → Diretoria/Secretaria-Geral (CJ4).</li>
+      <li><span class="tag elevacao">ELEVAÇÃO</span> DIJUD (Divisão Judiciária, dentro da SEGEP) → Secretaria-Geral Judiciária (SEGEJUD), unidade de topo paralela à própria SEGEP — salta os níveis Coordenadoria e Secretaria simples. Reúne SEJUDIC (Seção Judiciária) e passa a coordenar SETRI (Secretaria do Tribunal Pleno), SECTUR (Secretaria das Turmas), CODOM (Coordenadoria de Gestão Documental e Memória) e DTJ (Divisão Técnica Judiciária).</li>
       <li><span class="tag elevacao">ELEVAÇÃO</span> DCI (Divisão de Controle Interno) → Secretaria de Auditoria (SEAUD) — salta o nível Coordenadoria; ganha 3ª seção (SEAUCON, auditoria contábil/contratações), além de SEAUTI (TI) e SEAUPE (pessoal).</li>
       <li><span class="tag elevacao">ELEVAÇÃO</span> as 3 divisões técnicas da SETIC (DINFRA, DISIS, DGTIC) viram coordenadorias (COINF, COSIS, COGTIC).</li>
       <li><span class="tag elevacao">ELEVAÇÃO</span> DIDEP/DIREP (SGP) → coordenadorias CODOP/COREP.</li>
@@ -231,6 +234,7 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
 <table class="dados">
 <thead><tr><th>Unidade / função</th><th>Antes</th><th>Depois</th></tr></thead>
 <tbody>
+<tr><td>Estrutura judiciária de apoio (SEGEP)</td><td class="mono">DIJUD (Divisão)</td><td class="mono">SEGEJUD (Secretaria-Geral)</td></tr>
 <tr><td>Controle interno / auditoria</td><td class="mono">DCI (Divisão)</td><td class="mono">SEAUD (Secretaria)</td></tr>
 <tr><td>Infraestrutura de TIC</td><td class="mono">DINFRA (Divisão)</td><td class="mono">COINF (Coordenadoria)</td></tr>
 <tr><td>Soluções e sistemas de TIC</td><td class="mono">DISIS (Divisão)</td><td class="mono">COSIS (Coordenadoria)</td></tr>
@@ -249,7 +253,7 @@ table.dados td.mono{font-family:var(--mono);font-size:12px;color:var(--mut)}
 
 <div class="metod">
 <b>METODOLOGIA E LIMITAÇÕES</b><br><br>
-Comparação manual dos seis organogramas oficiais publicados no site do TRT-17, texto extraído das imagens de cada PDF. A ordem cronológica das duas publicações de 2018 (RA nº 01/2018 e RA nº 94/2018) foi inferida pela numeração sequencial do ato administrativo dentro do mesmo ano — nenhum dos PDFs traz a data de assinatura em texto extraível — então essa ordem deve ser confirmada antes de qualquer uso oficial. A análise cobre o nível macro (Secretaria, Coordenadoria/Centro, Divisão, Núcleo); mudanças isoladas em Seções/Setores individuais não foram exaustivamente mapeadas e podem existir sem constar aqui. Os organogramas de 2018–2021 não trazem NUSAUD nem alguns dos núcleos que aparecem só em 2022–2023; a ausência de uma unidade em anos anteriores foi tratada como indício de criação, não como certeza absoluta — a extração de texto de PDF de imagem pode ter perdido caixas de baixa legibilidade.
+Comparação manual dos seis organogramas oficiais publicados no site do TRT-17, texto extraído das imagens de cada PDF. A criação da SEGEJUD (Secretaria-Geral Judiciária) foi confirmada por inspeção visual direta dos PDFs em alta resolução — a primeira extração de texto não havia capturado essa unidade com clareza suficiente. A ordem cronológica das duas publicações de 2018 (RA nº 01/2018 e RA nº 94/2018) foi inferida pela numeração sequencial do ato administrativo dentro do mesmo ano — nenhum dos PDFs traz a data de assinatura em texto extraível — então essa ordem deve ser confirmada antes de qualquer uso oficial. A análise cobre o nível macro (Secretaria, Coordenadoria/Centro, Divisão, Núcleo); mudanças isoladas em Seções/Setores individuais não foram exaustivamente mapeadas e podem existir sem constar aqui. Os organogramas de 2018–2021 não trazem NUSAUD nem alguns dos núcleos que aparecem só em 2022–2023; a ausência de uma unidade em anos anteriores foi tratada como indício de criação, não como certeza absoluta — a extração de texto de PDF de imagem pode ter perdido caixas de baixa legibilidade.
 </div>
 
 <div class="fontes">
