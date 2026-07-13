@@ -105,6 +105,7 @@ const fmt=n=>n==null?'—':n.toLocaleString('pt-BR');
 const fmtBRL=n=>n==null?'—':n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 // gráfico de linhas multissérie. series=[{nome,cor,vals,tracejado}] labels=eixo x
+function refParts(lb){const m=String(lb).match(/^(\d{4})[-/](\d{2})$/);return m?{ano:m[1],mes:m[2]}:null;}
 function lineChart(el,labels,series,opt={}){
   const W=920,H=opt.h||300,mL=52,mR=34,mT=14,mB=34,pw=W-mL-mR,ph=H-mT-mB;
   const all=series.flatMap(s=>s.vals).filter(v=>v!=null&&!isNaN(v));
@@ -143,7 +144,8 @@ function lineChart(el,labels,series,opt={}){
     hov.setAttribute('x1',X(i));hov.setAttribute('x2',X(i));hov.setAttribute('opacity','1');
     const linhas=series.filter(s=>s.vals[i]!=null&&!isNaN(s.vals[i]))
       .map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="width:8px;height:8px;background:${s.cor};display:inline-block;flex:none"></span>${esc(s.nome)}: <b>${opt.fmtY?opt.fmtY(s.vals[i]):fmt(s.vals[i])}</b></div>`).join('');
-    tt.innerHTML=`<div style="font-weight:700;margin-bottom:3px;color:${C.yellow}">${esc(labels[i])}</div>${linhas}`;
+    const rp=refParts(labels[i]),lbTt=rp?`${rp.mes}/${rp.ano}`:labels[i];
+    tt.innerHTML=`<div style="font-weight:700;margin-bottom:3px;color:${C.yellow}">${esc(lbTt)}</div>${linhas}`;
     tt.style.display='block';
     let left=(X(i)/W)*r.width+14,top=8;
     if(left+170>r.width)left=(X(i)/W)*r.width-170-14;
@@ -199,7 +201,7 @@ function dumbbell(el,items,nomeA,nomeB){
 }
 
 fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
-  document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia;
+  document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia.replace(/^(\d{4})-(\d{2})$/,'$2/$1');
   render(D);
 }).catch(e=>{document.querySelector('.wrap').insertAdjacentHTML('beforeend',
   '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
