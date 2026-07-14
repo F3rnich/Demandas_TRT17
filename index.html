@@ -6,115 +6,133 @@
 <title>Painéis SGP · TRT-17</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --b900:#003A5C; --b800:#00466E; --b700:#005888; --b600:#0068A0; --b500:#1B8EC1;
-    --b300:#6FB7DA; --b100:#D6E8F2; --b50:#EEF5F9;
-    --y500:#FFD040; --y700:#D9A200; --y300:#FFE89C;
-    --g900:#1A1A1A; --g800:#2A2E33; --g700:#4A5159; --g600:#6B7280; --g500:#8A929C;
-    --g200:#E5E8EC; --g50:#F7F8FA; --white:#fff;
-    --focus:0 0 0 3px rgba(27,142,193,.35);
-    --sh-card:0 1px 2px rgba(0,58,92,.06),0 1px 1px rgba(0,58,92,.04);
-    --sh-hover:0 2px 6px rgba(0,58,92,.10),0 1px 2px rgba(0,58,92,.06);
-    --sh-sel:0 8px 20px rgba(0,58,92,.20),0 3px 6px rgba(0,58,92,.10);
-    --pixel:"Press Start 2P",ui-monospace,monospace;
-    --sans:"Open Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --ink:#10151F; --ink-70:#3A4150; --slate:#5B6474; --muted:#8890A0;
+    --paper:#F4F5F7; --surface:#FFFFFF; --line:#E3E5EA; --line-strong:#CBCED6;
+    --accent:#AD803C; --accent-deep:#7C5A25; --accent-tint:#F4EBDA;
+    --live:#1E7A5F; --live-tint:#E4F2EC;
+    --focus:0 0 0 3px rgba(173,128,60,.35);
+    --sh-1:0 1px 2px rgba(16,21,31,.06),0 1px 1px rgba(16,21,31,.04);
+    --sh-2:0 12px 28px rgba(16,21,31,.12),0 3px 8px rgba(16,21,31,.06);
+    --radius:12px;
+    --display:"Manrope",-apple-system,"Segoe UI",sans-serif;
+    --body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
   html,body{height:100%}
-  body{font-family:var(--sans);background:var(--b900);color:var(--g800);min-height:100%}
+  body{font-family:var(--body);background:var(--paper);color:var(--ink-70);min-height:100%}
 
-  .hud{background:var(--b700);border-bottom:3px solid var(--y500)}
-  .hud-in{max-width:1120px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;
-    font-family:var(--pixel);font-size:10px;letter-spacing:.06em;color:var(--b100)}
-  .hud-in .r{color:var(--white)}
-  .hud-in .led{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--y500);margin-right:8px;vertical-align:middle;animation:blink 1.4s steps(1) infinite}
-  @keyframes blink{50%{opacity:.25}}
+  /* ===== topbar ===== */
+  .topbar{background:var(--ink);color:var(--paper)}
+  .topbar-in{max-width:1200px;margin:0 auto;padding:13px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.03em}
+  .topbar-in .org{color:rgba(244,245,247,.72)}
+  .status-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 11px;border:1px solid rgba(244,245,247,.16);border-radius:999px;color:rgba(244,245,247,.9)}
+  .status-dot{width:6px;height:6px;border-radius:999px;background:var(--live);animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
 
-  .wrap{max-width:1120px;margin:0 auto;padding:48px 24px 64px}
+  .wrap{max-width:1200px;margin:0 auto;padding:64px 28px 72px}
 
-  .eyebrow{font-family:var(--pixel);font-size:11px;letter-spacing:.12em;color:var(--y500);display:inline-flex;align-items:center;gap:10px}
-  .eyebrow .cur{color:var(--y500);animation:blink 1s steps(1) infinite}
-  h1{font-family:var(--sans);font-weight:800;font-size:clamp(32px,5vw,44px);line-height:1.2;color:var(--white);letter-spacing:-.01em;margin-top:16px}
-  .ybar{width:48px;height:4px;background:var(--y500);margin-top:16px}
-  .lead{margin-top:16px;color:var(--b100);font-size:15px;line-height:1.55;max-width:100%}
-  @media(min-width:960px){.lead{white-space:nowrap}}
+  /* ===== hero ===== */
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep)}
+  h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,4.6vw,50px);line-height:1.1;color:var(--ink);letter-spacing:-.02em;margin-top:14px}
+  h1 .a{color:var(--accent)}
+  .lead{margin-top:16px;color:var(--slate);font-size:16px;line-height:1.6;max-width:640px}
 
-  /* barra de filtro por categoria */
-  .filterbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px}
-  .chip-filter{font-family:var(--pixel);font-size:9px;letter-spacing:.05em;color:var(--b100);
-    background:var(--b800);border:1px solid var(--b700);border-radius:999px;padding:8px 14px;cursor:pointer;
-    transition:background .15s ease,color .15s ease,border-color .15s ease}
-  .chip-filter:hover,.chip-filter:focus-visible{background:var(--b700);color:var(--white);border-color:var(--y500);outline:none}
-  .chip-filter.active{background:var(--y500);color:var(--b900);border-color:var(--y500)}
+  .stat-strip{display:flex;flex-wrap:wrap;gap:40px;margin-top:40px;padding-top:24px;border-top:1px solid var(--line)}
+  .stat{display:flex;flex-direction:column;gap:4px}
+  .stat-num{font-family:var(--display);font-weight:800;font-size:28px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 
-  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+  /* ===== filter bar (command bar) ===== */
+  .filterbar{position:sticky;top:0;z-index:20;position:relative;display:flex;flex-wrap:wrap;gap:6px;
+    margin-top:48px;padding:14px 0;background:var(--paper);transition:background .2s ease,box-shadow .2s ease,padding .2s ease}
+  .filterbar.scrolled{background:rgba(244,245,247,.86);backdrop-filter:blur(10px);box-shadow:0 1px 0 var(--line);padding:10px 0}
+  .chip-indicator{position:absolute;left:0;top:14px;height:34px;width:0;background:var(--ink);border-radius:999px;
+    transition:transform .38s cubic-bezier(.4,0,.2,1),width .38s cubic-bezier(.4,0,.2,1);z-index:0}
+  .chip-filter{position:relative;z-index:1;font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--slate);
+    background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:color .3s ease,border-color .3s ease}
+  .chip-filter:hover{border-color:var(--line-strong);color:var(--ink)}
+  .chip-filter:focus-visible{outline:none;box-shadow:var(--focus)}
+  .chip-filter.active{color:var(--paper);border-color:transparent}
+  .chip-count{font-family:var(--mono);font-size:9px;color:var(--muted);background:var(--surface);border-radius:999px;padding:1px 6px;transition:background .3s ease,color .3s ease}
+  .chip-filter.active .chip-count{background:rgba(244,245,247,.16);color:var(--paper)}
+
+  /* ===== grid ===== */
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}
   @media(max-width:900px){.stages{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.stages{grid-template-columns:1fr}}
 
-  /* cabeçalho de categoria — item full-width dentro do mesmo grid */
-  .cat-head{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;padding-top:24px;border-top:1px solid rgba(255,255,255,.10)}
-  .cat-head:first-child{padding-top:0;border-top:none}
-  .cat-head .bar{width:20px;height:3px;background:var(--y500);align-self:center}
-  .cat-head h3{font-family:var(--pixel);font-size:11px;letter-spacing:.08em;color:var(--y500);text-transform:uppercase}
-  .cat-head .cnt{font-family:var(--pixel);font-size:9px;color:var(--b300)}
+  .cat-head{grid-column:1/-1;display:flex;align-items:center;gap:16px;margin-top:12px}
+  .cat-head:first-child{margin-top:0}
+  .cat-head h3{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-70);white-space:nowrap}
+  .cat-head .rule{flex:1;height:1px;background:var(--line)}
+  .cat-head .cnt{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
   a.stage{
-    position:relative;display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
-    background:var(--white);border:1px solid var(--g200);border-left:4px solid var(--y500);border-radius:6px;
-    padding:20px 20px 18px;box-shadow:var(--sh-card);
-    transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+    position:relative;display:flex;flex-direction:column;gap:14px;text-decoration:none;color:inherit;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 22px 20px;box-shadow:var(--sh-1);
+    opacity:0;animation:cardIn .6s cubic-bezier(.16,1,.3,1) both;
+    transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+  a.stage::before{content:"";position:absolute;top:0;left:18px;right:18px;height:2px;background:var(--accent);
+    border-radius:0 0 3px 3px;transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+  a.stage:nth-of-type(1){animation-delay:.02s} a.stage:nth-of-type(2){animation-delay:.06s}
+  a.stage:nth-of-type(3){animation-delay:.10s} a.stage:nth-of-type(4){animation-delay:.14s}
+  a.stage:nth-of-type(5){animation-delay:.18s} a.stage:nth-of-type(6){animation-delay:.22s}
+  a.stage:nth-of-type(7){animation-delay:.26s} a.stage:nth-of-type(8){animation-delay:.30s}
+  a.stage:nth-of-type(9){animation-delay:.34s} a.stage:nth-of-type(10){animation-delay:.38s}
+  a.stage:nth-of-type(11){animation-delay:.42s} a.stage:nth-of-type(12){animation-delay:.46s}
+  a.stage:nth-of-type(13){animation-delay:.50s} a.stage:nth-of-type(14){animation-delay:.54s}
+  a.stage:nth-of-type(15){animation-delay:.58s} a.stage:nth-of-type(16){animation-delay:.62s}
 
-  /* reticle: cantos que travam no card selecionado */
-  a.stage::before,a.stage::after{content:"";position:absolute;width:18px;height:18px;border:3px solid var(--y500);
-    opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
-  a.stage::before{top:-5px;left:-5px;border-right:0;border-bottom:0;transform:translate(7px,7px)}
-  a.stage::after{right:-5px;bottom:-5px;border-left:0;border-top:0;transform:translate(-7px,-7px)}
+  a.stage:hover,a.stage:focus-visible,a.stage.sel{transform:translateY(-4px);box-shadow:var(--sh-2);border-color:var(--line-strong)}
+  a.stage:focus-visible{outline:none;box-shadow:var(--focus),var(--sh-2)}
+  a.stage:hover::before,a.stage:focus-visible::before,a.stage.sel::before{transform:scaleX(1)}
+  a.stage.hl{box-shadow:0 0 0 4px rgba(173,128,60,.35)}
 
-  /* ESTADO SELECIONADO (mouse, teclado e seleção corrente) */
-  a.stage:hover,a.stage:focus-visible,a.stage.sel{
-    transform:translateY(-5px);box-shadow:var(--sh-sel);border-color:var(--b500)}
-  a.stage:focus-visible{outline:none;box-shadow:var(--focus),var(--sh-sel)}
-  a.stage:hover::before,a.stage:focus-visible::before,a.stage.sel::before,
-  a.stage:hover::after,a.stage:focus-visible::after,a.stage.sel::after{opacity:1;transform:translate(0,0)}
-
-  /* destaque temporário ao usar o filtro */
-  a.stage.hl{animation:hlpulse 1.3s ease}
-  @keyframes hlpulse{0%{box-shadow:0 0 0 4px rgba(255,208,64,.6)}100%{box-shadow:var(--sh-card)}}
-
-  .srow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .srow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .lft{display:flex;align-items:center;gap:12px}
-  .num{font-family:var(--pixel);font-size:15px;color:var(--y700);padding:4px 7px;border-radius:2px;transition:background .16s ease,color .16s ease}
-  a.stage:hover .num,a.stage:focus-visible .num,a.stage.sel .num{background:var(--b700);color:var(--y500)}
-  .ico{width:24px;height:24px;flex:none}
-  .ico svg{display:block;width:24px;height:24px}
-  .chip{font-family:var(--pixel);font-size:8px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:2px;border:1px solid var(--g200)}
-  .chip .d{width:7px;height:7px;border-radius:999px}
-  .chip.live{color:var(--b600);border-color:var(--b100)} .chip.live .d{background:var(--b500);animation:blink 1.4s steps(1) infinite}
-  .chip.ro{color:var(--g600)} .chip.ro .d{background:var(--g500)}
+  .icobadge{width:40px;height:40px;border-radius:9px;background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink-70);transition:background .25s ease,color .25s ease}
+  a.stage:hover .icobadge{background:var(--accent-tint);color:var(--accent-deep)}
+  .icobadge svg{width:19px;height:19px;display:block}
+  .idx{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.05em}
 
-  .stage h2{font-family:var(--sans);font-weight:700;font-size:18px;line-height:1.25;color:var(--g900);letter-spacing:-.01em}
-  .stage p{font-size:14px;line-height:1.55;color:var(--g700)}
-  .play{margin-top:auto;padding-top:8px;font-family:var(--pixel);font-size:9px;letter-spacing:.06em;color:var(--b700);display:flex;align-items:center;gap:8px}
-  .play .arr{display:inline-block}
-  a.stage:hover .play,a.stage:focus-visible .play,a.stage.sel .play{color:var(--b600)}
-  a.stage:hover .play .arr,a.stage:focus-visible .play .arr,a.stage.sel .play .arr{animation:nudge 1s ease-in-out infinite}
-  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+  .chip{font-family:var(--mono);font-size:9px;letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px;
+    padding:5px 9px;border-radius:999px;border:1px solid transparent}
+  .chip .d{width:6px;height:6px;border-radius:999px}
+  .chip.live{color:var(--live);background:var(--live-tint)} .chip.live .d{background:var(--live);animation:breathe 2.3s ease-in-out infinite}
+  .chip.ro{color:var(--muted);background:var(--paper)} .chip.ro .d{background:var(--muted)}
 
-  .controls{margin-top:40px;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:center;
-    font-family:var(--pixel);font-size:9px;color:var(--b300);letter-spacing:.06em;align-items:center}
-  .key{display:inline-block;border:1px solid var(--b800);border-bottom-width:2px;border-radius:2px;padding:4px 7px;color:var(--b100);margin-right:5px}
+  .stage h2{font-family:var(--body);font-weight:600;font-size:17px;line-height:1.3;color:var(--ink);letter-spacing:-.005em}
+  .stage p{font-size:13.5px;line-height:1.55;color:var(--slate)}
+  .play{margin-top:auto;padding-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--accent-deep);display:flex;align-items:center;gap:7px}
+  .play .arr{display:inline-block;transition:transform .2s ease}
+  a.stage:hover .play .arr,a.stage:focus-visible .play .arr,a.stage.sel .play .arr{transform:translateX(4px)}
 
-  footer{border-top:1px solid var(--b800);margin-top:48px}
-  .foot-in{max-width:1120px;margin:0 auto;padding:20px 24px;font-family:var(--pixel);font-size:9px;color:var(--b300);letter-spacing:.08em;text-align:center}
+  /* ===== controls / footer ===== */
+  .controls{margin-top:56px;display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:center;
+    font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.03em;align-items:center}
+  .key{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
+    border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;background:var(--surface);
+    color:var(--slate);font-size:10px;margin-right:4px;box-shadow:0 1px 0 var(--line)}
+
+  footer{border-top:1px solid var(--line);margin-top:48px}
+  .foot-in{max-width:1200px;margin:0 auto;padding:22px 28px;font-family:var(--mono);font-size:10px;color:var(--muted);
+    letter-spacing:.05em;text-align:center}
 
   @media(prefers-reduced-motion:reduce){
-    .hud-in .led,.eyebrow .cur,.chip.live .d{animation:none}
-    a.stage{transition:none}
-    a.stage::before,a.stage::after{transition:none}
-    a.stage:hover .play .arr,a.stage:focus-visible .play .arr,a.stage.sel .play .arr{animation:none}
-    a.stage.hl{animation:none}
+    .status-dot,.chip.live .d{animation:none}
+    a.stage{animation:none;opacity:1}
+    a.stage,a.stage::before,.chip-indicator,.chip-filter,.icobadge,.icobadge svg *,.play .arr{transition:none}
   }
 </style>
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -124,247 +142,269 @@
 </head>
 <body>
 
-<div class="hud">
-  <div class="hud-in">
-    <span><span class="led"></span>SISTEMA ONLINE</span>
-    <span class="r">TRT-17 · SGP</span>
+<div class="topbar">
+  <div class="topbar-in">
+    <span class="org">TRT-17 · SECRETARIA DE GESTÃO DE PESSOAS</span>
+    <span class="status-pill"><span class="status-dot"></span>16 PAINÉIS ATIVOS</span>
   </div>
 </div>
 
 <div class="wrap">
 
-  <div class="eyebrow"><span class="cur">&#9654;</span> SELECIONE UM PAINEL</div>
-  <h1>Painéis SGP</h1>
-  <div class="ybar"></div>
-  <p class="lead">Índice dos painéis mantidos pela <span style="white-space:nowrap">UAE/SGP</span>. Os colaborativos sincronizam edições em tempo real; os de consulta são retratos estáticos.</p>
+  <p class="kicker">Índice de painéis · UAE/SGP</p>
+  <h1>Painéis <span class="a">SGP</span></h1>
+  <p class="lead">Painéis analíticos e de conformidade mantidos pela UAE/SGP. Os colaborativos sincronizam edições em tempo real; os demais são retratos estáticos, atualizados por pipeline.</p>
 
-  <div class="filterbar" id="filterbar">
-    <button class="chip-filter active" data-target="all">TODOS</button>
-    <button class="chip-filter" data-target="colegiados">COLEGIADOS</button>
-    <button class="chip-filter" data-target="correicao">CORREIÇÃO &amp; CONFORMIDADE</button>
-    <button class="chip-filter" data-target="forca-trabalho">FORÇA DE TRABALHO</button>
-    <button class="chip-filter" data-target="equidade">EQUIDADE &amp; COMISSIONAMENTOS</button>
-    <button class="chip-filter" data-target="afastamentos">AFASTAMENTOS</button>
-    <button class="chip-filter" data-target="estrutura">ESTRUTURA &amp; REESTRUTURAÇÃO</button>
+  <div class="stat-strip">
+    <div class="stat"><span class="stat-num" data-target="16">0</span><span class="stat-label">Painéis</span></div>
+    <div class="stat"><span class="stat-num" data-target="6">0</span><span class="stat-label">Categorias</span></div>
+    <div class="stat"><span class="stat-num" data-target="5">0</span><span class="stat-label">Colaborativos</span></div>
   </div>
+
+  <nav class="filterbar" id="filterbar">
+    <div class="chip-indicator" id="chipIndicator"></div>
+    <button class="chip-filter active" data-target="all">Todos<span class="chip-count">16</span></button>
+    <button class="chip-filter" data-target="colegiados">Colegiados<span class="chip-count">2</span></button>
+    <button class="chip-filter" data-target="correicao">Correição &amp; Conformidade<span class="chip-count">3</span></button>
+    <button class="chip-filter" data-target="forca-trabalho">Força de Trabalho<span class="chip-count">4</span></button>
+    <button class="chip-filter" data-target="equidade">Equidade &amp; Comissionamentos<span class="chip-count">4</span></button>
+    <button class="chip-filter" data-target="afastamentos">Afastamentos<span class="chip-count">1</span></button>
+    <button class="chip-filter" data-target="estrutura">Estrutura &amp; Reestruturação<span class="chip-count">2</span></button>
+  </nav>
 
   <div class="stages" id="stages">
 
-    <div class="cat-head" id="head-colegiados"><span class="bar"></span><h3>Colegiados</h3><span class="cnt">2 painéis</span></div>
+    <div class="cat-head" id="head-colegiados"><h3>Colegiados</h3><span class="rule"></span><span class="cnt">2 painéis</span></div>
 
     <a class="stage" href="dashboard_colegiados.html" data-n="1" data-cat="colegiados">
       <div class="srow">
-        <div class="lft"><span class="num">01</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M16 14.2c2.2-.2 4 1.6 4 4.3"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M16 14.2c2.2-.2 4 1.6 4 4.3"/></svg></div>
+          <span class="idx">Nº 01</span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
       <h2>Mapa de alocação — colegiados temáticos</h2>
       <p>Alocação de servidores da UAE/SGP nos colegiados temáticos, com edição compartilhada.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_pendencias_colegiados.html" data-n="3" data-cat="colegiados">
       <div class="srow">
-        <div class="lft"><span class="num">03</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7h10M9.5 12h10M9.5 17h10"/><path d="M4 6.6l1.3 1.3L7.3 5.6"/><path d="M4 11.6l1.3 1.3L7.3 10.6"/><path d="M4 16.6l1.3 1.3L7.3 15.6"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7h10M9.5 12h10M9.5 17h10"/><path d="M4 6.6l1.3 1.3L7.3 5.6"/><path d="M4 11.6l1.3 1.3L7.3 10.6"/><path d="M4 16.6l1.3 1.3L7.3 15.6"/></svg></div>
+          <span class="idx">Nº 03</span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
       <h2>Pendências — SUBPEAMS / SUBCOPERGD</h2>
       <p>Checklist de pendências dos colegiados, com marcação salva automaticamente.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
-    <div class="cat-head" id="head-correicao"><span class="bar"></span><h3>Correição &amp; Conformidade</h3><span class="cnt">3 painéis</span></div>
+    <div class="cat-head" id="head-correicao"><h3>Correição &amp; Conformidade</h3><span class="rule"></span><span class="cnt">3 painéis</span></div>
 
     <a class="stage" href="dashboard_demandas_correcionais.html" data-n="2" data-cat="correicao">
       <div class="srow">
-        <div class="lft"><span class="num">02</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2.5H9z"/><path d="M8.5 13l2.3 2.3 4.3-4.8"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2.5H9z"/><path d="M8.5 13l2.3 2.3 4.3-4.8"/></svg></div>
+          <span class="idx">Nº 02</span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
       <h2>Demandas correcionais — CGJT 2026</h2>
       <p>As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_apoio_indireto_csjt296.html" data-n="12" data-cat="correicao">
       <div class="srow">
-        <div class="lft"><span class="num">12</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4.5"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4.5"/></svg></div>
+          <span class="idx">Nº 12</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Conformidade estrutural — Res. CSJT 296/2021</h2>
       <p>Aderência aos limites da Resolução: carreiras (art. 5º), comissionamentos (art. 6º), apoio indireto (art. 12) e Escola Judicial (art. 14).</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_governanca_tcu.html" data-n="16" data-cat="correicao">
       <div class="srow">
-        <div class="lft"><span class="num">16</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></div>
+          <span class="idx">Nº 16</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Levantamentos de Governança - TCU</h2>
       <p>Séries do TCU sobre governança de pessoas e governança pública (Sefip 2013/2016 e questionário integrado 2017–2024): evolução, componentes, questões e benchmark do TRT-17 entre os 24 TRTs.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
-    <div class="cat-head" id="head-forca-trabalho"><span class="bar"></span><h3>Força de Trabalho</h3><span class="cnt">4 painéis</span></div>
+    <div class="cat-head" id="head-forca-trabalho"><h3>Força de Trabalho</h3><span class="rule"></span><span class="cnt">4 painéis</span></div>
 
     <a class="stage" href="dashboard-aderencia-funcional-trt17.html" data-n="4" data-cat="forca-trabalho">
       <div class="srow">
-        <div class="lft"><span class="num">04</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19v-6M11 19V7M16 19v-8M20.5 19V9.5" stroke-width="1.8"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19v-6M11 19V7M16 19v-8M20.5 19V9.5" stroke-width="1.8"/></svg></div>
+          <span class="idx">Nº 04</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Aderência funcional</h2>
       <p>Painel de aderência funcional no âmbito do TRT-17. Somente leitura.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_evolucao_forca_trabalho.html" data-n="6" data-cat="forca-trabalho">
       <div class="srow">
-        <div class="lft"><span class="num">06</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l4.5-4 3.5 2.5L16.5 8l3.5-2.5"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l4.5-4 3.5 2.5L16.5 8l3.5-2.5"/></svg></div>
+          <span class="idx">Nº 06</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Evolução da força de trabalho</h2>
       <p>Trajetória do quadro desde 2015: total, áreas, graus de jurisdição e vínculos.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_envelhecimento_demografico.html" data-n="7" data-cat="forca-trabalho">
       <div class="srow">
-        <div class="lft"><span class="num">07</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg></div>
+          <span class="idx">Nº 07</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Envelhecimento e risco demográfico</h2>
       <p>Pirâmide etária, idade média e concentração de servidores 55+ por área.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_qualificacao_cargo.html" data-n="11" data-cat="forca-trabalho">
       <div class="srow">
-        <div class="lft"><span class="num">11</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4.5L21 9l-9 4.5L3 9z"/><path d="M7 11.5V16c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.5"/><path d="M21 9v5"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4.5L21 9l-9 4.5L3 9z"/><path d="M7 11.5V16c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.5"/><path d="M21 9v5"/></svg></div>
+          <span class="idx">Nº 11</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Qualificação × cargo</h2>
       <p>Formação real dos ocupantes de cada carreira e evolução da pós-graduação.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
-    <div class="cat-head" id="head-equidade"><span class="bar"></span><h3>Equidade &amp; Comissionamentos</h3><span class="cnt">4 painéis</span></div>
+    <div class="cat-head" id="head-equidade"><h3>Equidade &amp; Comissionamentos</h3><span class="rule"></span><span class="cnt">4 painéis</span></div>
 
     <a class="stage" href="dashboard_equidade_racial_capacitacao.html" data-n="5" data-cat="equidade">
       <div class="srow">
-        <div class="lft"><span class="num">05</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9.5 19V5M15 19v-8M20.5 19v-5"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9.5 19V5M15 19v-8M20.5 19v-5"/></svg></div>
+          <span class="idx">Nº 05</span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
       <h2>Equidade racial — capacitação gerencial</h2>
       <p>Impacto do incentivo ENAP de 01/06 (ADPF 973) na participação de pretos e pardos em cursos gerenciais.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_equidade_comissionamentos.html" data-n="8" data-cat="equidade">
       <div class="srow">
-        <div class="lft"><span class="num">08</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 8h14"/><path d="M5 8l-2.5 5h5L5 8zM19 8l-2.5 5h5L19 8z"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 8h14"/><path d="M5 8l-2.5 5h5L5 8zM19 8l-2.5 5h5L19 8z"/></svg></div>
+          <span class="idx">Nº 08</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Equidade em comissionamentos</h2>
       <p>Acesso às FC/CJ e valor médio das funções por sexo e raça/cor (ADPF 973).</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_tempo_primeira_comissao.html" data-n="9" data-cat="equidade">
       <div class="srow">
-        <div class="lft"><span class="num">09</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M4 17c5 0 7-9 13-9"/><path d="M14 8h3v3"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M4 17c5 0 7-9 13-9"/><path d="M14 8h3v3"/></svg></div>
+          <span class="idx">Nº 09</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Tempo até a primeira comissão</h2>
       <p>Quantos anos até a primeira FC — e se o tempo difere por sexo e raça/cor.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_custo_comissionamentos.html" data-n="10" data-cat="equidade">
       <div class="srow">
-        <div class="lft"><span class="num">10</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 14.5c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2-1-1.7-2.5-2-2.5-.9-2.5-2 1.1-2 2.5-2 2.5.9 2.5 2"/><path d="M12 6.5v11"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 14.5c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2-1-1.7-2.5-2-2.5-.9-2.5-2 1.1-2 2.5-2 2.5.9 2.5 2"/><path d="M12 6.5v11"/></svg></div>
+          <span class="idx">Nº 10</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Custo dos comissionamentos</h2>
       <p>Despesa mensal com FC/CJ, quantidade de ocupantes e composição por tipo.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
-    <div class="cat-head" id="head-afastamentos"><span class="bar"></span><h3>Afastamentos</h3><span class="cnt">1 painel</span></div>
+    <div class="cat-head" id="head-afastamentos"><h3>Afastamentos</h3><span class="rule"></span><span class="cnt">1 painel</span></div>
 
     <a class="stage" href="dashboard_afastamentos.html" data-n="13" data-cat="afastamentos">
       <div class="srow">
-        <div class="lft"><span class="num">13</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16"/><path d="M8 3v3M16 3v3"/><path d="M12 13v3.2M12 13l2.2 1.3"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16"/><path d="M8 3v3M16 3v3"/><path d="M12 13v3.2M12 13l2.2 1.3"/></svg></div>
+          <span class="idx">Nº 13</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Afastamentos — panorama institucional</h2>
       <p>Volume, sazonalidade e composição dos afastamentos por tipo e cargo — onde a licença saúde concentra e o que está puxando o crescimento.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
-    <div class="cat-head" id="head-estrutura"><span class="bar"></span><h3>Estrutura &amp; Reestruturação</h3><span class="cnt">2 painéis</span></div>
+    <div class="cat-head" id="head-estrutura"><h3>Estrutura &amp; Reestruturação</h3><span class="rule"></span><span class="cnt">2 painéis</span></div>
 
     <a class="stage" href="dashboard_transformacoes_organograma.html" data-n="14" data-cat="estrutura">
       <div class="srow">
-        <div class="lft"><span class="num">14</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="10" cy="18" r="1.6" fill="#1B8EC1" stroke="none"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.6" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+          <span class="idx">Nº 14</span>
         </div>
         <span class="chip ro"><span class="d"></span>CONSULTA</span>
       </div>
       <h2>Transformações no organograma — 2018 a 2023</h2>
       <p>Linha do tempo das reorganizações institucionais: criação, extinção e elevação de secretarias, coordenadorias e divisões, e a mudança na régua hierárquica de 2022.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
     <a class="stage" href="dashboard_acoes_reestruturacao_2026.html" data-n="15" data-cat="estrutura">
       <div class="srow">
-        <div class="lft"><span class="num">15</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        <div class="lft">
+          <div class="icobadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <span class="idx">Nº 15</span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
       <h2>Ações SGP — Reestruturação Administrativa 2026</h2>
       <p>Painel editável de ações da SGP para a próxima reestruturação: FCs extintas, criadas e trocadas, com status, responsável e notas.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+      <div class="play">Abrir painel <span class="arr">&#8594;</span></div>
     </a>
 
   </div>
 
   <div class="controls">
-    <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> NAVEGAR</span>
-    <span><span class="key">ENTER</span> ABRIR</span>
-    <span><span class="key">1</span>&#8211;<span class="key" id="maxKey">16</span> IR DIRETO</span>
+    <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> Navegar</span>
+    <span><span class="key">Enter</span> Abrir</span>
+    <span><span class="key">1</span>&#8211;<span class="key" id="maxKey">16</span> Ir direto</span>
   </div>
 
 </div>
 
-<footer><div class="foot-in">UAE / SGP · TRT-17 — 2026</div></footer>
+<footer><div class="foot-in">SGP · TRT-17 — Índice de painéis internos · Reorganizado em 14/07/2026</div></footer>
 
 <script>
 (function(){
@@ -377,9 +417,9 @@
     c.addEventListener('mouseenter',function(){setSel(idx);});
     c.addEventListener('focus',function(){setSel(idx);});
   });
-  setSel(0); // sempre há um card selecionado
+  setSel(0);
 
-  // atalho numérico mapeia por data-n (não por posição), pois a ordem visual agora é por categoria
+  // atalho numérico mapeia por data-n
   var byNum={},maxN=0;
   cards.forEach(function(c){var n=parseInt(c.dataset.n,10);byNum[n]=c;if(n>maxN)maxN=n;});
   var maxKeyEl=document.getElementById('maxKey');
@@ -394,7 +434,7 @@
   document.addEventListener('keydown',function(e){
     var k=e.key;
     if(k>='0'&&k<='9'){
-      if(k==='0'&&buf==='')return; // não há painel 0
+      if(k==='0'&&buf==='')return;
       e.preventDefault();
       buf+=k;
       var n=parseInt(buf,10);
@@ -409,24 +449,53 @@
     e.preventDefault();t=(t+cards.length)%cards.length;cards[t].focus();
   });
 
-  // filtro por categoria: rola até a seção e destaca os cards correspondentes
+  // contador animado nas estatísticas do hero
+  document.querySelectorAll('.stat-num').forEach(function(el){
+    var target=parseInt(el.dataset.target,10),start=null,dur=700;
+    function step(ts){
+      if(!start)start=ts;
+      var p=Math.min(1,(ts-start)/dur);
+      el.textContent=Math.round(target*(1-Math.pow(1-p,3)));
+      if(p<1)requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+
+  // command bar: indicador deslizante + filtro por categoria
   var chips=[].slice.call(document.querySelectorAll('.chip-filter'));
+  var bar=document.getElementById('filterbar');
+  var indicator=document.getElementById('chipIndicator');
+  function moveIndicator(el){
+    indicator.style.width=el.offsetWidth+'px';
+    indicator.style.height=el.offsetHeight+'px';
+    indicator.style.transform='translate('+el.offsetLeft+'px,'+el.offsetTop+'px)';
+  }
+  var activeChip=chips[0];
+  window.addEventListener('load',function(){moveIndicator(activeChip);});
+  window.addEventListener('resize',function(){moveIndicator(activeChip);});
+
   chips.forEach(function(ch){
     ch.addEventListener('click',function(){
       chips.forEach(function(c){c.classList.remove('active');});
       ch.classList.add('active');
+      activeChip=ch;
+      moveIndicator(ch);
       var cat=ch.dataset.target;
       if(cat==='all'){window.scrollTo({top:0,behavior:'smooth'});return;}
       var head=document.getElementById('head-'+cat);
       if(head)head.scrollIntoView({behavior:'smooth',block:'start'});
       var targets=document.querySelectorAll('[data-cat="'+cat+'"]');
       targets.forEach(function(t){
-        t.classList.remove('hl');
-        void t.offsetWidth; // reinicia a animação
         t.classList.add('hl');
+        setTimeout(function(){t.classList.remove('hl');},1100);
       });
     });
   });
+
+  // condensa a barra de filtro (glass) ao rolar
+  window.addEventListener('scroll',function(){
+    if(window.scrollY>80)bar.classList.add('scrolled');else bar.classList.remove('scrolled');
+  },{passive:true});
 })();
 </script>
 </body>
