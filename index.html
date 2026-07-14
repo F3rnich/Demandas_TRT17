@@ -41,9 +41,24 @@
   .lead{margin-top:16px;color:var(--b100);font-size:15px;line-height:1.55;max-width:100%}
   @media(min-width:960px){.lead{white-space:nowrap}}
 
-  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+  /* barra de filtro por categoria */
+  .filterbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px}
+  .chip-filter{font-family:var(--pixel);font-size:9px;letter-spacing:.05em;color:var(--b100);
+    background:var(--b800);border:1px solid var(--b700);border-radius:999px;padding:8px 14px;cursor:pointer;
+    transition:background .15s ease,color .15s ease,border-color .15s ease}
+  .chip-filter:hover,.chip-filter:focus-visible{background:var(--b700);color:var(--white);border-color:var(--y500);outline:none}
+  .chip-filter.active{background:var(--y500);color:var(--b900);border-color:var(--y500)}
+
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
   @media(max-width:900px){.stages{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.stages{grid-template-columns:1fr}}
+
+  /* cabeçalho de categoria — item full-width dentro do mesmo grid */
+  .cat-head{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;padding-top:24px;border-top:1px solid rgba(255,255,255,.10)}
+  .cat-head:first-child{padding-top:0;border-top:none}
+  .cat-head .bar{width:20px;height:3px;background:var(--y500);align-self:center}
+  .cat-head h3{font-family:var(--pixel);font-size:11px;letter-spacing:.08em;color:var(--y500);text-transform:uppercase}
+  .cat-head .cnt{font-family:var(--pixel);font-size:9px;color:var(--b300)}
 
   a.stage{
     position:relative;display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
@@ -63,6 +78,10 @@
   a.stage:focus-visible{outline:none;box-shadow:var(--focus),var(--sh-sel)}
   a.stage:hover::before,a.stage:focus-visible::before,a.stage.sel::before,
   a.stage:hover::after,a.stage:focus-visible::after,a.stage.sel::after{opacity:1;transform:translate(0,0)}
+
+  /* destaque temporário ao usar o filtro */
+  a.stage.hl{animation:hlpulse 1.3s ease}
+  @keyframes hlpulse{0%{box-shadow:0 0 0 4px rgba(255,208,64,.6)}100%{box-shadow:var(--sh-card)}}
 
   .srow{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .lft{display:flex;align-items:center;gap:12px}
@@ -95,6 +114,7 @@
     a.stage{transition:none}
     a.stage::before,a.stage::after{transition:none}
     a.stage:hover .play .arr,a.stage:focus-visible .play .arr,a.stage.sel .play .arr{animation:none}
+    a.stage.hl{animation:none}
   }
 </style>
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -118,9 +138,21 @@
   <div class="ybar"></div>
   <p class="lead">Índice dos painéis mantidos pela <span style="white-space:nowrap">UAE/SGP</span>. Os colaborativos sincronizam edições em tempo real; os de consulta são retratos estáticos.</p>
 
+  <div class="filterbar" id="filterbar">
+    <button class="chip-filter active" data-target="all">TODOS</button>
+    <button class="chip-filter" data-target="colegiados">COLEGIADOS</button>
+    <button class="chip-filter" data-target="correicao">CORREIÇÃO &amp; CONFORMIDADE</button>
+    <button class="chip-filter" data-target="forca-trabalho">FORÇA DE TRABALHO</button>
+    <button class="chip-filter" data-target="equidade">EQUIDADE &amp; COMISSIONAMENTOS</button>
+    <button class="chip-filter" data-target="afastamentos">AFASTAMENTOS</button>
+    <button class="chip-filter" data-target="estrutura">ESTRUTURA &amp; REESTRUTURAÇÃO</button>
+  </div>
+
   <div class="stages" id="stages">
 
-    <a class="stage" href="dashboard_colegiados.html" data-n="1">
+    <div class="cat-head" id="head-colegiados"><span class="bar"></span><h3>Colegiados</h3><span class="cnt">2 painéis</span></div>
+
+    <a class="stage" href="dashboard_colegiados.html" data-n="1" data-cat="colegiados">
       <div class="srow">
         <div class="lft"><span class="num">01</span>
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9.5" r="2.2"/><path d="M16 14.2c2.2-.2 4 1.6 4 4.3"/></svg></span>
@@ -132,19 +164,7 @@
       <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage" href="dashboard_demandas_correcionais.html" data-n="2">
-      <div class="srow">
-        <div class="lft"><span class="num">02</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2.5H9z"/><path d="M8.5 13l2.3 2.3 4.3-4.8"/></svg></span>
-        </div>
-        <span class="chip live"><span class="d"></span>AO VIVO</span>
-      </div>
-      <h2>Demandas correcionais — CGJT 2026</h2>
-      <p>As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_pendencias_colegiados.html" data-n="3">
+    <a class="stage" href="dashboard_pendencias_colegiados.html" data-n="3" data-cat="colegiados">
       <div class="srow">
         <div class="lft"><span class="num">03</span>
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7h10M9.5 12h10M9.5 17h10"/><path d="M4 6.6l1.3 1.3L7.3 5.6"/><path d="M4 11.6l1.3 1.3L7.3 10.6"/><path d="M4 16.6l1.3 1.3L7.3 15.6"/></svg></span>
@@ -156,104 +176,21 @@
       <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage" href="dashboard-aderencia-funcional-trt17.html" data-n="4">
-      <div class="srow">
-        <div class="lft"><span class="num">04</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19v-6M11 19V7M16 19v-8M20.5 19V9.5" stroke-width="1.8"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Aderência funcional</h2>
-      <p>Painel de aderência funcional no âmbito do TRT-17. Somente leitura.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
+    <div class="cat-head" id="head-correicao"><span class="bar"></span><h3>Correição &amp; Conformidade</h3><span class="cnt">3 painéis</span></div>
 
-
-    <a class="stage" href="dashboard_equidade_racial_capacitacao.html" data-n="5">
+    <a class="stage" href="dashboard_demandas_correcionais.html" data-n="2" data-cat="correicao">
       <div class="srow">
-        <div class="lft"><span class="num">05</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9.5 19V5M15 19v-8M20.5 19v-5"/></svg></span>
+        <div class="lft"><span class="num">02</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2.5H9z"/><path d="M8.5 13l2.3 2.3 4.3-4.8"/></svg></span>
         </div>
         <span class="chip live"><span class="d"></span>AO VIVO</span>
       </div>
-      <h2>Equidade racial — capacitação gerencial</h2>
-      <p>Impacto do incentivo ENAP de 01/06 (ADPF 973) na participação de pretos e pardos em cursos gerenciais.</p>
+      <h2>Demandas correcionais — CGJT 2026</h2>
+      <p>As 13 demandas da Correição Ordinária, com acompanhamento por item e status derivado.</p>
       <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage" href="dashboard_evolucao_forca_trabalho.html" data-n="6">
-      <div class="srow">
-        <div class="lft"><span class="num">06</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l4.5-4 3.5 2.5L16.5 8l3.5-2.5"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Evolução da força de trabalho</h2>
-      <p>Trajetória do quadro desde 2015: total, áreas, graus de jurisdição e vínculos.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_envelhecimento_demografico.html" data-n="7">
-      <div class="srow">
-        <div class="lft"><span class="num">07</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Envelhecimento e risco demográfico</h2>
-      <p>Pirâmide etária, idade média e concentração de servidores 55+ por área.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_equidade_comissionamentos.html" data-n="8">
-      <div class="srow">
-        <div class="lft"><span class="num">08</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 8h14"/><path d="M5 8l-2.5 5h5L5 8zM19 8l-2.5 5h5L19 8z"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Equidade em comissionamentos</h2>
-      <p>Acesso às FC/CJ e valor médio das funções por sexo e raça/cor (ADPF 973).</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_tempo_primeira_comissao.html" data-n="9">
-      <div class="srow">
-        <div class="lft"><span class="num">09</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M4 17c5 0 7-9 13-9"/><path d="M14 8h3v3"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Tempo até a primeira comissão</h2>
-      <p>Quantos anos até a primeira FC — e se o tempo difere por sexo e raça/cor.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_custo_comissionamentos.html" data-n="10">
-      <div class="srow">
-        <div class="lft"><span class="num">10</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 14.5c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2-1-1.7-2.5-2-2.5-.9-2.5-2 1.1-2 2.5-2 2.5.9 2.5 2"/><path d="M12 6.5v11"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Custo dos comissionamentos</h2>
-      <p>Despesa mensal com FC/CJ, quantidade de ocupantes e composição por tipo.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_qualificacao_cargo.html" data-n="11">
-      <div class="srow">
-        <div class="lft"><span class="num">11</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4.5L21 9l-9 4.5L3 9z"/><path d="M7 11.5V16c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.5"/><path d="M21 9v5"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Qualificação × cargo</h2>
-      <p>Formação real dos ocupantes de cada carreira e evolução da pós-graduação.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_apoio_indireto_csjt296.html" data-n="12">
+    <a class="stage" href="dashboard_apoio_indireto_csjt296.html" data-n="12" data-cat="correicao">
       <div class="srow">
         <div class="lft"><span class="num">12</span>
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4.5"/></svg></span>
@@ -265,43 +202,7 @@
       <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
-    <a class="stage" href="dashboard_afastamentos.html" data-n="13">
-      <div class="srow">
-        <div class="lft"><span class="num">13</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16"/><path d="M8 3v3M16 3v3"/><path d="M12 13v3.2M12 13l2.2 1.3"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Afastamentos — panorama institucional</h2>
-      <p>Volume, sazonalidade e composição dos afastamentos por tipo e cargo — onde a licença saúde concentra e o que está puxando o crescimento.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_transformacoes_organograma.html" data-n="14">
-      <div class="srow">
-        <div class="lft"><span class="num">14</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="10" cy="18" r="1.6" fill="#1B8EC1" stroke="none"/></svg></span>
-        </div>
-        <span class="chip ro"><span class="d"></span>CONSULTA</span>
-      </div>
-      <h2>Transformações no organograma — 2018 a 2023</h2>
-      <p>Linha do tempo das reorganizações institucionais: criação, extinção e elevação de secretarias, coordenadorias e divisões, e a mudança na régua hierárquica de 2022.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_acoes_reestruturacao_2026.html" data-n="15">
-      <div class="srow">
-        <div class="lft"><span class="num">15</span>
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
-        </div>
-        <span class="chip live"><span class="d"></span>AO VIVO</span>
-      </div>
-      <h2>Ações SGP — Reestruturação Administrativa 2026</h2>
-      <p>Painel editável de ações da SGP para a próxima reestruturação: FCs extintas, criadas e trocadas, com status, responsável e notas.</p>
-      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
-    </a>
-
-    <a class="stage" href="dashboard_governanca_tcu.html" data-n="16">
+    <a class="stage" href="dashboard_governanca_tcu.html" data-n="16" data-cat="correicao">
       <div class="srow">
         <div class="lft"><span class="num">16</span>
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></span>
@@ -313,12 +214,152 @@
       <div class="play">INICIAR <span class="arr">&#9654;</span></div>
     </a>
 
+    <div class="cat-head" id="head-forca-trabalho"><span class="bar"></span><h3>Força de Trabalho</h3><span class="cnt">4 painéis</span></div>
+
+    <a class="stage" href="dashboard-aderencia-funcional-trt17.html" data-n="4" data-cat="forca-trabalho">
+      <div class="srow">
+        <div class="lft"><span class="num">04</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19v-6M11 19V7M16 19v-8M20.5 19V9.5" stroke-width="1.8"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Aderência funcional</h2>
+      <p>Painel de aderência funcional no âmbito do TRT-17. Somente leitura.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_evolucao_forca_trabalho.html" data-n="6" data-cat="forca-trabalho">
+      <div class="srow">
+        <div class="lft"><span class="num">06</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l4.5-4 3.5 2.5L16.5 8l3.5-2.5"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Evolução da força de trabalho</h2>
+      <p>Trajetória do quadro desde 2015: total, áreas, graus de jurisdição e vínculos.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_envelhecimento_demografico.html" data-n="7" data-cat="forca-trabalho">
+      <div class="srow">
+        <div class="lft"><span class="num">07</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Envelhecimento e risco demográfico</h2>
+      <p>Pirâmide etária, idade média e concentração de servidores 55+ por área.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_qualificacao_cargo.html" data-n="11" data-cat="forca-trabalho">
+      <div class="srow">
+        <div class="lft"><span class="num">11</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4.5L21 9l-9 4.5L3 9z"/><path d="M7 11.5V16c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.5"/><path d="M21 9v5"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Qualificação × cargo</h2>
+      <p>Formação real dos ocupantes de cada carreira e evolução da pós-graduação.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <div class="cat-head" id="head-equidade"><span class="bar"></span><h3>Equidade &amp; Comissionamentos</h3><span class="cnt">4 painéis</span></div>
+
+    <a class="stage" href="dashboard_equidade_racial_capacitacao.html" data-n="5" data-cat="equidade">
+      <div class="srow">
+        <div class="lft"><span class="num">05</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M9.5 19V5M15 19v-8M20.5 19v-5"/></svg></span>
+        </div>
+        <span class="chip live"><span class="d"></span>AO VIVO</span>
+      </div>
+      <h2>Equidade racial — capacitação gerencial</h2>
+      <p>Impacto do incentivo ENAP de 01/06 (ADPF 973) na participação de pretos e pardos em cursos gerenciais.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_equidade_comissionamentos.html" data-n="8" data-cat="equidade">
+      <div class="srow">
+        <div class="lft"><span class="num">08</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 8h14"/><path d="M5 8l-2.5 5h5L5 8zM19 8l-2.5 5h5L19 8z"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Equidade em comissionamentos</h2>
+      <p>Acesso às FC/CJ e valor médio das funções por sexo e raça/cor (ADPF 973).</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_tempo_primeira_comissao.html" data-n="9" data-cat="equidade">
+      <div class="srow">
+        <div class="lft"><span class="num">09</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M4 17c5 0 7-9 13-9"/><path d="M14 8h3v3"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Tempo até a primeira comissão</h2>
+      <p>Quantos anos até a primeira FC — e se o tempo difere por sexo e raça/cor.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_custo_comissionamentos.html" data-n="10" data-cat="equidade">
+      <div class="srow">
+        <div class="lft"><span class="num">10</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 14.5c0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2-1-1.7-2.5-2-2.5-.9-2.5-2 1.1-2 2.5-2 2.5.9 2.5 2"/><path d="M12 6.5v11"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Custo dos comissionamentos</h2>
+      <p>Despesa mensal com FC/CJ, quantidade de ocupantes e composição por tipo.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <div class="cat-head" id="head-afastamentos"><span class="bar"></span><h3>Afastamentos</h3><span class="cnt">1 painel</span></div>
+
+    <a class="stage" href="dashboard_afastamentos.html" data-n="13" data-cat="afastamentos">
+      <div class="srow">
+        <div class="lft"><span class="num">13</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16"/><path d="M8 3v3M16 3v3"/><path d="M12 13v3.2M12 13l2.2 1.3"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Afastamentos — panorama institucional</h2>
+      <p>Volume, sazonalidade e composição dos afastamentos por tipo e cargo — onde a licença saúde concentra e o que está puxando o crescimento.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <div class="cat-head" id="head-estrutura"><span class="bar"></span><h3>Estrutura &amp; Reestruturação</h3><span class="cnt">2 painéis</span></div>
+
+    <a class="stage" href="dashboard_transformacoes_organograma.html" data-n="14" data-cat="estrutura">
+      <div class="srow">
+        <div class="lft"><span class="num">14</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="15" cy="12" r="1.6" fill="#1B8EC1" stroke="none"/><circle cx="10" cy="18" r="1.6" fill="#1B8EC1" stroke="none"/></svg></span>
+        </div>
+        <span class="chip ro"><span class="d"></span>CONSULTA</span>
+      </div>
+      <h2>Transformações no organograma — 2018 a 2023</h2>
+      <p>Linha do tempo das reorganizações institucionais: criação, extinção e elevação de secretarias, coordenadorias e divisões, e a mudança na régua hierárquica de 2022.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
+    <a class="stage" href="dashboard_acoes_reestruturacao_2026.html" data-n="15" data-cat="estrutura">
+      <div class="srow">
+        <div class="lft"><span class="num">15</span>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1B8EC1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        </div>
+        <span class="chip live"><span class="d"></span>AO VIVO</span>
+      </div>
+      <h2>Ações SGP — Reestruturação Administrativa 2026</h2>
+      <p>Painel editável de ações da SGP para a próxima reestruturação: FCs extintas, criadas e trocadas, com status, responsável e notas.</p>
+      <div class="play">INICIAR <span class="arr">&#9654;</span></div>
+    </a>
+
   </div>
 
   <div class="controls">
     <span><span class="key">&#8593;</span><span class="key">&#8595;</span><span class="key">&#8592;</span><span class="key">&#8594;</span> NAVEGAR</span>
     <span><span class="key">ENTER</span> ABRIR</span>
-    <span><span class="key">1</span>&#8211;<span class="key" id="maxKey">9</span> IR DIRETO</span>
+    <span><span class="key">1</span>&#8211;<span class="key" id="maxKey">16</span> IR DIRETO</span>
   </div>
 
 </div>
@@ -338,16 +379,17 @@
   });
   setSel(0); // sempre há um card selecionado
 
-  // rótulo do atalho reflete a quantidade real de painéis
+  // atalho numérico mapeia por data-n (não por posição), pois a ordem visual agora é por categoria
+  var byNum={},maxN=0;
+  cards.forEach(function(c){var n=parseInt(c.dataset.n,10);byNum[n]=c;if(n>maxN)maxN=n;});
   var maxKeyEl=document.getElementById('maxKey');
-  if(maxKeyEl)maxKeyEl.textContent=cards.length;
+  if(maxKeyEl)maxKeyEl.textContent=maxN;
 
-  // atalho numérico com buffer para suportar 2+ dígitos (ex.: "1" então "2" = painel 12)
-  var maxLen=String(cards.length).length,buf='',bufTimer=null;
+  var maxLen=String(maxN).length,buf='',bufTimer=null;
   function commitBuf(){
     clearTimeout(bufTimer);bufTimer=null;
     var n=parseInt(buf,10);buf='';
-    if(n>=1&&n<=cards.length){location.href=cards[n-1].href;}
+    if(byNum[n]){location.href=byNum[n].href;}
   }
   document.addEventListener('keydown',function(e){
     var k=e.key;
@@ -356,7 +398,7 @@
       e.preventDefault();
       buf+=k;
       var n=parseInt(buf,10);
-      var canExtend=buf.length<maxLen&&(n*10)<=cards.length;
+      var canExtend=buf.length<maxLen&&(n*10)<=maxN;
       clearTimeout(bufTimer);
       if(!canExtend)commitBuf();else bufTimer=setTimeout(commitBuf,500);
       return;
@@ -366,8 +408,26 @@
     else if(k==='ArrowDown')t=i+c;else if(k==='ArrowUp')t=i-c;else return;
     e.preventDefault();t=(t+cards.length)%cards.length;cards[t].focus();
   });
+
+  // filtro por categoria: rola até a seção e destaca os cards correspondentes
+  var chips=[].slice.call(document.querySelectorAll('.chip-filter'));
+  chips.forEach(function(ch){
+    ch.addEventListener('click',function(){
+      chips.forEach(function(c){c.classList.remove('active');});
+      ch.classList.add('active');
+      var cat=ch.dataset.target;
+      if(cat==='all'){window.scrollTo({top:0,behavior:'smooth'});return;}
+      var head=document.getElementById('head-'+cat);
+      if(head)head.scrollIntoView({behavior:'smooth',block:'start'});
+      var targets=document.querySelectorAll('[data-cat="'+cat+'"]');
+      targets.forEach(function(t){
+        t.classList.remove('hl');
+        void t.offsetWidth; // reinicia a animação
+        t.classList.add('hl');
+      });
+    });
+  });
 })();
 </script>
 </body>
 </html>
-
