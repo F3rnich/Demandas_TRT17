@@ -9,7 +9,8 @@
    "dashboard_apoio_indireto_csjt296.html",
    "dashboard_equidade_comissionamentos.html",
    "dashboard_afastamentos.html",
-   "dashboard_transformacoes_organograma.html"
+   "dashboard_transformacoes_organograma.html",
+   "dashboard_governanca_tcu.html"
   ],
   "must_not_contain": []
  },
@@ -249,6 +250,22 @@
    "PAINEL 14",
    "regua-cmp",
    "SEFO"
+  ],
+  "must_not_contain": [
+   "CPF",
+   "MATRICULA",
+   "\"NOME\""
+  ]
+ },
+ "dashboard_governanca_tcu.html": {
+  "must_contain": [
+   "<html",
+   "</html>",
+   "favicon.svg",
+   "sgp-hub-back",
+   "Levantamentos do TCU",
+   "iGovPessoas",
+   "iGestPessoas"
   ],
   "must_not_contain": [
    "CPF",
