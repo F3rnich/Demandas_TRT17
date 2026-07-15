@@ -170,9 +170,13 @@ function hbar(el,items,opt={}){
 // pirâmide etária: faixas (baixo→cima na ordem dada), esq/dir arrays
 function piramide(el,faixas,esq,dir,nomeEsq,nomeDir){
   const W=920,rh=32,mC=90,H=faixas.length*rh+34,half=(W-mC)/2;
+  // reserva espaço para o rótulo numérico (evita corte quando a barra se aproxima do máximo)
+  const medir=(s,fpx)=>String(s).length*fpx*0.62;
+  const mLbl=Math.ceil(Math.max(...esq.map(v=>medir(fmt(v),11.5)),...dir.map(v=>medir(fmt(v),11.5))))+10;
+  const barMax=half-mLbl;
   const mx=Math.max(...esq,...dir);let g='';
   faixas.forEach((f,i)=>{const y=6+(faixas.length-1-i)*rh;
-    const we=half*esq[i]/mx,wd=half*dir[i]/mx;
+    const we=barMax*esq[i]/mx,wd=barMax*dir[i]/mx;
     g+=`<rect x="${half-we}" y="${y+4}" width="${Math.max(we,1)}" height="${rh-11}" fill="${C.navy}"/>`;
     g+=`<rect x="${half+mC}" y="${y+4}" width="${Math.max(wd,1)}" height="${rh-11}" fill="${C.amber}"/>`;
     g+=`<text x="${W/2}" y="${y+18}" text-anchor="middle" font-size="12" fill="#5C6E79" font-family="ui-monospace,monospace">${esc(f)}</text>`;
