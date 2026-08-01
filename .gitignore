@@ -1,0 +1,32 @@
+# =============================================================
+# BASES DE PESSOAL — NUNCA VERSIONAR
+# Contem CPF, nome, nascimento, deficiencia e doenca grave.
+# O repositorio e PUBLICO. Apenas o JSON agregado (k=5) entra.
+# =============================================================
+*.xlsx
+*.xlsm
+*.xltx
+*.xls
+*.ods
+*.csv
+*.tsv
+*.parquet
+*.pbix
+~$*
+
+# Segredos
+token.txt
+*.pat
+.env
+
+# Artefatos locais
+__pycache__/
+*.pyc
+*.log
+conv_planilha_*/
+conv_base_*/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

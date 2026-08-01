@@ -196,9 +196,12 @@
  "build_paineis_forca.py": {
   "must_contain": [
    "K_MIN = 5",
-   "A BASE NUNCA ENTRA NO REPOSITÓRIO"
+   "A BASE NUNCA ENTRA NO REPOSITÓRIO",
+   "EJUD_RE"
   ],
-  "must_not_contain": []
+  "must_not_contain": [
+   "github_pat_"
+  ]
  },
  "dashboard_afastamentos.html": {
   "must_contain": [
@@ -271,6 +274,49 @@
    "CPF",
    "MATRICULA",
    "\"NOME\""
+  ]
+ },
+ "atualizar.py": {
+  "must_contain": [
+   "EJUD_RE",
+   "GITHUB_PAT",
+   "def comparar"
+  ],
+  "must_not_contain": [
+   "github_pat_"
+  ]
+ },
+ "diagnostico.py": {
+  "must_contain": [
+   "COLS_EXIGIDAS",
+   "resolver_base"
+  ],
+  "must_not_contain": [
+   "github_pat_"
+  ]
+ },
+ "ATUALIZAR PAINEIS.bat": {
+  "must_contain": [
+   "atualizar.py"
+  ],
+  "must_not_contain": [
+   "github_pat_"
+  ]
+ },
+ ".gitignore": {
+  "must_contain": [
+   "*.xlsx",
+   "*.ods"
+  ],
+  "must_not_contain": []
+ },
+ "README.md": {
+  "must_contain": [
+   "ATUALIZAR PAINEIS.bat",
+   "k=5"
+  ],
+  "must_not_contain": [
+   "github_pat_"
   ]
  }
 }

@@ -5,7 +5,13 @@ build_paineis_forca.py — Gera dados_paineis_forca.json para os painéis 07–1
 do hub Demandas_TRT17 a partir da base de pessoal da SGP (xlsx local).
 
 USO:
-    python build_paineis_forca.py /caminho/para/Base_atualizada.xlsx
+    python build_paineis_forca.py "Base atualizada.ods"
+    python build_paineis_forca.py "BASE JULHO"     (extensao opcional)
+    python build_paineis_forca.py                  (localiza sozinho na pasta)
+
+FORMATOS: .ods, .xlsx, .xlsm, .xls. Para .ods, instale odfpy
+(pip install odfpy); sem ele o script converte via LibreOffice headless
+em pasta temporaria, sem alterar o arquivo original.
 
 REGRAS LGPD (aplicadas na origem — nenhum dado individual sai deste script):
   1. Nenhum identificador (NOME, CPF, MATRICULA, NASCIMENTO) é gravado no JSON.
@@ -18,11 +24,147 @@ REGRAS LGPD (aplicadas na origem — nenhum dado individual sai deste script):
 
 A BASE NUNCA ENTRA NO REPOSITÓRIO. Apenas este script e o JSON agregado.
 """
-import sys, json
+import sys, json, os, shutil, subprocess, tempfile
+from pathlib import Path
 import pandas as pd
 import numpy as np
 
 K_MIN = 5  # k-anonimato
+
+# Unidades da Escola Judicial — FONTE UNICA. Nao duplicar esta regex em
+# outros scripts: importe daqui (from build_paineis_forca import EJUD_RE).
+EJUD_RE = r"Escola Judicial|Capacita[çc][ãa]o de Magistrado|Capacita[çc][ãa]o de Servidor"
+
+# ---------------------------------------------------------------------------
+# Leitura de planilha independente de formato (.ods, .xlsx, .xlsm, .xls)
+# ---------------------------------------------------------------------------
+
+_EXT_OK = {".ods", ".xlsx", ".xlsm", ".xltx", ".xls"}
+_ENGINE = {".ods": "odf", ".xlsx": "openpyxl", ".xlsm": "openpyxl",
+           ".xltx": "openpyxl", ".xls": "xlrd"}
+_SOFFICE = [
+    r"C:\Program Files\LibreOffice\program\soffice.exe",
+    r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+    "/usr/bin/soffice", "/usr/bin/libreoffice",
+    "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+]
+_CONVERTIDO = {}  # cache: original -> xlsx temporario
+
+
+def resolver_base(nome=None, pasta="."):
+    """
+    Localiza a planilha ignorando extensao. Aceita caminho completo, nome sem
+    extensao, ou nada (procura qualquer planilha na pasta, preferindo nomes
+    que comecem com 'base').
+    """
+    pasta = Path(pasta)
+    if nome:
+        p = Path(nome)
+        if p.exists() and p.suffix:
+            return p.resolve()
+        pasta = p.parent if str(p.parent) != "." else pasta
+        alvo = p.stem.strip().lower()
+    else:
+        alvo = None
+
+    cands = [f for f in pasta.iterdir()
+             if f.is_file() and f.suffix.lower() in _EXT_OK
+             and not f.name.startswith("~$")]
+
+    if alvo:
+        exatos = [f for f in cands if f.stem.strip().lower() == alvo]
+        cands = exatos or [f for f in cands
+                           if f.stem.strip().lower().startswith(alvo)]
+    else:
+        base = [f for f in cands if f.stem.strip().lower().startswith("base")]
+        cands = base or cands
+
+    if not cands:
+        disp = sorted(f.name for f in pasta.iterdir()
+                      if f.is_file() and f.suffix.lower() in _EXT_OK)
+        sys.exit(f"ERRO: nenhuma planilha {'para ' + repr(nome) if nome else ''} "
+                 f"encontrada em {pasta.resolve()}.\n"
+                 f"Planilhas na pasta: {disp or '(nenhuma)'}")
+
+    cands.sort(key=lambda f: (0 if f.suffix.lower() != ".xls" else 1,
+                              -f.stat().st_mtime))
+    if len(cands) > 1:
+        print(f"[aviso] {len(cands)} planilhas casam; usando {cands[0].name}")
+        for f in cands[1:]:
+            print(f"        (ignorada: {f.name})")
+    return cands[0].resolve()
+
+
+def _achar_soffice():
+    exe = shutil.which("soffice") or shutil.which("libreoffice")
+    if exe:
+        return exe
+    return next((c for c in _SOFFICE if os.path.exists(c)), None)
+
+
+def _converter(path):
+    """Converte para xlsx em pasta temporaria. Nao altera o original."""
+    path = Path(path)
+    if path in _CONVERTIDO:
+        return _CONVERTIDO[path]
+    exe = _achar_soffice()
+    if not exe:
+        sys.exit(f"ERRO: nao consigo ler '{path.name}'. Falta o engine para "
+                 f"'{path.suffix}' e o LibreOffice nao foi encontrado.\n"
+                 f"Resolva com:  pip install odfpy   (para .ods)\n"
+                 f"          ou:  pip install xlrd    (para .xls antigo)")
+    dest = Path(tempfile.mkdtemp(prefix="conv_base_"))
+    print(f"[info] convertendo {path.name} -> xlsx (temporario)...")
+    proc = subprocess.run([exe, "--headless", "--convert-to", "xlsx",
+                           "--outdir", str(dest), str(path)],
+                          capture_output=True, text=True)
+    saida = dest / (path.stem + ".xlsx")
+    if not saida.exists():
+        sys.exit("ERRO: conversao pelo LibreOffice falhou. Feche o arquivo se "
+                 f"estiver aberto e tente de novo.\n{proc.stderr}")
+    _CONVERTIDO[path] = saida
+    return saida
+
+
+def abas(path):
+    """Nomes das abas da planilha."""
+    path = Path(path)
+    eng = _ENGINE.get(path.suffix.lower())
+    try:
+        with pd.ExcelFile(path, engine=eng) as xl:
+            return list(xl.sheet_names)
+    except ImportError:
+        with pd.ExcelFile(_converter(path), engine="openpyxl") as xl:
+            return list(xl.sheet_names)
+
+
+def ler_aba(path, sheet, obrigatoria=True):
+    """
+    Le uma aba de qualquer formato suportado. Casa o nome da aba ignorando
+    caixa e espacos. Se obrigatoria=False, devolve None quando ausente.
+    """
+    path = Path(path)
+    if path.suffix.lower() not in _EXT_OK:
+        sys.exit(f"ERRO: extensao nao suportada: '{path.suffix}'. "
+                 f"Suportadas: {sorted(_EXT_OK)}")
+
+    disponiveis = abas(path)
+    real = next((a for a in disponiveis
+                 if a.strip().lower() == str(sheet).strip().lower()), None)
+    if real is None:
+        if not obrigatoria:
+            return None
+        sys.exit(f"ERRO: aba '{sheet}' nao existe em {path.name}.\n"
+                 f"Abas disponiveis: {disponiveis}\n"
+                 f"Renomeie a aba na planilha ou ajuste o nome no script.")
+
+    eng = _ENGINE.get(path.suffix.lower())
+    try:
+        return pd.read_excel(path, sheet_name=real, engine=eng)
+    except ImportError:
+        return pd.read_excel(_converter(path), sheet_name=real,
+                             engine="openpyxl")
+
 
 def sup(n):
     """Suprime contagens 0<n<K_MIN (retorna None)."""
@@ -37,8 +179,15 @@ def raca_grp(v):
     return "Outras/NI"
 
 def main(path):
-    df = pd.read_excel(path, sheet_name="dados")
-    df["REFERENCIA"] = pd.to_datetime(df["REFERENCIA"])
+    path = resolver_base(path)
+    print(f"[info] base: {path.name}  ({path.stat().st_size/1024:.0f} KB)")
+    df = ler_aba(path, "dados")
+    df["REFERENCIA"] = pd.to_datetime(df["REFERENCIA"], errors="coerce")
+    n_ruim = int(df["REFERENCIA"].isna().sum())
+    if n_ruim:
+        print(f"[aviso] {n_ruim} linha(s) com REFERENCIA vazia/invalida — descartadas "
+              f"({n_ruim/len(df)*100:.2f}% da base).")
+        df = df[df["REFERENCIA"].notna()].copy()
     df["ref"] = df["REFERENCIA"].dt.strftime("%Y-%m")
     df["ano"] = df["REFERENCIA"].dt.year
     refs = sorted(df["ref"].unique())
@@ -64,7 +213,9 @@ def main(path):
     # A coluna "GRAU" crua da aba "dados" (XLOOKUP na planilha-fonte) NÃO é usada aqui:
     # fica sem match para praticamente todo o histórico (ver nota de bug em memória).
     try:
-        bu = pd.read_excel(path, sheet_name="Base unidades")
+        bu = ler_aba(path, "Base unidades", obrigatoria=False)
+        if bu is None:
+            raise KeyError("aba 'Base unidades' ausente")
         gmap = dict(zip(bu["UNIDADE ADMINISTRATIVA"].astype(str).str.strip().str.upper(), bu["GRAU"]))
     except Exception:
         gmap = {}
@@ -300,7 +451,7 @@ def main(path):
     }
 
     # ---------------- P13 — Conformidade estrutural Res. CSJT 296/2021 ----------------
-    _EJUD = r"Escola Judicial|Capacita[çc][ãa]o de Magistrado|Capacita[çc][ãa]o de Servidor"
+    _EJUD = EJUD_RE
     srv["ejud"] = srv["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
     srv["tem_com"] = srv["CODIGO_COMISSAO"].notna()
     sult = srv[srv["ref"] == ult_ref]
@@ -370,6 +521,5 @@ def main(path):
     print(f"OK — dados_paineis_forca.json gerado ({ult_ref}, {len(ult)} servidores no último snapshot)")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("Uso: python build_paineis_forca.py <Base.xlsx>")
-    main(sys.argv[1])
+    # argumento opcional: se omitido, localiza a planilha na pasta atual
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
