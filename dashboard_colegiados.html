@@ -94,16 +94,18 @@ const STAFF=[
 ];
 
 const UAE_INIT=[
-  {id:'SUBCOTELE', sigla:'SUBCOTELE', nome:'Subcomitê de Teletrabalho',                                         uaeId:'ALLINE'   },
-  {id:'SUBCOPERGD',sigla:'SUBCOPERGD',nome:'Subcomitê Gestor de Equidade de Raça, Gênero e Diversidade',        uaeId:'ALINNE'   },
-  {id:'SUBCOGPC',  sigla:'SUBCOGPC',  nome:'Subcomitê Regional de Gestão de Pessoas por Competências',          uaeId:'ALLINE'   },
-  {id:'SUBCOAD',   sigla:'SUBCOAD',   nome:'Subcomitê de Avaliação de Desempenho',                              uaeId:'JAQUELINE'},
-  {id:'COP',       sigla:'COP',       nome:'Comitê de Pessoas',                                                 uaeId:'LEONARDO' },
-  {id:'SUBPEAMS',  sigla:'SUBPEAMS',  nome:'Subcomitê de Prevenção e Enfrentamento ao Assédio Moral e Sexual',  uaeId:'ALINNE'   },
-  {id:'SUBCOIPFE', sigla:'SUBCOIPFE', nome:'Subcomitê de Incentivo à Participação Institucional Feminina',      uaeId:'CLEIDE'   },
-  {id:'SUBCOSIGEP',sigla:'SUBCOSIGEP',nome:'Subcomitê do SIGEP-JT',                                             uaeId:'FRANCHA'  },
-  {id:'SUBCOIDOSO',sigla:'SUBCOIDOSO',nome:'Subcomitê Regional de Atenção às Pessoas Idosas',                   uaeId:'CLEIDE'   },
-  {id:'GTCPS',     sigla:'GTCPS',     nome:'GT 7º Concurso Público para Servidores',                            uaeId:'LEONARDO' },
+  {id:'SUBCOTELE', sigla:'SUBCOTELE', nome:'Subcomitê de Teletrabalho',                                         uaeIds:['ALLINE']   },
+  {id:'SUBCOPERGD',sigla:'SUBCOPERGD',nome:'Subcomitê Gestor de Equidade de Raça, Gênero e Diversidade',        uaeIds:['ALINNE']   },
+  {id:'SUBCOGPC',  sigla:'SUBCOGPC',  nome:'Subcomitê Regional de Gestão de Pessoas por Competências',          uaeIds:['ALLINE']   },
+  {id:'SUBCOAD',   sigla:'SUBCOAD',   nome:'Subcomitê de Avaliação de Desempenho',                              uaeIds:['JAQUELINE']},
+  {id:'COP',       sigla:'COP',       nome:'Comitê de Pessoas',                                                 uaeIds:['LEONARDO'] },
+  {id:'SUBPEAMS',  sigla:'SUBPEAMS',  nome:'Subcomitê de Prevenção e Enfrentamento ao Assédio Moral e Sexual',  uaeIds:['ALINNE']   },
+  {id:'SUBCOIPFE', sigla:'SUBCOIPFE', nome:'Subcomitê de Incentivo à Participação Institucional Feminina',      uaeIds:['CLEIDE']   },
+  {id:'SUBCOSIGEP',sigla:'SUBCOSIGEP',nome:'Subcomitê do SIGEP-JT',                                             uaeIds:['FRANCHA']  },
+  {id:'SUBCOIDOSO',sigla:'SUBCOIDOSO',nome:'Subcomitê Regional de Atenção às Pessoas Idosas',                   uaeIds:['CLEIDE']   },
+  {id:'GTCPS',     sigla:'GTCPS',     nome:'GT 7º Concurso Público para Servidores',                            uaeIds:['LEONARDO'] },
+  {id:'SUBCOCANDE',sigla:'SUBCOCANDE',nome:'Subcomitê de Apoio a Candidatos com Deficiência',                   uaeIds:['NARA','RODOLFO'], multiUae:true,
+   uaeNota:'UAE exercida em alternância pela SGP conforme o cargo avaliado (técnico/analista).'},
 ];
 
 const PART=[
@@ -164,7 +166,7 @@ const PART=[
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = {
-  tab: 0, cols: JSON.parse(JSON.stringify(UAE_INIT)),
+  tab: 0, cols: reconcile(JSON.parse(JSON.stringify(UAE_INIT))),
   sel: null, search: '',
   // sync
   syncStatus: 'connecting', // connecting | synced | saving | error
@@ -179,7 +181,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function fmtDate(iso){try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch{return '';}}
 function computeLoads(){
   const l={};STAFF.forEach(s=>{l[s.id]={uae:[],part:[]};});
-  S.cols.forEach(c=>{if(c.uaeId&&l[c.uaeId])l[c.uaeId].uae.push(c.nome);});
+  S.cols.forEach(c=>{(c.uaeIds||[]).forEach(id=>{if(l[id])l[id].uae.push(c.nome);});});
   PART.forEach(p=>{if(l[p.s])l[p.s].part.push({t:p.t,c:p.c});});
   return l;
 }
@@ -195,12 +197,34 @@ function toast(msg,bg,ms=3500){
 }
 
 // ── FIRESTORE ─────────────────────────────────────────────────────────────────
+function addUae(c,sid){
+  if(!c.multiUae) return sid?[sid]:[];
+  const cur=c.uaeIds||[];
+  return cur.includes(sid)?cur:[...cur,sid];
+}
+function normCol(c){
+  const ids = Array.isArray(c.uaeIds) ? c.uaeIds.filter(Boolean) : (c.uaeId ? [c.uaeId] : []);
+  const o = {...c, uaeIds: ids}; delete o.uaeId; return o;
+}
+// Reconcilia o estado remoto com o catálogo UAE_INIT: injeta colegiados novos e
+// reaplica a configuração (sigla, nome, multiUae, nota), que não é editável na UI.
+function reconcile(cols){
+  const out = (cols||[]).map(normCol);
+  const seen = new Set(out.map(c=>c.id));
+  UAE_INIT.forEach(d=>{ if(!seen.has(d.id)) out.push(normCol(JSON.parse(JSON.stringify(d)))); });
+  return out.map(c=>{
+    const d = UAE_INIT.find(x=>x.id===c.id);
+    return d ? {...c, sigla:d.sigla, nome:d.nome, multiUae:!!d.multiUae, uaeNota:d.uaeNota||null} : c;
+  });
+}
 function applyRemoteData(data){
-  S.cols      = data.cols;
+  const before = (data.cols||[]).length;
+  S.cols      = reconcile(data.cols);
   S.lastSaved = data.savedAt?.toDate?.()?.toISOString() || null;
-  S.dirty     = false;
+  S.dirty     = S.cols.length > before;
   S.remoteWhileDirty = null;
   S.syncStatus = 'synced';
+  if(S.dirty) toast('Colegiado novo do catálogo incorporado. Clique "↑ Salvar" para persistir.','#3B82F6',7000);
 }
 
 // Listener em tempo real
@@ -317,13 +341,26 @@ function render(){
     document.querySelectorAll('.abtn').forEach(el=>{
       el.addEventListener('click',()=>{
         if(!S.sel)return;
-        S.cols=S.cols.map(c=>c.id===el.dataset.cid?{...c,uaeId:S.sel}:c);
+        S.cols=S.cols.map(c=>c.id===el.dataset.cid?{...c,uaeIds:addUae(c,S.sel)}:c);
         S.sel=null;S.dirty=true;render();
       });
     });
     document.querySelectorAll('.usel').forEach(el=>{
       el.addEventListener('change',e=>{
-        S.cols=S.cols.map(c=>c.id===el.dataset.cid?{...c,uaeId:e.target.value||null}:c);
+        const sid=e.target.value;
+        S.cols=S.cols.map(c=>{
+          if(c.id!==el.dataset.cid)return c;
+          if(!sid)return c.multiUae?c:{...c,uaeIds:[]};
+          return {...c,uaeIds:addUae(c,sid)};
+        });
+        S.dirty=true;render();
+      });
+    });
+    document.querySelectorAll('.urm').forEach(el=>{
+      el.addEventListener('click',ev=>{
+        ev.stopPropagation();
+        const {cid,sid}=el.dataset;
+        S.cols=S.cols.map(c=>c.id===cid?{...c,uaeIds:(c.uaeIds||[]).filter(x=>x!==sid)}:c);
         S.dirty=true;render();
       });
     });
@@ -345,7 +382,7 @@ function render(){
         const sid=e.dataTransfer.getData('text/plain');
         const cid=el.dataset.cid;
         if(!sid||!cid)return;
-        S.cols=S.cols.map(c=>c.id===cid?{...c,uaeId:sid}:c);
+        S.cols=S.cols.map(c=>c.id===cid?{...c,uaeIds:addUae(c,sid)}:c);
         S.sel=null;S.dirty=true;render();
       });
     });
@@ -391,27 +428,35 @@ function tab0(ld,sorted,selS){
   }).join('');
 
   const colCards=S.cols.map(c=>{
-    const uae=STAFF.find(s=>s.id===c.uaeId);
-    const ut=c.uaeId?tot(c.uaeId,ld):0;const col=lc(ut);
+    const ids=(c.uaeIds||[]).filter(id=>STAFF.some(s=>s.id===id));
+    const multi=!!c.multiUae;
+    const badges = ids.length
+      ? ids.map(id=>{
+          const s=STAFF.find(x=>x.id===id);const ut=tot(id,ld);const col=lc(ut);
+          const rm = multi?`<button class="urm" data-cid="${c.id}" data-sid="${id}" title="Remover da UAE" style="background:none;border:none;color:#64748B;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 3px;">&times;</button>`:'';
+          return`<span style="background:${col}18;border:1.5px solid ${col};border-radius:16px;padding:3px 10px;font-size:11px;font-weight:700;color:#1E293B;display:inline-flex;align-items:center;gap:6px;">${esc(s.nc)}<span style="background:${col};color:white;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700;">${ut}</span>${rm}</span>`;
+        }).join('')
+      : `<span style="color:#EF4444;font-size:12px;font-style:italic;">não atribuído</span>`;
     const right=S.sel
-      ?`<button class="abtn" data-cid="${c.id}" style="background:#2563EB;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">Atribuir ${selS?esc(selS.nc.split(' ')[0]):''}→</button>`
+      ?`<button class="abtn" data-cid="${c.id}" style="background:#2563EB;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">${multi?'Adicionar':'Atribuir'} ${selS?esc(selS.nc.split(' ')[0]):''}&rarr;</button>`
       :`<select class="usel" data-cid="${c.id}" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E8F0;color:#64748B;background:#F8FAFC;cursor:pointer;flex-shrink:0;">
-         <option value="">— trocar —</option>
-         ${STAFF.map(s=>`<option value="${s.id}"${c.uaeId===s.id?' selected':''}>${esc(s.nc)} (${tot(s.id,ld)})</option>`).join('')}
+         <option value="">${multi?'— adicionar —':'— trocar —'}</option>
+         ${STAFF.map(s=>`<option value="${s.id}"${(!multi&&ids[0]===s.id)?' selected':''}>${esc(s.nc)} (${tot(s.id,ld)})</option>`).join('')}
        </select>`;
+    const nota=c.uaeNota?`<div style="font-size:10px;color:#94A3B8;font-style:italic;line-height:1.35;margin-top:7px;">${esc(c.uaeNota)}</div>`:'';
     return`<div class="uae-card" data-cid="${c.id}" style="border:1.5px solid ${S.sel?'#BFDBFE':'#E2E8F0'};">
       <div style="margin-bottom:8px;">
         <span style="background:${NAV};color:white;border-radius:4px;padding:2px 6px;font-size:9px;font-weight:700;margin-right:6px;">${c.sigla}</span>
         <span style="font-size:12px;font-weight:700;color:#1E293B;">${esc(c.nome)}</span>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span style="font-size:11px;color:#94A3B8;flex-shrink:0;">UAE atual:</span>
-          ${uae?`<span style="background:${col}18;border:1.5px solid ${col};border-radius:16px;padding:3px 10px;font-size:11px;font-weight:700;color:#1E293B;display:flex;align-items:center;gap:6px;">${esc(uae.nc)}<span style="background:${col};color:white;border-radius:8px;padding:0 5px;font-size:10px;font-weight:700;">${ut}</span></span>`
-               :`<span style="color:#EF4444;font-size:12px;font-style:italic;">não atribuído</span>`}
+          ${badges}
         </div>
         ${right}
       </div>
+      ${nota}
     </div>`;
   }).join('');
 
@@ -501,7 +546,7 @@ window._fsSync  = fsSync;
 window._clearSel= ()=>{ S.sel=null; render(); };
 window._doReset = ()=>{
   if(!confirm('Resetar para os valores padrão? As edições não salvas serão perdidas.'))return;
-  S.cols=JSON.parse(JSON.stringify(UAE_INIT));
+  S.cols=reconcile(JSON.parse(JSON.stringify(UAE_INIT)));
   S.sel=null;S.search='';S.dirty=true;render();
   toast('Valores padrão restaurados. Clique "↑ Salvar" para persistir.','#64748B');
 };
