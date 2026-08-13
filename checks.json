@@ -1,322 +1,337 @@
 {
- "index.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "Índice de painéis",
-   "dashboard_evolucao_forca_trabalho.html",
-   "dashboard_apoio_indireto_csjt296.html",
-   "dashboard_equidade_comissionamentos.html",
-   "dashboard_afastamentos.html",
-   "dashboard_transformacoes_organograma.html",
-   "dashboard_governanca_tcu.html"
-  ],
-  "must_not_contain": []
- },
- "dashboard_colegiados.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "firebaseConfig",
-   "alocacao_uae"
-  ],
-  "must_not_contain": []
- },
- "dashboard_demandas_correcionais.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "firebaseConfig",
-   "demandas_correcionais_sgp"
-  ],
-  "must_not_contain": []
- },
- "dashboard_pendencias_colegiados.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "firebaseConfig",
-   "pendencias_subpeams_subcopergd"
-  ],
-  "must_not_contain": []
- },
- "dashboard-aderencia-funcional-trt17.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back"
-  ],
-  "must_not_contain": []
- },
- "dashboard_equidade_racial_capacitacao.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "firebaseConfig",
-   "equidade_racial_capacitacao_enap"
-  ],
-  "must_not_contain": []
- },
- "dashboard_evolucao_forca_trabalho.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "c-total",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_envelhecimento_demografico.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "c-pir",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_equidade_comissionamentos.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "indice_paridade",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_tempo_primeira_comissao.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "curva_geral",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_custo_comissionamentos.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "c-custo",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_qualificacao_cargo.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "c-esc",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dashboard_apoio_indireto_csjt296.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_paineis_forca.json",
-   "c-serie",
-   "c-art6",
-   "c-art14",
-   "render(D)",
-   "Conformidade estrutural"
-  ],
-  "must_not_contain": [
-   "CPF"
-  ]
- },
- "dados_paineis_forca.json": {
-  "must_contain": [
-   "p07",
-   "p08",
-   "p09",
-   "p10",
-   "p11",
-   "p12",
-   "p13",
-   "k_anonimato"
-  ],
-  "must_not_contain": [
-   "CPF",
-   "MATRICULA",
-   "NASCIMENTO",
-   "\"NOME\""
-  ]
- },
- "build_paineis_forca.py": {
-  "must_contain": [
-   "K_MIN = 5",
-   "A BASE NUNCA ENTRA NO REPOSITÓRIO",
-   "EJUD_RE"
-  ],
-  "must_not_contain": [
-   "github_pat_"
-  ]
- },
- "dashboard_afastamentos.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PROTEÇÃO DE DADOS",
-   "dados_afastamentos.json",
-   "c-anual",
-   "render(D)"
-  ],
-  "must_not_contain": [
-   "MATRICULA",
-   "\"NOME\""
-  ]
- },
- "dados_afastamentos.json": {
-  "must_contain": [
-   "kpis",
-   "serie_anual",
-   "top_tipos",
-   "por_cargo",
-   "k_anonimato"
-  ],
-  "must_not_contain": [
-   "CPF",
-   "MATRICULA",
-   "\"NOME\""
-  ]
- },
- "dashboard_acoes_reestruturacao_2026.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "firebaseConfig",
-   "acoes_reestruturacao_2026"
-  ],
-  "must_not_contain": []
- },
- "dashboard_transformacoes_organograma.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "PAINEL 14",
-   "regua-cmp",
-   "SEFO"
-  ],
-  "must_not_contain": [
-   "CPF",
-   "MATRICULA",
-   "\"NOME\""
-  ]
- },
- "dashboard_governanca_tcu.html": {
-  "must_contain": [
-   "<html",
-   "</html>",
-   "favicon.svg",
-   "sgp-hub-back",
-   "Levantamentos do TCU",
-   "iGovPessoas",
-   "iGestPessoas"
-  ],
-  "must_not_contain": [
-   "CPF",
-   "MATRICULA",
-   "\"NOME\""
-  ]
- },
- "atualizar.py": {
-  "must_contain": [
-   "EJUD_RE",
-   "GITHUB_PAT",
-   "def comparar"
-  ],
-  "must_not_contain": [
-   "github_pat_"
-  ]
- },
- "diagnostico.py": {
-  "must_contain": [
-   "COLS_EXIGIDAS",
-   "resolver_base"
-  ],
-  "must_not_contain": [
-   "github_pat_"
-  ]
- },
- "ATUALIZAR PAINEIS.bat": {
-  "must_contain": [
-   "atualizar.py"
-  ],
-  "must_not_contain": [
-   "github_pat_"
-  ]
- },
- ".gitignore": {
-  "must_contain": [
-   "*.xlsx",
-   "*.ods"
-  ],
-  "must_not_contain": []
- },
- "README.md": {
-  "must_contain": [
-   "ATUALIZAR PAINEIS.bat",
-   "k=5"
-  ],
-  "must_not_contain": [
-   "github_pat_"
-  ]
- }
+  "index.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "Índice de painéis",
+      "dashboard_evolucao_forca_trabalho.html",
+      "dashboard_apoio_indireto_csjt296.html",
+      "dashboard_equidade_comissionamentos.html",
+      "dashboard_afastamentos.html",
+      "dashboard_transformacoes_organograma.html",
+      "dashboard_governanca_tcu.html",
+      "dashboard_risco_sucessorio.html"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_colegiados.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "firebaseConfig",
+      "alocacao_uae"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_demandas_correcionais.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "firebaseConfig",
+      "demandas_correcionais_sgp"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_pendencias_colegiados.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "firebaseConfig",
+      "pendencias_subpeams_subcopergd"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard-aderencia-funcional-trt17.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_equidade_racial_capacitacao.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "firebaseConfig",
+      "equidade_racial_capacitacao_enap"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_evolucao_forca_trabalho.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "c-total",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_envelhecimento_demografico.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "c-pir",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_equidade_comissionamentos.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "indice_paridade",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_tempo_primeira_comissao.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "curva_geral",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_custo_comissionamentos.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "c-custo",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_qualificacao_cargo.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "c-esc",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dashboard_apoio_indireto_csjt296.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_paineis_forca.json",
+      "c-serie",
+      "c-art6",
+      "c-art14",
+      "render(D)",
+      "Conformidade estrutural"
+    ],
+    "must_not_contain": [
+      "CPF"
+    ]
+  },
+  "dados_paineis_forca.json": {
+    "must_contain": [
+      "p07",
+      "p08",
+      "p09",
+      "p10",
+      "p11",
+      "p12",
+      "p13",
+      "k_anonimato"
+    ],
+    "must_not_contain": [
+      "CPF",
+      "MATRICULA",
+      "NASCIMENTO",
+      "\"NOME\""
+    ]
+  },
+  "build_paineis_forca.py": {
+    "must_contain": [
+      "K_MIN = 5",
+      "A BASE NUNCA ENTRA NO REPOSITÓRIO",
+      "EJUD_RE"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  "dashboard_afastamentos.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PROTEÇÃO DE DADOS",
+      "dados_afastamentos.json",
+      "c-anual",
+      "render(D)"
+    ],
+    "must_not_contain": [
+      "MATRICULA",
+      "\"NOME\""
+    ]
+  },
+  "dados_afastamentos.json": {
+    "must_contain": [
+      "kpis",
+      "serie_anual",
+      "top_tipos",
+      "por_cargo",
+      "k_anonimato"
+    ],
+    "must_not_contain": [
+      "CPF",
+      "MATRICULA",
+      "\"NOME\""
+    ]
+  },
+  "dashboard_acoes_reestruturacao_2026.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "firebaseConfig",
+      "acoes_reestruturacao_2026"
+    ],
+    "must_not_contain": []
+  },
+  "dashboard_transformacoes_organograma.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "PAINEL 14",
+      "regua-cmp",
+      "SEFO"
+    ],
+    "must_not_contain": [
+      "CPF",
+      "MATRICULA",
+      "\"NOME\""
+    ]
+  },
+  "dashboard_governanca_tcu.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "Levantamentos do TCU",
+      "iGovPessoas",
+      "iGestPessoas"
+    ],
+    "must_not_contain": [
+      "CPF",
+      "MATRICULA",
+      "\"NOME\""
+    ]
+  },
+  "atualizar.py": {
+    "must_contain": [
+      "EJUD_RE",
+      "GITHUB_PAT",
+      "def comparar"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  "diagnostico.py": {
+    "must_contain": [
+      "COLS_EXIGIDAS",
+      "resolver_base"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  "ATUALIZAR PAINEIS.bat": {
+    "must_contain": [
+      "atualizar.py"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  ".gitignore": {
+    "must_contain": [
+      "*.xlsx",
+      "*.ods"
+    ],
+    "must_not_contain": []
+  },
+  "README.md": {
+    "must_contain": [
+      "ATUALIZAR PAINEIS.bat",
+      "k=5"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  "dashboard_risco_sucessorio.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "Risco Sucessório",
+      "Nota metodológica"
+    ],
+    "must_not_contain": [
+      "UAE",
+      "firebaseConfig"
+    ]
+  }
 }

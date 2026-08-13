@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risco Sucessório — SGP/TRT-17</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#003A5C; --navy-2:#00507E; --yellow:#FFD040; --yellow-dk:#E0AE00;
+    --bg:#F4F6F8; --card:#FFFFFF; --line:#DDE3E9;
+    --txt:#1B2A36; --txt-2:#5B6B78; --red:#C0392B; --green:#1E7B54;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Open Sans',Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.55;padding-bottom:48px}
+  header{background:var(--navy);color:#fff;padding:26px 0 22px;border-bottom:5px solid var(--yellow)}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+  header h1{font-size:1.45rem;font-weight:700;letter-spacing:.2px}
+  header p{font-size:.86rem;opacity:.85;margin-top:5px}
+  .sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+    background:var(--navy);color:var(--yellow);text-decoration:none;font-size:11.5px;font-weight:700;letter-spacing:.06em;
+    padding:9px 14px;border-radius:8px;border:1px solid var(--navy-2);box-shadow:0 2px 6px rgba(0,40,70,.18)}
+  .sgp-hub-back:hover{background:var(--navy-2)}
+  @media print{.sgp-hub-back{display:none}}
+
+  section{margin-top:26px}
+  h2{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:12px;
+     padding-bottom:6px;border-bottom:2px solid var(--yellow);display:inline-block}
+  .sub{font-size:.82rem;color:var(--txt-2);margin:-4px 0 14px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;
+        border-top:4px solid var(--navy)}
+  .card.alert{border-top-color:var(--red)}
+  .card.ok{border-top-color:var(--green)}
+  .card .n{font-size:2rem;font-weight:700;color:var(--navy);line-height:1.1}
+  .card.alert .n{color:var(--red)}
+  .card .lb{font-size:.78rem;color:var(--txt-2);margin-top:3px}
+  .card .hint{font-size:.72rem;color:var(--txt-2);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:840px){.grid2{grid-template-columns:1fr}}
+
+  .bar-row{display:grid;grid-template-columns:150px 1fr 46px;align-items:center;gap:10px;margin-bottom:9px;font-size:.82rem}
+  .track{background:#EEF1F4;border-radius:3px;height:19px;overflow:hidden}
+  .fill{height:100%;background:var(--navy-2);border-radius:3px}
+  .fill.y{background:var(--yellow-dk)}
+  .fill.r{background:var(--red)}
+  .fill.g{background:var(--green)}
+  .val{text-align:right;font-weight:600;font-size:.82rem}
+
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{background:var(--navy);color:#fff;text-align:left;padding:8px 10px;font-weight:600;font-size:.78rem}
+  td{padding:8px 10px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:center}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.7rem;font-weight:600}
+  .tag.c{background:#FBE3E0;color:var(--red)}
+  .tag.a{background:#FFF2CC;color:#8A6A00}
+
+  .note{background:#FFFBEC;border-left:4px solid var(--yellow);padding:13px 16px;border-radius:0 6px 6px 0;font-size:.82rem}
+  .note strong{color:var(--navy)}
+  .meta{font-size:.75rem;color:var(--txt-2);margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+  ul.tight{margin:8px 0 0 18px}
+  ul.tight li{margin-bottom:5px;font-size:.82rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Risco Sucessório — Ocupações Críticas</h1>
+    <p>Política de Sucessão · Secretaria de Gestão de Pessoas · TRT da 17ª Região</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="cards">
+      <div class="card">
+        <div class="n">33</div>
+        <div class="lb">ocupações no universo de apuração</div>
+        <div class="hint">Postos críticos com FC/CJ cujo titular está em abono, tem 55+ (mulher) ou 60+ (homem)</div>
+      </div>
+      <div class="card">
+        <div class="n">21</div>
+        <div class="lb">ocupações já apuradas</div>
+        <div class="hint">64% do universo; apuração das demais em curso</div>
+      </div>
+      <div class="card alert">
+        <div class="n">9</div>
+        <div class="lb">sem cobertura de substituição</div>
+        <div class="hint">Postos não passíveis de substituição, equiparados à ausência de substituto</div>
+      </div>
+      <div class="card ok">
+        <div class="n">5</div>
+        <div class="lb">ocupações na fila do ciclo</div>
+        <div class="hint">Relação nominal em documento próprio, restrita à SGP</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Composição do universo</h2>
+    <p class="sub">Ocupações críticas sujeitas à apuração trimestral, por natureza do posto e por faixa etária do titular.</p>
+    <div class="grid2">
+      <div class="panel">
+        <div class="bar-row"><span>Gabinete e 1º grau</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="val">20</span></div>
+        <div class="bar-row"><span>Administrativo</span><div class="track"><div class="fill" style="width:65%"></div></div><span class="val">13</span></div>
+        <p class="sub" style="margin:12px 0 0">Dois terços do universo estão em gabinetes e unidades de primeiro grau, onde a sucessão depende de escolha do magistrado titular.</p>
+      </div>
+      <div class="panel">
+        <div class="bar-row"><span>55 a 59 anos</span><div class="track"><div class="fill y" style="width:83%"></div></div><span class="val">15</span></div>
+        <div class="bar-row"><span>60 anos ou mais</span><div class="track"><div class="fill y" style="width:100%"></div></div><span class="val">18</span></div>
+        <p class="sub" style="margin:12px 0 0">22 titulares estão em abono de permanência; os 11 demais ingressaram no universo pelo critério etário.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cobertura de substituição</h2>
+    <p class="sub">Considera-se coberta a ocupação com designação prévia vigente e eficaz — titular ainda no exercício da função indicada e substituto em condições de assumi-la.</p>
+    <div class="panel">
+      <div class="bar-row"><span>Com designação eficaz</span><div class="track"><div class="fill g" style="width:100%"></div></div><span class="val">12</span></div>
+      <div class="bar-row"><span>Sem cobertura</span><div class="track"><div class="fill r" style="width:75%"></div></div><span class="val">9</span></div>
+      <p class="sub" style="margin:14px 0 0">
+        Nenhuma das 12 designações apuradas mostrou-se ineficaz. As 9 ocupações sem cobertura são postos que a estrutura
+        não admite substituir, e não falhas de designação — 8 delas em gabinetes e unidades de primeiro grau.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ocupações apuradas por nível de criticidade</h2>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Nível</th><th class="num">Ocupações</th><th class="num">Com cobertura</th><th class="num">Sem cobertura</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag c">Crítico — nota 25</span></td><td class="num">9</td><td class="num">8</td><td class="num">1</td></tr>
+          <tr><td><span class="tag c">Crítico — notas 18 a 20</span></td><td class="num">12</td><td class="num">4</td><td class="num">8</td></tr>
+        </tbody>
+      </table>
+      <p class="sub" style="margin:12px 0 0">A concentração de postos descobertos está no nível 18–20, majoritariamente assessorias de gabinete e de vara.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Faixa B — reposição dependente de certame</h2>
+    <p class="sub">Ocupações críticas sem função comissionada, cuja reposição não se resolve por ato de nomeação. Não há sucessor a designar; o tratamento é a retenção de conhecimento e o alerta de reposição.</p>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Ocupação</th><th class="num">Nota</th><th class="num">Ocupantes em abono</th></tr></thead>
+        <tbody>
+          <tr><td>Apoio Especializado — Medicina</td><td class="num">25</td><td class="num">3</td></tr>
+          <tr><td>Oficial de Justiça Avaliador Federal</td><td class="num">16 a 20</td><td class="num">12</td></tr>
+          <tr><td>Agente da Polícia Judicial</td><td class="num">16</td><td class="num">8</td></tr>
+        </tbody>
+      </table>
+      <p class="sub" style="margin:12px 0 0">O posto de Apoio Especializado — Medicina tem nota idêntica à de cargos em comissão de nível CJ-3, e a reposição depende de concurso público.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quadro etário do Tribunal</h2>
+    <p class="sub">Servidores efetivos ativos, exceto magistrados. Contexto para leitura do universo de apuração.</p>
+    <div class="panel">
+      <div class="bar-row"><span>Até 39 anos</span><div class="track"><div class="fill" style="width:35%"></div></div><span class="val">94</span></div>
+      <div class="bar-row"><span>40 a 49 anos</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="val">270</span></div>
+      <div class="bar-row"><span>50 a 54 anos</span><div class="track"><div class="fill" style="width:34%"></div></div><span class="val">93</span></div>
+      <div class="bar-row"><span>55 a 59 anos</span><div class="track"><div class="fill y" style="width:42%"></div></div><span class="val">114</span></div>
+      <div class="bar-row"><span>60 a 64 anos</span><div class="track"><div class="fill y" style="width:21%"></div></div><span class="val">56</span></div>
+      <div class="bar-row"><span>65 anos ou mais</span><div class="track"><div class="fill r" style="width:8%"></div></div><span class="val">22</span></div>
+      <p class="sub" style="margin:12px 0 0">Idade mediana de 47 anos. O abono de permanência alcança 91% dos servidores com 65 anos ou mais e 59% da faixa de 60 a 64.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Nota metodológica</h2>
+    <div class="note">
+      <p><strong>Dados agregados.</strong> Este painel publica exclusivamente contagens agregadas. A relação nominal das ocupações
+      integrantes da fila de prioridade consta de documento próprio, de acesso restrito à Secretaria de Gestão de Pessoas e juntado
+      ao processo administrativo da Política de Sucessão.</p>
+      <ul class="tight">
+        <li>O universo de apuração compreende as ocupações críticas com função comissionada ou cargo em comissão cujo titular esteja
+        em gozo de abono de permanência, conte 55 anos ou mais, se mulher, ou 60 anos ou mais, se homem, ou tenha comunicado
+        previsão de desligamento.</li>
+        <li>O limiar etário diferenciado acompanha as menores idades mínimas admitidas pelas regras de transição previdenciárias vigentes.</li>
+        <li>A idade é utilizada exclusivamente para dimensionar o risco institucional de vacância, não podendo fundamentar decisão
+        individual sobre lotação, designação, dispensa de função, avaliação de desempenho ou acesso a ações de capacitação.</li>
+        <li>Os níveis de criticidade seguem a matriz consolidada em maio de 2026, ainda sujeita à revisão decorrente da reestruturação
+        organizacional.</li>
+        <li>Categorias com contagem reduzida foram agrupadas para impedir a identificação de servidores.</li>
+      </ul>
+    </div>
+
+    <p class="meta">
+      Apuração de referência: agosto de 2026 · Periodicidade trimestral · Fontes: matriz de criticidade dos postos de trabalho,
+      cadastro funcional e registro de designação prévia de substituição · Elaboração: Secretaria de Gestão de Pessoas.
+    </p>
+  </section>
+
+</div>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis">&#9666; HUB</a>
+</body>
+</html>
