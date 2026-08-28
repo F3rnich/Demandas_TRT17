@@ -22,7 +22,8 @@
       "favicon.svg",
       "sgp-hub-back",
       "firebaseConfig",
-      "alocacao_uae"
+      "alocacao_uae",
+      "UMF"
     ],
     "must_not_contain": []
   },
