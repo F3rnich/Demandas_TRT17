@@ -117,6 +117,27 @@
 
   .vazio{padding:22px 16px;color:var(--neutro);font-size:13.5px}
 
+  /* ---------- leitura prévia ---------- */
+  .painel{background:var(--superficie);border:1px solid var(--linha);border-radius:10px;padding:20px 22px}
+  .numeros{display:flex;gap:clamp(18px,4vw,42px);flex-wrap:wrap;padding-bottom:17px;
+    border-bottom:1px solid var(--linha);margin-bottom:17px}
+  .numero b{display:block;font-family:"IBM Plex Sans Condensed";font-size:34px;font-weight:700;
+    line-height:1;color:var(--marinha);letter-spacing:-.01em}
+  .numero span{font-size:12.5px;color:var(--neutro);display:block;margin-top:4px;max-width:21ch}
+  .colunas{display:grid;grid-template-columns:1.25fr 1fr;gap:clamp(20px,4vw,40px)}
+  .componente{display:grid;grid-template-columns:38px 1fr;gap:11px;margin-bottom:13px;align-items:start}
+  .peso-tag{font-family:"IBM Plex Sans Condensed";font-size:15px;font-weight:700;color:var(--marinha);
+    background:var(--papel);border-radius:6px;padding:3px 0;text-align:center}
+  .componente p{margin:0;font-size:13.5px;line-height:1.5}
+  .componente p b{font-weight:600}
+  .componente p span{color:var(--neutro)}
+  .cargos{list-style:none;margin:9px 0 0;padding:0}
+  .cargos li{display:grid;grid-template-columns:26px 1fr;gap:9px;font-size:13px;margin-bottom:5px;align-items:baseline}
+  .cargos li b{font-family:"IBM Plex Sans Condensed";font-size:15px;text-align:right;color:var(--marinha)}
+  .cargos li.fora b,.cargos li.fora{color:var(--neutro)}
+  .sub{font-size:12.5px;color:var(--neutro);margin:0 0 4px}
+  @media (max-width:760px){.colunas{grid-template-columns:1fr}}
+
   /* ---------- plano ---------- */
   .plano{background:var(--superficie);border:1px solid var(--linha);border-radius:10px;padding:18px 20px}
   .plano ol{margin:0;padding-left:20px}
@@ -191,6 +212,29 @@
 
 <div class="env">
 
+  <section id="sec-leitura">
+    <div class="cabeca"><h2>O que está sendo decidido</h2></div>
+    <div class="painel">
+      <div class="numeros">
+        <div class="numero"><b class="num" id="n-vagos">—</b><span>cargos efetivos vagos no Regional em 31 de agosto</span></div>
+        <div class="numero"><b class="num" id="n-ingresso">—</b><span>servidores ingressam em setembro</span></div>
+        <div class="numero"><b class="num" id="n-lacuna">—</b><span>posições em aberto nas unidades com paradigma</span></div>
+        <div class="numero"><b class="num" id="n-cedidos">—</b><span>servidores cedidos por outros órgãos em exercício aqui</span></div>
+      </div>
+      <div class="colunas">
+        <div>
+          <p class="sub">Como a ordem de prioridade é calculada</p>
+          <div id="componentes"></div>
+          <p class="sub" style="margin-top:14px">Cada componente conta pessoas, não proporção da unidade, e todos usam a mesma escala: cinco pessoas valem o máximo. Uma seção de uma pessoa em vias de se aposentar não passa à frente de uma Vara com cinco posições em aberto. Unidades sem lotação paradigma entram sem o primeiro componente, com os pesos restantes renormalizados — na área administrativa não há paradigma, então a decisão ali depende sobretudo da justificativa escrita.</p>
+        </div>
+        <div>
+          <p class="sub">Cargos vagos por perfil</p>
+          <ul class="cargos" id="lista-cargos"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="sec-falta">
     <div class="cabeca">
       <h2>Onde falta gente</h2>
@@ -223,15 +267,14 @@
     <div class="plano">
       <div id="plano-corpo"></div>
       <p class="saldo" id="plano-saldo"></p>
-      <button class="bt" id="copiar">Copiar para o despacho</button>
     </div>
   </section>
 
   <section>
     <details class="ajustes">
-      <summary>Ajustar o critério</summary>
+      <summary>Ajustar os pesos</summary>
       <div class="corpo">
-        <p class="intro">O índice soma três componentes, todos contados em pessoas e na mesma escala, em que cinco valem o máximo: posições em aberto em relação ao paradigma, servidores cedidos por outros órgãos e servidores em abono de permanência ou com aposentadoria prevista. Unidades sem lotação paradigma entram sem o primeiro componente e os pesos restantes são renormalizados.</p>
+        <p class="intro">Alterar os pesos reordena a lista para todos os usuários. A soma não precisa dar cem — os valores são normalizados.</p>
         <div class="pesos">
           <div class="peso"><label for="w-def">Lacuna de lotação</label><input type="number" id="w-def" min="0" max="100" step="5"></div>
           <div class="peso"><label for="w-req">Força cedida</label><input type="number" id="w-req" min="0" max="100" step="5"></div>
@@ -275,10 +318,59 @@ const BASE = {
  "meta": {
   "fonteLotacao": "Força_trabalho_após_reestruturação-_2026.xlsx · aba \"NÃO MEXER-PREVISÃO SET 2026 - a\" (cenário previsto para setembro/2026)",
   "fonteVagas": "Vagas_FC_CJ_SET2026_TRT17.xlsx — 25 FCs vagas, 20 delas no 1º grau",
+  "fonteVagos": "Cargos_efetivos_vagos_-_31_08_2026.xlsx — posição de 31/08/2026",
   "kMin": 5,
   "ingresso": 16,
-  "totalUnidades": 137
+  "totalUnidades": 137,
+  "vagosTotal": 41
  },
+ "cargosVagos": [
+  {
+   "cargo": "Técnico Jud. · Administrativa",
+   "qtd": 19,
+   "extincao": false
+  },
+  {
+   "cargo": "Analista Jud. · Administrativa",
+   "qtd": 6,
+   "extincao": false
+  },
+  {
+   "cargo": "Técnico Jud. · Administrativa · Agente da Polícia Judicial",
+   "qtd": 6,
+   "extincao": false
+  },
+  {
+   "cargo": "Analista Jud. · Judiciária · Oficial de Justiça Avaliador Federal",
+   "qtd": 4,
+   "extincao": false
+  },
+  {
+   "cargo": "Técnico Jud. · Apoio Especializado · Tecnologia da Informação",
+   "qtd": 3,
+   "extincao": false
+  },
+  {
+   "cargo": "Analista Jud. · Apoio Especializado · Arquivologia",
+   "qtd": 1,
+   "extincao": false
+  },
+  {
+   "cargo": "Analista Jud. · Apoio Especializado · Engenharia Civil",
+   "qtd": 1,
+   "extincao": false
+  },
+  {
+   "cargo": "Analista Jud. · Judiciária",
+   "qtd": 1,
+   "extincao": false
+  },
+  {
+   "cargo": "Auxiliar Jud. – Administrativa · Apoio de Serviços Diversos",
+   "qtd": 4,
+   "extincao": true
+  }
+ ],
  "unidades": [
   {
    "id": "central_de_mandados_ceman",
@@ -2612,6 +2704,7 @@ const BASE = {
  ]
 };
 const UNIDADES = BASE.unidades;
+const CARGOS   = BASE.cargosVagos;
 const META     = BASE.meta;
 const TOTAL    = META.ingresso;
 
@@ -2752,6 +2845,32 @@ function linha(u, i, mostrarPosto) {
 }
 
 /* ---------- desenho ---------- */
+const COMPONENTES = [
+  { k: 'deficit',      t: 'Lacuna de lotação',
+    d: 'Posições em aberto em relação à lotação paradigma da unidade.' },
+  { k: 'requisitados', t: 'Força cedida',
+    d: 'Servidores de prefeituras e de outros órgãos em exercício na unidade. Podem ser devolvidos a qualquer momento, por decisão que não é do Tribunal.' },
+  { k: 'risco',        t: 'Saídas previstas',
+    d: 'Servidores em abono de permanência ou com aposentadoria já prevista.' },
+];
+
+function leitura() {
+  const lacTotal = UNIDADES.reduce((s, u) => { const l = lacuna(u); return s + (l && l > 0 ? l : 0); }, 0);
+  const cedidos  = UNIDADES.reduce((s, u) => s + u.req, 0);
+  document.getElementById('n-vagos').textContent    = META.vagosTotal;
+  document.getElementById('n-ingresso').textContent = TOTAL;
+  document.getElementById('n-lacuna').textContent   = lacTotal;
+  document.getElementById('n-cedidos').textContent  = cedidos;
+
+  document.getElementById('componentes').innerHTML = COMPONENTES.map(c =>
+    `<div class="componente"><span class="peso-tag num">${cfg.pesos[c.k]}</span>
+      <p><b>${c.t}</b> <span>— ${c.d}</span></p></div>`).join('');
+
+  document.getElementById('lista-cargos').innerHTML = CARGOS.map(c =>
+    `<li class="${c.extincao ? 'fora' : ''}"><b class="num">${c.qtd}</b><span>${esc(c.cargo)}${c.extincao ? ' <span style="font-size:11.5px">(cargo em extinção, não deve ser provido)</span>' : ''}</span></li>`
+  ).join('');
+}
+
 function desenhar() {
   document.getElementById('ck-req').checked = cfg.contarReq;
   document.getElementById('ck-req-txt').textContent = cfg.contarReq
@@ -2763,6 +2882,7 @@ function desenhar() {
   document.querySelectorAll('.filtro').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tr === filtro)));
 
   contador();
+  leitura();
 
   const casa = u => (filtro === 'todas' || grupo(u) === filtro)
     && (!busca || u.nome.toLowerCase().includes(busca.toLowerCase()));
@@ -2828,21 +2948,6 @@ function plano() {
     : `A distribuição soma ${n}, ${-resta} além dos ${TOTAL} que ingressam.`;
 }
 
-function textoPlano() {
-  const itens = UNIDADES.filter(u => posto(u) > 0).sort((a, b) => posto(b) - posto(a) || a.nome.localeCompare(b.nome));
-  const linhas = itens.map(u => {
-    const l = lacuna(u);
-    const base = `${u.nome} — ${posto(u)} ${posto(u) === 1 ? 'servidor' : 'servidores'}. ` +
-      (l != null && l > 0 ? `${l} ${l === 1 ? 'posição em aberto' : 'posições em aberto'} em relação ao paradigma. ` : '') +
-      (u.req ? `${u.req} ${u.req === 1 ? 'servidor cedido' : 'servidores cedidos'} por outro órgão. ` : '');
-    return base + (nota(u) ? nota(u) : '');
-  });
-  const modo = cfg.contarReq ? 'contando os servidores cedidos por outros órgãos' : 'considerando apenas o quadro próprio';
-  return `Distribuição dos ${TOTAL} servidores que ingressam em setembro de 2026\n` +
-    `Critério estrutural sobre a estrutura prevista na RA 68/2026, ${modo}.\n\n` +
-    linhas.join('\n') + `\n\nTotal distribuído: ${alocado()} de ${TOTAL}.`;
-}
-
 /* ---------- eventos ---------- */
 function ajusta(id, d) {
   const n = Math.max(0, (alocacoes[id]?.n || 0) + d);
@@ -2865,11 +2970,6 @@ document.addEventListener('click', e => {
   if (e.target.id === 'ver-menos') { verTudo = false; desenhar(); document.getElementById('sec-falta').scrollIntoView({ block: 'start' }); return; }
   if (e.target.id === 'restaurar') { cfg = JSON.parse(JSON.stringify(CFG_PADRAO)); paradigmas = {}; desenhar(); gravar(); }
   if (e.target.id === 'ir-plano')  { document.getElementById('sec-plano').scrollIntoView({ block: 'start' }); }
-  if (e.target.id === 'copiar') {
-    navigator.clipboard.writeText(textoPlano())
-      .then(() => { e.target.textContent = 'Copiado'; setTimeout(() => { e.target.textContent = 'Copiar para o despacho'; }, 1800); })
-      .catch(() => { e.target.textContent = 'Não foi possível copiar'; });
-  }
 });
 
 document.addEventListener('input', e => {
