@@ -147,7 +147,7 @@
 
   <div class="panel" style="opacity:.78">
     <h2>Anexo — indicadores processuais (fora do critério)</h2>
-    <p class="hint">Registro do que foi levantado e afastado por decisão da SGP. Nenhum destes números influencia o índice, a ordenação ou qualquer recomendação deste painel. Consta aqui para documentar o exame feito. Acervo apurado em 23 das 24 Varas; a 15.ª de Vitória não integra a relação. Colocação IGEST refere-se ao ranking nacional das Varas do Trabalho, apuração trimestral sobre 12 meses até jun/2026 — a seta indica a variação entre a antepenúltima e a última apuração.</p>
+    <p class="hint">Registro do que foi levantado e afastado por decisão da SGP. Nenhum destes números influencia o índice, a ordenação ou qualquer recomendação deste painel. Consta aqui para documentar o exame feito. Acervo apurado em 23 das 24 Varas; a 15.ª de Vitória não integra a relação. Guarapari aparece com o acervo da 1.ª Vara, a única instalada — a relação traz ainda uma 2.ª Vara de Guarapari com 1.377 processos, divergência a esclarecer com a origem do dado. Colocação IGEST refere-se ao ranking nacional das Varas do Trabalho, apuração trimestral sobre 12 meses até jun/2026 — a seta indica a variação entre a antepenúltima e a última apuração.</p>
     <table id="t-anexo"></table>
   </div>
 
@@ -156,7 +156,7 @@
 <footer>
   <strong>Fontes.</strong> <span id="f-fontes"></span><br>
   <strong>Proteção de dados.</strong> Painel construído apenas com agregados por unidade. Nenhum nome, matrícula ou registro individual foi utilizado. Afastamento superior a 60 dias é publicado somente em unidades com <span id="f-k"></span> ou mais pessoas; abaixo desse limiar o número identificaria a pessoa e aparece como “—”. Condição especial não é publicada por unidade pelo mesmo motivo: no cenário de setembro/2026 há 76 registros em todo o Regional, 9,5% da força.<br>
-  <strong>Limites conhecidos.</strong> O critério é exclusivamente estrutural: mede lacuna de lotação, não volume nem natureza do serviço prestado. Duas unidades com o mesmo déficit aparecem iguais ainda que uma trabalhe muito mais que a outra. A área administrativa não tem lotação paradigma, logo não há déficit calculável e nenhum ranking de necessidade é produzido para ela. Registros institucionais apontam duas Varas em Guarapari enquanto a base de lotação traz uma unidade com paradigma 11; o paradigma de cada unidade pode ser corrigido no próprio painel e a alteração fica registrada.<br>
+  <strong>Limites conhecidos.</strong> O critério é exclusivamente estrutural: mede lacuna de lotação, não volume nem natureza do serviço prestado. Duas unidades com o mesmo déficit aparecem iguais ainda que uma trabalhe muito mais que a outra. A área administrativa não tem lotação paradigma, logo não há déficit calculável e nenhum ranking de necessidade é produzido para ela. O paradigma de cada unidade pode ser corrigido no próprio painel e a alteração fica registrada.<br>
   Sincronização em tempo real via Firebase Firestore — alterações feitas por um usuário aparecem automaticamente para os demais.
 </footer>
 
@@ -251,12 +251,12 @@ const BASE = {
    "aposent": 0,
    "afast": 1,
    "semfc": 6,
-   "acervo": 2711,
+   "acervo": 1334,
    "igest": 699,
    "igestQuartil": 2,
    "igestDelta": -21,
    "igestPontos": 0,
-   "ressalva": "Registros institucionais apontam 1ª e 2ª Varas do Trabalho de Guarapari, enquanto a base de lotação traz uma única unidade com paradigma 11. Confirmar quantas Varas estão instaladas: se forem duas, o paradigma dobra e a unidade deixa de ser excedente. Paradigma editável nesta tela."
+   "ressalva": null
   },
   {
    "id": "vara_do_trabalho_de_colatina",
