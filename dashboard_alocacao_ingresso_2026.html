@@ -84,7 +84,7 @@
 <header>
   <div>
     <h1>Alocação da Força de Trabalho — Ingresso SET/2026</h1>
-    <p>SGP — TRT-17 · 16 servidores a lotar · cenário de estrutura previsto para setembro/2026 (RA 68/2026) cruzado com acervo processual e IGEST · painel de decisão editável</p>
+    <p>SGP — TRT-17 · 16 servidores a lotar · critério estrutural sobre o cenário previsto para setembro/2026 (RA 68/2026) · por decisão da SGP, indicadores processuais não integram o critério · painel de decisão editável</p>
   </div>
   <span id="sync-indicator">&#8635; conectando…</span>
 </header>
@@ -93,30 +93,27 @@
 
   <div class="metrics" id="metrics"></div>
 
+  <div class="panel" style="border-left:4px solid #E8821E">
+    <h2>Escopo do critério</h2>
+    <p class="hint" style="margin-bottom:0">Por decisão da Secretaria de Gestão de Pessoas, <strong>acervo processual, congestionamento, produtividade e IGEST não entram no critério de alocação</strong>. A decisão se apoia apenas na situação estrutural das unidades: déficit em relação à lotação paradigma, dependência de força de trabalho cedida por outros órgãos, funções comissionadas sem ocupante e risco de saída por aposentadoria. Os indicadores processuais levantados durante a análise ficam registrados no anexo ao final desta página, fora do cálculo, apenas como documentação do que foi examinado e afastado.</p>
+  </div>
+
   <div class="panel">
     <h2>Parâmetros da análise</h2>
     <p class="hint">O interruptor abaixo muda o diagnóstico inteiro. Os 34 servidores requisitados do 1º grau vêm de prefeituras e de outros órgãos, são reversíveis por ato de terceiro e não integram o quadro do Tribunal. Contá-los mostra a operação como ela funciona hoje; não contá-los mostra a capacidade própria do Regional. As duas leituras são legítimas e levam a decisões diferentes.</p>
     <div class="ctl-row">
       <label class="switch"><input type="checkbox" id="ck-req"><span id="lbl-req"></span></label>
       <div class="ctl"><label>Peso · déficit</label><input type="number" id="w-def" min="0" max="100" step="5"></div>
-      <div class="ctl"><label>Peso · carga</label><input type="number" id="w-car" min="0" max="100" step="5"></div>
       <div class="ctl"><label>Peso · requisitados</label><input type="number" id="w-req" min="0" max="100" step="5"></div>
       <div class="ctl"><label>Peso · risco de saída</label><input type="number" id="w-ris" min="0" max="100" step="5"></div>
       <button class="btn ghost" id="btn-reset">Restaurar padrão</button>
     </div>
-    <p class="legend"><strong>Déficit</strong>: paradigma menos força considerada. <strong>Carga</strong>: acervo por servidor, normalizado entre as Varas. <strong>Requisitados</strong>: proporção da força que é cedida por outro órgão. <strong>Risco de saída</strong>: abono de permanência e aposentadoria prevista sobre os efetivos. Componentes sem dado na unidade são retirados do cálculo e os pesos restantes são renormalizados.</p>
+    <p class="legend"><strong>Déficit</strong>: posições faltantes em relação ao paradigma, numa escala fixa em que cinco posições em aberto equivalem ao máximo. <strong>Requisitados</strong>: parcela da força que é cedida por outro órgão. <strong>Risco de saída</strong>: abono de permanência e aposentadoria prevista sobre os efetivos. Componentes sem dado na unidade são retirados do cálculo e os pesos restantes são renormalizados.</p>
   </div>
 
   <div class="panel">
-    <h2>Déficit de quadro × carga processual</h2>
-    <p class="hint">Cada ponto é uma Vara. Quem está no quadrante superior direito acumula os dois problemas. Quem está mal colocado no IGEST mas aparece à esquerda e abaixo tem problema de outra natureza, e receber servidor não resolve.</p>
-    <div id="quad-wrap"></div>
-    <p class="legend" id="quad-legend"></p>
-  </div>
-
-  <div class="panel">
-    <h2>1º grau — Varas com acervo apurado</h2>
-    <p class="hint">Ordenado pelo índice de necessidade. Digite a quantidade a alocar e registre a justificativa; tudo é gravado e compartilhado em tempo real.</p>
+    <h2>1º grau — Varas do Trabalho</h2>
+    <p class="hint">As 24 Varas, ordenadas pelo índice estrutural de necessidade. Digite a quantidade a alocar e registre a justificativa; tudo é gravado e compartilhado em tempo real.</p>
     <div class="ctl-row" style="margin-bottom:12px">
       <input type="text" class="search-box" id="busca" placeholder="Filtrar por unidade…">
       <label class="switch"><input type="checkbox" id="ck-tudo"><span>Mostrar todas as unidades administrativas</span></label>
@@ -126,13 +123,13 @@
 
   <div class="panel">
     <h2>1º grau — demais unidades</h2>
-    <p class="hint">Central de Mandados, CEJUSCs, GAJUS, Fóruns e unidades de apoio. Não há acervo por unidade; o índice é calculado sem o componente de carga.</p>
+    <p class="hint">Central de Mandados, CEJUSCs, GAJUS, Fóruns e unidades de apoio ao 1º grau.</p>
     <table id="t-apoio"></table>
   </div>
 
   <div class="panel">
     <h2>Gabinetes de 2º grau</h2>
-    <p class="hint">Paradigma de 11 servidores. Não há dado de acervo por gabinete nas fontes disponíveis; o índice roda sem o componente de carga.</p>
+    <p class="hint">Paradigma de 11 servidores por gabinete.</p>
     <table id="t-gab"></table>
   </div>
 
@@ -144,8 +141,14 @@
 
   <div class="panel">
     <h2>Unidades acima do paradigma — candidatas a liberar servidor</h2>
-    <p class="hint">Excedente calculado no mesmo modo escolhido acima. Onde a carga por servidor também está abaixo da média do 1º grau, o excedente é mais defensável.</p>
+    <p class="hint">Excedente calculado no mesmo modo escolhido acima. Servem como origem possível para remoção interna, além dos 16 que ingressam.</p>
     <table id="t-exc"></table>
+  </div>
+
+  <div class="panel" style="opacity:.78">
+    <h2>Anexo — indicadores processuais (fora do critério)</h2>
+    <p class="hint">Registro do que foi levantado e afastado por decisão da SGP. Nenhum destes números influencia o índice, a ordenação ou qualquer recomendação deste painel. Consta aqui para documentar o exame feito. Acervo apurado em 23 das 24 Varas; a 15.ª de Vitória não integra a relação. Colocação IGEST refere-se ao ranking nacional das Varas do Trabalho, apuração trimestral sobre 12 meses até jun/2026 — a seta indica a variação entre a antepenúltima e a última apuração.</p>
+    <table id="t-anexo"></table>
   </div>
 
 </div>
@@ -153,7 +156,7 @@
 <footer>
   <strong>Fontes.</strong> <span id="f-fontes"></span><br>
   <strong>Proteção de dados.</strong> Painel construído apenas com agregados por unidade. Nenhum nome, matrícula ou registro individual foi utilizado. Afastamento superior a 60 dias é publicado somente em unidades com <span id="f-k"></span> ou mais pessoas; abaixo desse limiar o número identificaria a pessoa e aparece como “—”. Condição especial não é publicada por unidade pelo mesmo motivo: no cenário de setembro/2026 há 76 registros em todo o Regional, 9,5% da força.<br>
-  <strong>Limites conhecidos.</strong> O IGEST mede desempenho relativo entre as Varas do Trabalho do país, não volume de serviço, e a correlação apurada entre acervo por servidor e colocação no IGEST é de apenas 0,22 — desempenho fraco não indica, por si só, falta de servidor. A relação de acervo cobre 23 das 24 Varas: a 15.ª Vara de Vitória não consta na apuração. O acervo de Guarapari soma duas Varas enquanto a base de lotação traz uma única unidade com paradigma 11. Não há dado de casos novos, o que impede medir fluxo de entrada. O paradigma de cada unidade pode ser corrigido no próprio painel e a alteração fica registrada.<br>
+  <strong>Limites conhecidos.</strong> O critério é exclusivamente estrutural: mede lacuna de lotação, não volume nem natureza do serviço prestado. Duas unidades com o mesmo déficit aparecem iguais ainda que uma trabalhe muito mais que a outra. A área administrativa não tem lotação paradigma, logo não há déficit calculável e nenhum ranking de necessidade é produzido para ela. Registros institucionais apontam duas Varas em Guarapari enquanto a base de lotação traz uma unidade com paradigma 11; o paradigma de cada unidade pode ser corrigido no próprio painel e a alteração fica registrada.<br>
   Sincronização em tempo real via Firebase Firestore — alterações feitas por um usuário aparecem automaticamente para os demais.
 </footer>
 
@@ -253,7 +256,7 @@ const BASE = {
    "igestQuartil": 2,
    "igestDelta": -21,
    "igestPontos": 0,
-   "ressalva": "Acervo soma 1ª e 2ª Varas de Guarapari (1.334 + 1.377). A base de lotação traz uma única unidade com paradigma 11 — confirmar se são duas Varas instaladas."
+   "ressalva": "Registros institucionais apontam 1ª e 2ª Varas do Trabalho de Guarapari, enquanto a base de lotação traz uma única unidade com paradigma 11. Confirmar quantas Varas estão instaladas: se forem duas, o paradigma dobra e a unidade deixa de ser excedente. Paradigma editável nesta tela."
   },
   {
    "id": "vara_do_trabalho_de_colatina",
@@ -561,7 +564,7 @@ const BASE = {
    "igestQuartil": 3,
    "igestDelta": 2,
    "igestPontos": 0,
-   "ressalva": "Não consta na relação de acervo (filtro: a partir de 750 processos). Confirmar acervo real antes de considerá-la para liberação de servidor."
+   "ressalva": null
   },
   {
    "id": "2_a_vara_de_vitoria",
@@ -3208,7 +3211,7 @@ const BASE = {
 const UNIDADES = BASE.unidades;
 const META     = BASE.meta;
 
-const PESOS_PADRAO = { deficit: 35, carga: 35, requisitados: 20, risco: 10 };
+const PESOS_PADRAO = { deficit: 50, carga: 0, requisitados: 30, risco: 20 };
 const CFG_PADRAO   = { contarReq: false, pesos: { ...PESOS_PADRAO } };
 
 let cfg        = JSON.parse(JSON.stringify(CFG_PADRAO));
@@ -3267,18 +3270,13 @@ const justDe        = u => (alocacoes[u.id]?.just || '');
 function deficitDe(u) { const p = paradigmaDe(u); return p == null ? null : p - forcaDe(u); }
 function cargaDe(u)   { const f = forcaDe(u); return (u.acervo && f > 0) ? u.acervo / f : null; }
 
-const COM_ACERVO = UNIDADES.filter(u => u.acervo);
-function faixaCarga() {
-  const vs = COM_ACERVO.map(cargaDe).filter(v => v != null);
-  return { min: Math.min(...vs), max: Math.max(...vs), media: COM_ACERVO.reduce((s, u) => s + u.acervo, 0) / COM_ACERVO.reduce((s, u) => s + forcaDe(u), 0) };
-}
-
 function componentes(u) {
-  const p = paradigmaDe(u), f = forcaDe(u), fx = faixaCarga();
+  const p = paradigmaDe(u), f = forcaDe(u);
   const c = {};
-  if (p != null && p > 0) c.deficit = clamp01(Math.max(0, p - f) / p);
-  const car = cargaDe(u);
-  if (car != null && fx.max > fx.min) c.carga = clamp01((car - fx.min) / (fx.max - fx.min));
+  // Déficit em posições faltantes, não em proporção do paradigma: a proporção satura
+  // em unidades minúsculas (uma seção de 1 com a vaga aberta marcaria 100% e lideraria
+  // o ranking contra uma Vara com 5 posições em aberto). Escala fixa: 5 posições = máximo.
+  if (p != null && p > 0) c.deficit = clamp01(Math.max(0, p - f) / 5);
   if (u.forca > 0) c.requisitados = clamp01(u.req / u.forca);
   if (u.efet > 0)  c.risco = clamp01((u.abono + u.aposent) / u.efet);
   return c;
@@ -3301,7 +3299,7 @@ function renderMetricas() {
   const alocado  = totalAlocado();
   const restante = META.ingresso - alocado;
   const reqPrim  = primeiro.reduce((s, u) => s + u.req, 0);
-  const fx = faixaCarga();
+  const vagasFC  = UNIDADES.reduce((s, u) => s + u.vaga, 0);
   const cards = [
     { l: 'Servidores a lotar',          v: META.ingresso },
     { l: 'Já alocados no painel',       v: alocado },
@@ -3309,44 +3307,11 @@ function renderMetricas() {
     { l: 'Déficit total de quadro',     v: defTotal, sub: cfg.contarReq ? 'com requisitados' : 'só quadro próprio' },
     { l: 'Excedente total',             v: excTotal, sub: cfg.contarReq ? 'com requisitados' : 'só quadro próprio' },
     { l: 'Requisitados no 1º grau',     v: reqPrim, sub: 'força cedida, reversível' },
-    { l: 'Acervo por servidor',         v: Math.round(fx.media), sub: 'média das Varas' },
+    { l: 'Funções sem ocupante',        v: vagasFC, sub: 'FCs vagas em set/2026' },
   ];
   document.getElementById('metrics').innerHTML = cards.map(c =>
     `<div class="metric-card"><p class="label">${c.l}</p><p class="value${c.warn ? ' warn' : ''}">${nf(c.v)}</p>${c.sub ? `<p class="sub">${esc(c.sub)}</p>` : ''}</div>`
   ).join('');
-}
-
-/* ---------- quadrantes ---------- */
-function renderQuadrantes() {
-  const pts = COM_ACERVO.map(u => ({ u, x: deficitDe(u), y: cargaDe(u) })).filter(p => p.x != null && p.y != null);
-  const W = 1100, H = 460, M = { t: 22, r: 26, b: 46, l: 62 };
-  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
-  const x0 = Math.min(-2, Math.min(...xs) - 0.6), x1 = Math.max(2, Math.max(...xs) + 0.6);
-  const y0 = Math.min(...ys) * 0.9, y1 = Math.max(...ys) * 1.06;
-  const media = faixaCarga().media;
-  const px = v => M.l + (v - x0) / (x1 - x0) * (W - M.l - M.r);
-  const py = v => H - M.b - (v - y0) / (y1 - y0) * (H - M.t - M.b);
-  const cx0 = px(0), cy0 = py(media);
-  const cor = u => u.igestQuartil === 4 ? '#DC2626' : u.igestQuartil === 1 ? '#2563EB' : u.igestQuartil === 2 ? '#16A34A' : '#D97706';
-  const rotulo = u => u.nome.replace(/VARA DO TRABALHO DE /,'').replace(/\.ª VARA DE VITÓRIA/,'ª VIT').replace(/ª VARA DO TRABALHO DE /,'ª ').replace(/CACHOEIRO DE ITAPEMIRIM/,'Cachoeiro').replace(/VENDA NOVA DO IMIGRANTE/,'Venda Nova');
-  const svg = `<svg class="quad" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dispersão de déficit de quadro por acervo por servidor">
-    <rect x="${cx0}" y="${M.t}" width="${W - M.r - cx0}" height="${cy0 - M.t}" fill="#FEF2F2"/>
-    <rect x="${M.l}" y="${cy0}" width="${cx0 - M.l}" height="${H - M.b - cy0}" fill="#F0FDF4"/>
-    <line x1="${M.l}" y1="${cy0}" x2="${W - M.r}" y2="${cy0}" stroke="#94A3B8" stroke-dasharray="5 4"/>
-    <line x1="${cx0}" y1="${M.t}" x2="${cx0}" y2="${H - M.b}" stroke="#94A3B8" stroke-dasharray="5 4"/>
-    <line x1="${M.l}" y1="${H - M.b}" x2="${W - M.r}" y2="${H - M.b}" stroke="#334155"/>
-    <line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H - M.b}" stroke="#334155"/>
-    <text x="${W - M.r}" y="${H - 14}" text-anchor="end" font-size="12" fill="#475569">déficit de quadro (paradigma − força) →</text>
-    <text x="14" y="${M.t + 4}" font-size="12" fill="#475569" transform="rotate(-90 14 ${M.t + 4})" text-anchor="end">acervo por servidor →</text>
-    <text x="${cx0 + 10}" y="${M.t + 16}" font-size="11.5" font-weight="bold" fill="#B91C1C">déficit + carga acima da média</text>
-    <text x="${M.l + 10}" y="${H - M.b - 10}" font-size="11.5" font-weight="bold" fill="#15803D">quadro completo e carga abaixo da média</text>
-    <text x="${M.l - 8}" y="${py(media) + 4}" text-anchor="end" font-size="11" fill="#475569">${Math.round(media)}</text>
-    ${pts.map(p => `<g><circle cx="${px(p.x).toFixed(1)}" cy="${py(p.y).toFixed(1)}" r="6.5" fill="${cor(p.u)}" fill-opacity="0.82" stroke="#FFF" stroke-width="1.4"><title>${esc(p.u.nome)} — acervo ${nf(p.u.acervo)}, ${nf(Math.round(p.y))} por servidor, déficit ${p.x > 0 ? '+' : ''}${p.x}, IGEST ${p.u.igest}º (${p.u.igestQuartil}º quartil)</title></circle>
-      <text x="${(px(p.x) + 9).toFixed(1)}" y="${(py(p.y) + 4).toFixed(1)}" font-size="10.5" fill="#334155">${esc(rotulo(p.u))}</text></g>`).join('')}
-  </svg>`;
-  document.getElementById('quad-wrap').innerHTML = svg;
-  document.getElementById('quad-legend').innerHTML =
-    'Cor do ponto = quartil no IGEST: <span style="color:#2563EB;font-weight:700">1º</span> · <span style="color:#16A34A;font-weight:700">2º</span> · <span style="color:#D97706;font-weight:700">3º</span> · <span style="color:#DC2626;font-weight:700">4º</span>. Linha horizontal = média de ' + Math.round(faixaCarga().media) + ' processos por servidor.';
 }
 
 /* ---------- tabelas ---------- */
@@ -3411,20 +3376,18 @@ function render() {
     ? 'Contando requisitados na força (operação como está hoje)'
     : 'Só quadro próprio — requisitados fora da conta (capacidade do Tribunal)';
   document.getElementById('w-def').value = cfg.pesos.deficit;
-  document.getElementById('w-car').value = cfg.pesos.carga;
   document.getElementById('w-req').value = cfg.pesos.requisitados;
   document.getElementById('w-ris').value = cfg.pesos.risco;
   document.getElementById('ck-tudo').checked = mostrarTudo;
 
   renderMetricas();
-  renderQuadrantes();
 
   const ord = (a, b) => indiceDe(b) - indiceDe(a) || a.nome.localeCompare(b.nome);
 
   const eVara = u => /VARA D/.test(u.nome);
   const varas = filtra(UNIDADES.filter(u => u.trilha === 'primeiro' && eVara(u))).sort(ord);
   tabela(document.getElementById('t-varas'), varas,
-    [cNome, cPar, cEfet, cReq, cVaga, cDef, cAcer, cCarga, cIgest, cRisco, cIdx]);
+    [cNome, cPar, cEfet, cReq, cVaga, cDef, cRisco, cAfast, cIdx]);
 
   const apoio = filtra(UNIDADES.filter(u => u.trilha === 'primeiro' && !eVara(u))).sort(ord);
   tabela(document.getElementById('t-apoio'), apoio,
@@ -3441,16 +3404,17 @@ function render() {
     filtra(adm).sort((a, b) => sinais(b) - sinais(a) || b.efet - a.efet || a.nome.localeCompare(b.nome)),
     [cNome, cEfet, cReq, cVaga, cRisco, cAfast, cSinais]);
 
-  const media = faixaCarga().media;
   const exc = filtra(UNIDADES.filter(u => { const d = deficitDe(u); return d != null && d < 0; }))
     .sort((a, b) => deficitDe(a) - deficitDe(b));
   tabela(document.getElementById('t-exc'), exc,
-    [cNome, cPar, cEfet, cReq, cDef, cCarga,
-     { t: 'Carga vs média', f: u => { const c = cargaDe(u); return c == null ? '—' : c < media ? '<span class="neg">abaixo</span>' : '<span class="pos">acima</span>'; } },
-     cIgest], { alocavel: false });
+    [cNome, cPar, cEfet, cReq, cVaga, cDef, cRisco], { alocavel: false });
+
+  const anexo = filtra(UNIDADES.filter(u => u.acervo)).sort((a, b) => b.acervo - a.acervo);
+  tabela(document.getElementById('t-anexo'), anexo,
+    [cNome, cEfet, cAcer, cCarga, cIgest], { alocavel: false });
 
   document.getElementById('f-fontes').textContent =
-    META.fonteLotacao + ' · ' + META.fonteVagas + ' · ' + META.fonteIgest + ' · ' + META.fonteAcervo + '.';
+    META.fonteLotacao + ' · ' + META.fonteVagas + '. Fontes do anexo, fora do critério: ' + META.fonteIgest + ' · ' + META.fonteAcervo + '.';
   document.getElementById('f-k').textContent = META.kMin;
 }
 
@@ -3469,10 +3433,10 @@ document.addEventListener('input', e => {
     salvarBreve();
   }
   if (t.id === 'busca') { busca = t.value; render(); }
-  if (['w-def','w-car','w-req','w-ris'].includes(t.id)) {
+  if (['w-def','w-req','w-ris'].includes(t.id)) {
     cfg.pesos = {
       deficit:      Math.max(0, parseInt(document.getElementById('w-def').value, 10) || 0),
-      carga:        Math.max(0, parseInt(document.getElementById('w-car').value, 10) || 0),
+      carga:        0,
       requisitados: Math.max(0, parseInt(document.getElementById('w-req').value, 10) || 0),
       risco:        Math.max(0, parseInt(document.getElementById('w-ris').value, 10) || 0),
     };
