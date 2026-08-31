@@ -1,0 +1,3501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Alocação da Força de Trabalho — Ingresso SET/2026</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; background: #F2F4F7; color: #1A1A1A; margin: 0; padding: 0 0 4rem; }
+  header { background: #1F4E79; color: #FFF; padding: 2rem 2rem 1.5rem; border-bottom: 4px solid #E8821E; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+  header p { margin: 0; font-size: 14px; color: #CFE0EF; max-width: 780px; }
+  #sync-indicator { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); white-space: nowrap; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 2rem; }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 1.5rem 0; }
+  .metric-card { background: #FFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: .9rem 1.1rem; }
+  .metric-card .label { font-size: 11.5px; color: #5C6B7A; margin: 0 0 4px; line-height: 1.3; }
+  .metric-card .value { font-size: 25px; font-weight: 700; margin: 0; color: #1F4E79; }
+  .metric-card .value.warn { color: #C2410C; }
+  .metric-card .sub { font-size: 11px; color: #8A97A5; margin: 2px 0 0; }
+
+  .panel { background: #FFF; border: 1px solid #DDE3EA; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; }
+  .panel h2 { margin: 0 0 4px; font-size: 16px; color: #1F4E79; }
+  .panel .hint { margin: 0 0 1rem; font-size: 12.5px; color: #5C6B7A; line-height: 1.5; }
+
+  .ctl-row { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+  .ctl { display: flex; flex-direction: column; gap: 4px; }
+  .ctl label { font-size: 11px; color: #5C6B7A; text-transform: uppercase; letter-spacing: .04em; }
+  .ctl input[type=number] { width: 74px; padding: 6px 8px; border: 1px solid #C9D3DD; border-radius: 5px; font-size: 14px; font-family: inherit; }
+  .switch { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13.5px; color: #1A1A1A; user-select: none; }
+  .switch input { width: 16px; height: 16px; cursor: pointer; }
+  .btn { background: #1F4E79; color: #FFF; border: 0; border-radius: 5px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn.ghost { background: #FFF; color: #1F4E79; border: 1px solid #C9D3DD; }
+  .btn:hover { filter: brightness(1.08); }
+  .search-box { flex: 1 1 220px; min-width: 180px; padding: 7px 10px; border: 1px solid #C9D3DD; border-radius: 5px; font-size: 13.5px; font-family: inherit; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 7px; border-bottom: 2px solid #1F4E79; color: #1F4E79; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+  th.num, td.num { text-align: right; }
+  td { padding: 7px; border-bottom: 1px solid #EDF1F5; vertical-align: middle; }
+  tr.alocada td { background: #F0F8F2; }
+  .unidade { font-weight: 600; }
+  .flag { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; vertical-align: middle; }
+  .flag.rev { background: #FEF3C7; color: #92400E; }
+  .flag.q4 { background: #FEE2E2; color: #991B1B; }
+  .flag.q1 { background: #DBEAFE; color: #1E40AF; }
+  .idx { font-weight: 700; color: #1F4E79; }
+  .bar { display: inline-block; height: 7px; border-radius: 3px; background: #1F4E79; vertical-align: middle; margin-right: 6px; }
+  .neg { color: #15803D; }
+  .pos { color: #C2410C; font-weight: 600; }
+  .aloc-input { width: 52px; padding: 5px 6px; border: 1px solid #C9D3DD; border-radius: 5px; font-size: 13px; text-align: center; font-family: inherit; }
+  .just-btn { background: none; border: 0; color: #1F4E79; font-size: 15px; cursor: pointer; padding: 2px 5px; }
+  .just-row td { background: #F7FAFC; padding: 10px 12px 14px; }
+  .just-row textarea { width: 100%; min-height: 58px; padding: 7px 9px; border: 1px solid #C9D3DD; border-radius: 5px; font-size: 13px; font-family: inherit; resize: vertical; }
+  .just-preview { font-size: 12px; color: #5C6B7A; font-style: italic; margin-top: 3px; }
+  .ressalva { font-size: 11.5px; color: #92400E; background: #FFFBEB; border-left: 3px solid #F59E0B; padding: 5px 9px; margin-top: 5px; border-radius: 0 3px 3px 0; }
+
+  .quad { width: 100%; height: auto; display: block; }
+  .quad text { font-family: Arial, sans-serif; }
+
+  .legend { font-size: 11.5px; color: #5C6B7A; margin-top: 8px; line-height: 1.6; }
+  footer { max-width: 1180px; margin: 2rem auto 0; padding: 1.25rem 2rem; font-size: 11.5px; color: #5C6B7A; line-height: 1.7; border-top: 1px solid #DDE3EA; }
+  footer strong { color: #1F4E79; }
+
+  .sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+   font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:12px;font-weight:700;letter-spacing:.08em;
+   text-transform:uppercase;text-decoration:none;color:#e8ecff;background:rgba(11,15,42,.82);-webkit-backdrop-filter:blur(6px);
+   backdrop-filter:blur(6px);border:1px solid rgba(120,140,255,.35);border-radius:999px;padding:9px 15px 9px 13px;
+   box-shadow:0 6px 20px -6px rgba(0,0,0,.5);transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,color .18s ease}
+  .sgp-hub-back:hover,.sgp-hub-back:focus-visible{outline:none;transform:translateY(-2px);border-color:#36e2ec;color:#36e2ec;
+   box-shadow:0 0 0 1px #36e2ec,0 0 18px -2px #36e2ec,0 8px 24px -8px #000}
+  .sgp-hub-back__ic{font-size:14px;line-height:1}
+  @media print{.sgp-hub-back{display:none}}
+</style>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Alocação da Força de Trabalho — Ingresso SET/2026</h1>
+    <p>SGP — TRT-17 · 16 servidores a lotar · cenário de estrutura previsto para setembro/2026 (RA 68/2026) cruzado com acervo processual e IGEST · painel de decisão editável</p>
+  </div>
+  <span id="sync-indicator">&#8635; conectando…</span>
+</header>
+
+<div class="container">
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="panel">
+    <h2>Parâmetros da análise</h2>
+    <p class="hint">O interruptor abaixo muda o diagnóstico inteiro. Os 34 servidores requisitados do 1º grau vêm de prefeituras e de outros órgãos, são reversíveis por ato de terceiro e não integram o quadro do Tribunal. Contá-los mostra a operação como ela funciona hoje; não contá-los mostra a capacidade própria do Regional. As duas leituras são legítimas e levam a decisões diferentes.</p>
+    <div class="ctl-row">
+      <label class="switch"><input type="checkbox" id="ck-req"><span id="lbl-req"></span></label>
+      <div class="ctl"><label>Peso · déficit</label><input type="number" id="w-def" min="0" max="100" step="5"></div>
+      <div class="ctl"><label>Peso · carga</label><input type="number" id="w-car" min="0" max="100" step="5"></div>
+      <div class="ctl"><label>Peso · requisitados</label><input type="number" id="w-req" min="0" max="100" step="5"></div>
+      <div class="ctl"><label>Peso · risco de saída</label><input type="number" id="w-ris" min="0" max="100" step="5"></div>
+      <button class="btn ghost" id="btn-reset">Restaurar padrão</button>
+    </div>
+    <p class="legend"><strong>Déficit</strong>: paradigma menos força considerada. <strong>Carga</strong>: acervo por servidor, normalizado entre as Varas. <strong>Requisitados</strong>: proporção da força que é cedida por outro órgão. <strong>Risco de saída</strong>: abono de permanência e aposentadoria prevista sobre os efetivos. Componentes sem dado na unidade são retirados do cálculo e os pesos restantes são renormalizados.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Déficit de quadro × carga processual</h2>
+    <p class="hint">Cada ponto é uma Vara. Quem está no quadrante superior direito acumula os dois problemas. Quem está mal colocado no IGEST mas aparece à esquerda e abaixo tem problema de outra natureza, e receber servidor não resolve.</p>
+    <div id="quad-wrap"></div>
+    <p class="legend" id="quad-legend"></p>
+  </div>
+
+  <div class="panel">
+    <h2>1º grau — Varas com acervo apurado</h2>
+    <p class="hint">Ordenado pelo índice de necessidade. Digite a quantidade a alocar e registre a justificativa; tudo é gravado e compartilhado em tempo real.</p>
+    <div class="ctl-row" style="margin-bottom:12px">
+      <input type="text" class="search-box" id="busca" placeholder="Filtrar por unidade…">
+      <label class="switch"><input type="checkbox" id="ck-tudo"><span>Mostrar todas as unidades administrativas</span></label>
+    </div>
+    <table id="t-varas"></table>
+  </div>
+
+  <div class="panel">
+    <h2>1º grau — demais unidades</h2>
+    <p class="hint">Central de Mandados, CEJUSCs, GAJUS, Fóruns e unidades de apoio. Não há acervo por unidade; o índice é calculado sem o componente de carga.</p>
+    <table id="t-apoio"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Gabinetes de 2º grau</h2>
+    <p class="hint">Paradigma de 11 servidores. Não há dado de acervo por gabinete nas fontes disponíveis; o índice roda sem o componente de carga.</p>
+    <table id="t-gab"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Área administrativa — sinais de fragilidade</h2>
+    <p class="hint">A área administrativa não tem lotação paradigma, logo não há déficit calculável nem ranking de necessidade comparável ao do 1º grau. Também não se aplica aqui um índice em proporção: a maioria destas unidades tem uma ou duas pessoas, e qualquer razão satura — um requisitado numa unidade de um servidor produziria 100%, sem significado. O que a coluna traz é a contagem absoluta de sinais de risco: força cedida, função comissionada sem ocupante, abono de permanência, aposentadoria prevista e afastamento prolongado. Serve para sinalizar onde olhar, não para ordenar prioridade — a decisão nesta trilha é discricionária e exige justificativa registrada.</p>
+    <table id="t-adm"></table>
+  </div>
+
+  <div class="panel">
+    <h2>Unidades acima do paradigma — candidatas a liberar servidor</h2>
+    <p class="hint">Excedente calculado no mesmo modo escolhido acima. Onde a carga por servidor também está abaixo da média do 1º grau, o excedente é mais defensável.</p>
+    <table id="t-exc"></table>
+  </div>
+
+</div>
+
+<footer>
+  <strong>Fontes.</strong> <span id="f-fontes"></span><br>
+  <strong>Proteção de dados.</strong> Painel construído apenas com agregados por unidade. Nenhum nome, matrícula ou registro individual foi utilizado. Afastamento superior a 60 dias é publicado somente em unidades com <span id="f-k"></span> ou mais pessoas; abaixo desse limiar o número identificaria a pessoa e aparece como “—”. Condição especial não é publicada por unidade pelo mesmo motivo: no cenário de setembro/2026 há 76 registros em todo o Regional, 9,5% da força.<br>
+  <strong>Limites conhecidos.</strong> O IGEST mede desempenho relativo entre as Varas do Trabalho do país, não volume de serviço, e a correlação apurada entre acervo por servidor e colocação no IGEST é de apenas 0,22 — desempenho fraco não indica, por si só, falta de servidor. A relação de acervo cobre 23 das 24 Varas: a 15.ª Vara de Vitória não consta na apuração. O acervo de Guarapari soma duas Varas enquanto a base de lotação traz uma única unidade com paradigma 11. Não há dado de casos novos, o que impede medir fluxo de entrada. O paradigma de cada unidade pode ser corrigido no próprio painel e a alteração fica registrada.<br>
+  Sincronização em tempo real via Firebase Firestore — alterações feitas por um usuário aparecem automaticamente para os demais.
+</footer>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de paineis">
+  <span class="sgp-hub-back__ic">&#9666;</span><span>HUB</span>
+</a>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyCybE6ghe_F8Rdr6vha3QQaDQLrDMK4uVQ",
+  authDomain:        "demandas-trt-17.firebaseapp.com",
+  projectId:         "demandas-trt-17",
+  storageBucket:     "demandas-trt-17.firebasestorage.app",
+  messagingSenderId: "72728505894",
+  appId:             "1:72728505894:web:c2289011bdf6ac9dfb40e7",
+};
+const app       = initializeApp(firebaseConfig);
+const db        = getFirestore(app);
+const STATE_DOC = doc(db, 'estado', 'alocacao_ingresso_2026');
+const SCHEMA_VERSION = 1;
+
+const BASE = {
+ "meta": {
+  "fonteLotacao": "Força_trabalho_após_reestruturação-_2026.xlsx · aba \"NÃO MEXER-PREVISÃO SET 2026 - a\" (cenário previsto para setembro/2026)",
+  "fonteVagas": "Vagas_FC_CJ_SET2026_TRT17.xlsx — 25 FCs vagas, 20 delas no 1º grau",
+  "fonteIgest": "Painel de Acompanhamento IGEST — Pontos de Valorização (Ato TRT 17.ª PRESI/SGP n.º 18/2024). Apuração trimestral referente a 12 meses, atualizada até jun/2026",
+  "fonteAcervo": "Relação de Varas com acervo a partir de 750 processos — total 53.318",
+  "kMin": 5,
+  "ingresso": 16,
+  "totalUnidades": 137
+ },
+ "unidades": [
+  {
+   "id": "central_de_mandados_ceman",
+   "nome": "CENTRAL DE MANDADOS - CEMAN",
+   "trilha": "primeiro",
+   "paradigma": 42,
+   "anl": 40,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 41,
+   "forca": 41,
+   "abono": 10,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 40,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_policia_judicial_copjud",
+   "nome": "COORDENADORIA DE POLÍCIA JUDICIAL - COPJUD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 29,
+   "req": 0,
+   "vaga": 0,
+   "efet": 29,
+   "forca": 29,
+   "abono": 4,
+   "aposent": 3,
+   "afast": 1,
+   "semfc": 28,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_guarapari",
+   "nome": "VARA DO TRABALHO DE GUARAPARI",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 6,
+   "tec": 6,
+   "req": 3,
+   "vaga": 0,
+   "efet": 12,
+   "forca": 15,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 6,
+   "acervo": 2711,
+   "igest": 699,
+   "igestQuartil": 2,
+   "igestDelta": -21,
+   "igestPontos": 0,
+   "ressalva": "Acervo soma 1ª e 2ª Varas de Guarapari (1.334 + 1.377). A base de lotação traz uma única unidade com paradigma 11 — confirmar se são duas Varas instaladas."
+  },
+  {
+   "id": "vara_do_trabalho_de_colatina",
+   "nome": "VARA DO TRABALHO DE COLATINA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 8,
+   "tec": 4,
+   "req": 2,
+   "vaga": 0,
+   "efet": 12,
+   "forca": 14,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 4,
+   "acervo": 2471,
+   "igest": 725,
+   "igestQuartil": 2,
+   "igestDelta": 62,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "1_a_vara_do_trabalho_de_cachoeiro_de_itapemirim",
+   "nome": "1.ª VARA DO TRABALHO DE CACHOEIRO DE ITAPEMIRIM",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 2,
+   "tec": 6,
+   "req": 5,
+   "vaga": 0,
+   "efet": 8,
+   "forca": 13,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 1,
+   "acervo": 2475,
+   "igest": 385,
+   "igestQuartil": 1,
+   "igestDelta": -71,
+   "igestPontos": 15,
+   "ressalva": null
+  },
+  {
+   "id": "assessoria_de_revista_arevis",
+   "nome": "ASSESSORIA DE REVISTA - AREVIS",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 7,
+   "tec": 6,
+   "req": 0,
+   "vaga": 0,
+   "efet": 13,
+   "forca": 13,
+   "abono": 2,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "11_a_vara_de_vitoria",
+   "nome": "11.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 12,
+   "forca": 12,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 3,
+   "acervo": 2170,
+   "igest": 908,
+   "igestQuartil": 3,
+   "igestDelta": 234,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "2a_vara_do_trabalho_de_cachoeiro_de_itapemirim",
+   "nome": "2ª VARA DO TRABALHO DE CACHOEIRO DE ITAPEMIRIM",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 0,
+   "tec": 6,
+   "req": 6,
+   "vaga": 0,
+   "efet": 6,
+   "forca": 12,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 3173,
+   "igest": 1053,
+   "igestQuartil": 3,
+   "igestDelta": 116,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "4_a_vara_de_vitoria",
+   "nome": "4.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 12,
+   "forca": 12,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 3,
+   "acervo": 2463,
+   "igest": 751,
+   "igestQuartil": 2,
+   "igestDelta": 141,
+   "igestPontos": 22,
+   "ressalva": null
+  },
+  {
+   "id": "6_a_vara_de_vitoria",
+   "nome": "6.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 8,
+   "req": 1,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 12,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 3,
+   "acervo": 2328,
+   "igest": 740,
+   "igestQuartil": 2,
+   "igestDelta": 212,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "7_a_vara_de_vitoria",
+   "nome": "7.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 9,
+   "req": 0,
+   "vaga": 0,
+   "efet": 12,
+   "forca": 12,
+   "abono": 0,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2345,
+   "igest": 551,
+   "igestQuartil": 2,
+   "igestDelta": 119,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_sao_mateus",
+   "nome": "VARA DO TRABALHO DE SÃO MATEUS",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 6,
+   "req": 3,
+   "vaga": 1,
+   "efet": 9,
+   "forca": 12,
+   "abono": 1,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 5,
+   "acervo": 1938,
+   "igest": 729,
+   "igestQuartil": 2,
+   "igestDelta": 42,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "10_a_vara_de_vitoria",
+   "nome": "10.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 6,
+   "tec": 5,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 3,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2375,
+   "igest": 990,
+   "igestQuartil": 3,
+   "igestDelta": 136,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "12_a_vara_de_vitoria",
+   "nome": "12.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 2,
+   "tec": 8,
+   "req": 1,
+   "vaga": 0,
+   "efet": 10,
+   "forca": 11,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2415,
+   "igest": 939,
+   "igestQuartil": 3,
+   "igestDelta": 104,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "13_a_vara_de_vitoria",
+   "nome": "13.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 5,
+   "req": 1,
+   "vaga": 0,
+   "efet": 10,
+   "forca": 11,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2389,
+   "igest": 303,
+   "igestQuartil": 1,
+   "igestDelta": 60,
+   "igestPontos": 15,
+   "ressalva": null
+  },
+  {
+   "id": "14_a_vara_de_vitoria",
+   "nome": "14.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 4,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2303,
+   "igest": 776,
+   "igestQuartil": 2,
+   "igestDelta": 180,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "15_a_vara_de_vitoria",
+   "nome": "15.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 4,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 2,
+   "acervo": null,
+   "igest": 792,
+   "igestQuartil": 3,
+   "igestDelta": 2,
+   "igestPontos": 0,
+   "ressalva": "Não consta na relação de acervo (filtro: a partir de 750 processos). Confirmar acervo real antes de considerá-la para liberação de servidor."
+  },
+  {
+   "id": "2_a_vara_de_vitoria",
+   "nome": "2.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 4,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2330,
+   "igest": 1026,
+   "igestQuartil": 3,
+   "igestDelta": 177,
+   "igestPontos": 22,
+   "ressalva": null
+  },
+  {
+   "id": "3_a_vara_de_vitoria",
+   "nome": "3.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 6,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2194,
+   "igest": 1149,
+   "igestQuartil": 3,
+   "igestDelta": 96,
+   "igestPontos": 22,
+   "ressalva": null
+  },
+  {
+   "id": "5_a_vara_de_vitoria",
+   "nome": "5.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 2,
+   "tec": 9,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 3,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2225,
+   "igest": 830,
+   "igestQuartil": 3,
+   "igestDelta": 331,
+   "igestPontos": 8,
+   "ressalva": null
+  },
+  {
+   "id": "8_a_vara_de_vitoria",
+   "nome": "8.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 6,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 3,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 3488,
+   "igest": 972,
+   "igestQuartil": 3,
+   "igestDelta": 26,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "forum_trabalhista_de_cachoeiro_de_itapemirim",
+   "nome": "FÓRUM TRABALHISTA DE CACHOEIRO DE ITAPEMIRIM",
+   "trilha": "primeiro",
+   "paradigma": 8,
+   "anl": 8,
+   "tec": 2,
+   "req": 1,
+   "vaga": 0,
+   "efet": 10,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 1,
+   "afast": 0,
+   "semfc": 9,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_valdir_donizetti_caixeta_vdc",
+   "nome": "GABINETE  DO DESEMBARGADOR VALDIR DONIZETTI CAIXETA – VDC",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 8,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_daniele_correa_santa_catarina_dcsc",
+   "nome": "GABINETE DA DESEMBARGADORA DANIELE CORREA SANTA CATARINA - DCSC",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 7,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_marise_medeiros_cavalcanti_chamberlain_mmcc",
+   "nome": "GABINETE DA DESEMBARGADORA MARISE MEDEIROS CAVALCANTI CHAMBERLAIN - MMCC",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 7,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_wanda_lucia_costa_leite_franca_decuzzi_wlclfd",
+   "nome": "GABINETE DA DESEMBARGADORA WANDA LÚCIA COSTA LEITE FRANÇA DECUZZI – WLCLFD",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 6,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 3,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_claudio_armando_couce_de_menezes_cacm",
+   "nome": "GABINETE DO DESEMBARGADOR CLÁUDIO ARMANDO COUCE DE MENEZES – CACM",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 6,
+   "tec": 5,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_luis_claudio_dos_santos_branco_lcsb",
+   "nome": "GABINETE DO DESEMBARGADOR LUIS CLÁUDIO DOS SANTOS BRANCO - LCSB",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 6,
+   "tec": 5,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_marcello_maciel_mancilha_mmm",
+   "nome": "GABINETE DO DESEMBARGADOR MARCELLO MACIEL MANCILHA - MMM",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 8,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_valerio_soares_heringer_vsh",
+   "nome": "GABINETE DO DESEMBARGADOR VALÉRIO SOARES HERINGER - VSH",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 8,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 11,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_aracruz",
+   "nome": "VARA DO TRABALHO DE ARACRUZ",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 4,
+   "req": 4,
+   "vaga": 2,
+   "efet": 7,
+   "forca": 11,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": 1549,
+   "igest": 1443,
+   "igestQuartil": 4,
+   "igestDelta": -15,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_linhares",
+   "nome": "VARA DO TRABALHO DE LINHARES",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 5,
+   "req": 3,
+   "vaga": 2,
+   "efet": 8,
+   "forca": 11,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": 2525,
+   "igest": 905,
+   "igestQuartil": 3,
+   "igestDelta": -172,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "9_a_vara_de_vitoria",
+   "nome": "9.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 3,
+   "tec": 7,
+   "req": 0,
+   "vaga": 1,
+   "efet": 10,
+   "forca": 10,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 1,
+   "acervo": 2495,
+   "igest": 1080,
+   "igestQuartil": 3,
+   "igestDelta": 312,
+   "igestPontos": 8,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_ana_paula_tauceda_branco_aptb",
+   "nome": "GABINETE DA DESEMBARGADORA ANA PAULA TAUCEDA BRANCO - APTB",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 7,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 10,
+   "forca": 10,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_fatima_gomes_ferreira_fgf",
+   "nome": "GABINETE DA DESEMBARGADORA FÁTIMA GOMES FERREIRA - FGF",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 5,
+   "req": 0,
+   "vaga": 2,
+   "efet": 10,
+   "forca": 10,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_do_desembargador_mario_ribeiro_cantarino_neto_mrcn",
+   "nome": "GABINETE DO DESEMBARGADOR MÁRIO RIBEIRO CANTARINO NETO - MRCN",
+   "trilha": "gabinete",
+   "paradigma": 11,
+   "anl": 5,
+   "tec": 5,
+   "req": 0,
+   "vaga": 1,
+   "efet": 10,
+   "forca": 10,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "1_a_vara_de_vitoria",
+   "nome": "1.ª VARA DE VITÓRIA",
+   "trilha": "primeiro",
+   "paradigma": 11,
+   "anl": 4,
+   "tec": 5,
+   "req": 0,
+   "vaga": 2,
+   "efet": 9,
+   "forca": 9,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": 2496,
+   "igest": 1084,
+   "igestQuartil": 3,
+   "igestDelta": -18,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "grupo_de_assistentes_de_juizes_do_trabalho_substitutos_gajus",
+   "nome": "GRUPO DE ASSISTENTES DE JUÍZES DO TRABALHO SUBSTITUTOS (GAJUS)",
+   "trilha": "primeiro",
+   "paradigma": 10,
+   "anl": 5,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 9,
+   "forca": 9,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_manutencao_de_infraestrutura_de_tic_semai",
+   "nome": "SEÇÃO DE MANUTENÇÃO DE INFRAESTRUTURA DE TIC - SEMAI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 9,
+   "forca": 9,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_nova_venecia",
+   "nome": "VARA DO TRABALHO DE NOVA VENÉCIA",
+   "trilha": "primeiro",
+   "paradigma": 7,
+   "anl": 3,
+   "tec": 2,
+   "req": 4,
+   "vaga": 1,
+   "efet": 5,
+   "forca": 9,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": 1349,
+   "igest": 594,
+   "igestQuartil": 2,
+   "igestDelta": 147,
+   "igestPontos": 0,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_de_atendimento_ao_usuario_de_tic_nuate",
+   "nome": "NÚCLEO DE ATENDIMENTO AO USUÁRIO DE TIC - NUATE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 5,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 8,
+   "forca": 8,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 5,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_desenvolvimento_de_sistemas_sedes",
+   "nome": "SEÇÃO DE DESENVOLVIMENTO DE SISTEMAS - SEDES",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 5,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 8,
+   "forca": 8,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_sustentacao_de_sistemas_sesut",
+   "nome": "SEÇÃO DE SUSTENTAÇÃO DE SISTEMAS - SESUT",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 7,
+   "req": 0,
+   "vaga": 0,
+   "efet": 8,
+   "forca": 8,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 4,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "vara_do_trabalho_de_venda_nova_do_imigrante",
+   "nome": "VARA DO TRABALHO DE VENDA NOVA DO IMIGRANTE",
+   "trilha": "primeiro",
+   "paradigma": 6,
+   "anl": 4,
+   "tec": 4,
+   "req": 0,
+   "vaga": 1,
+   "efet": 8,
+   "forca": 8,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 3,
+   "acervo": 1111,
+   "igest": 267,
+   "igestQuartil": 1,
+   "igestDelta": -80,
+   "igestPontos": 15,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_analise_e_inteligencia_de_negocio_seane",
+   "nome": "SEÇÃO DE ANÁLISE E INTELIGÊNCIA DE NEGÓCIO - SEANE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 3,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 7,
+   "forca": 7,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 5,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_de_saude_nusaud",
+   "nome": "NÚCLEO DE SAÚDE - NUSAUD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 5,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 6,
+   "forca": 6,
+   "abono": 2,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 5,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "assessoria_juridica_da_presidencia_assjup",
+   "nome": "ASSESSORIA JURÍDICA DA PRESIDÊNCIA - ASSJUP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 5,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 5,
+   "forca": 5,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_precatorios_coprec",
+   "nome": "COORDENADORIA DE PRECATÓRIOS - COPREC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 5,
+   "forca": 5,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_processamento_de_folha_de_pagamento_diprof",
+   "nome": "DIVISÃO DE PROCESSAMENTO DE FOLHA DE PAGAMENTO - DIPROF",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 5,
+   "forca": 5,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_tecnologia_da_informacao_e_comunicacoes_setic",
+   "nome": "SECRETARIA DE TECNOLOGIA DA INFORMAÇÃO E COMUNICAÇÕES – SETIC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 4,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 5,
+   "forca": 5,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 1,
+   "semfc": 3,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_geral_da_presidencia_segep",
+   "nome": "SECRETARIA-GERAL DA PRESIDÊNCIA - SEGEP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 5,
+   "forca": 5,
+   "abono": 1,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_informacoes_funcionais_seinfo",
+   "nome": "SEÇÃO DE INFORMAÇÕES FUNCIONAIS - SEINFO",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 3,
+   "req": 1,
+   "vaga": 0,
+   "efet": 4,
+   "forca": 5,
+   "abono": 0,
+   "aposent": 0,
+   "afast": 0,
+   "semfc": 2,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_comunicacao_social_e_cerimonial_ccom",
+   "nome": "COORDENADORIA DE COMUNICAÇÃO SOCIAL E CERIMONIAL - CCOM",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 4,
+   "req": 0,
+   "vaga": 1,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_servicos_de_infraestrutura_cosinf",
+   "nome": "COORDENADORIA DE SERVIÇOS DE INFRAESTRUTURA - COSINF",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 2,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_analise_administrativa_e_contratacoes_diac",
+   "nome": "DIVISÃO DE ANÁLISE ADMINISTRATIVA E CONTRATAÇÕES - DIAC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_ouvidoria_douvid",
+   "nome": "DIVISÃO DE OUVIDORIA - DOUVID",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_pesquisa_patrimonial_e_execucao_dipesq",
+   "nome": "DIVISÃO DE PESQUISA PATRIMONIAL E EXECUÇÃO - DIPESQ",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 4,
+   "req": 0,
+   "vaga": 0,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_permanente_de_metodos_consensuais_de_solucao_de_disputas_nupemec",
+   "nome": "NÚCLEO PERMANENTE DE MÉTODOS CONSENSUAIS DE SOLUÇÃO DE DISPUTAS - NUPEMEC",
+   "trilha": "primeiro",
+   "paradigma": 4,
+   "anl": 2,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_da_corregedoria_regional_secor",
+   "nome": "SECRETARIA DA CORREGEDORIA REGIONAL - SECOR",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 3,
+   "tec": 1,
+   "req": 0,
+   "vaga": 1,
+   "efet": 4,
+   "forca": 4,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_atendimento_e_apoio_ao_forum_de_vitoria_seat",
+   "nome": "SEÇÃO DE ATENDIMENTO E APOIO AO FÓRUM DE VITÓRIA - SEAT",
+   "trilha": "primeiro",
+   "paradigma": 4,
+   "anl": 1,
+   "tec": 1,
+   "req": 2,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 4,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_1o_grau_cejusc1",
+   "nome": "CENTRO JUDICIÁRIO DE MÉTODOS CONSENSUAIS DE SOLUÇÃO DE DISPUTAS DO 1º GRAU - CEJUSC1",
+   "trilha": "primeiro",
+   "paradigma": 4,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 1,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_apoio_ao_forum_de_vitoria_diapfor",
+   "nome": "DIVISÃO DE APOIO AO FÓRUM DE VITÓRIA - DIAPFOR",
+   "trilha": "primeiro",
+   "paradigma": 3,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_gestao_negocial_digen",
+   "nome": "DIVISÃO DE GESTÃO NEGOCIAL - DIGEN",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_governanca_de_tic_digov",
+   "nome": "DIVISÃO DE GOVERNANÇA DE TIC - DIGOV",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_de_licitacoes_nulic",
+   "nome": "NÚCLEO DE LICITAÇÕES - NULIC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 1,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_administracao_seadm",
+   "nome": "SECRETARIA DE ADMINISTRAÇÃO - SEADM",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 3,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_do_tribunal_pleno_setri",
+   "nome": "SECRETARIA DO TRIBUNAL PLENO - SETRI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_da_primeira_turma_set1",
+   "nome": "SEÇÃO DA PRIMEIRA TURMA - SET1",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_da_segunda_turma_set2",
+   "nome": "SEÇÃO DA SEGUNDA TURMA - SET2",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_da_terceira_turma_set3",
+   "nome": "SEÇÃO DA TERCEIRA TURMA - SET3",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_almoxarifado_e_patrimonio_sealp",
+   "nome": "SEÇÃO DE ALMOXARIFADO E PATRIMÔNIO - SEALP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 1,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_conformidade_e_liquidacao_secliq",
+   "nome": "SEÇÃO DE CONFORMIDADE E LIQUIDAÇÃO - SECLIQ",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_contratacoes_secon",
+   "nome": "SEÇÃO DE CONTRATAÇÕES - SECON",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_orcamento_e_contratacoes_de_tic_segec",
+   "nome": "SEÇÃO DE ORÇAMENTO E CONTRATAÇÕES DE TIC - SEGEC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_projetos_tecnicos_sepro",
+   "nome": "SEÇÃO DE PROJETOS TÉCNICOS - SEPRO",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_seguridade_social_seses",
+   "nome": "SEÇÃO DE SEGURIDADE SOCIAL - SESES",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_judiciaria_sejudic",
+   "nome": "SEÇÃO JUDICIÁRIA - SEJUDIC",
+   "trilha": "primeiro",
+   "paradigma": 3,
+   "anl": 0,
+   "tec": 3,
+   "req": 0,
+   "vaga": 0,
+   "efet": 3,
+   "forca": 3,
+   "abono": 2,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_desenvolvimento_organizacional_de_pessoas_codop",
+   "nome": "COORDENADORIA DE DESENVOLVIMENTO ORGANIZACIONAL DE PESSOAS - CODOP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_gerenciamento_de_precedentes_e_acoes_coletivas_cogepac",
+   "nome": "COORDENADORIA DE GERENCIAMENTO DE PRECEDENTES E AÇÕES COLETIVAS - COGEPAC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 1,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 1,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_solucoes_e_aplicacoes_cosis",
+   "nome": "COORDENADORIA DE SOLUÇÕES E APLICAÇÕES - COSIS",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_estatistica_e_pesquisa_diepe",
+   "nome": "DIVISÃO DE ESTATÍSTICA E PESQUISA - DIEPE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_seguranca_da_informacao_disegi",
+   "nome": "DIVISÃO DE SEGURANÇA DA INFORMAÇÃO - DISEGI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "gabinete_da_desembargadora_alzenir_bollesi_de_pla_loeffler_abpl",
+   "nome": "GABINETE DA DESEMBARGADORA ALZENIR BOLLESI DE PLÁ LOEFFLER - ABPL",
+   "trilha": "gabinete",
+   "paradigma": 2,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_da_escola_judicial_sejud",
+   "nome": "SECRETARIA DA ESCOLA JUDICIAL - SEJUD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_das_turmas_sectur",
+   "nome": "SECRETARIA DAS TURMAS - SECTUR",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 1,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_auditoria_seaud",
+   "nome": "SECRETARIA DE AUDITORIA - SEAUD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_gestao_de_pessoas_sgp",
+   "nome": "SECRETARIA DE GESTÃO DE PESSOAS - SGP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_infraestrutura_manutencao_e_servicos_sims",
+   "nome": "SECRETARIA DE INFRAESTRUTURA, MANUTENÇÃO E SERVIÇOS - SIMS",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_geral_judiciaria_segejud",
+   "nome": "SECRETARIA-GERAL JUDICIÁRIA - SEGEJUD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_arquivo_searq",
+   "nome": "SEÇÃO DE ARQUIVO - SEARQ",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_auditoria_contabil_e_contratacoes_seaucon",
+   "nome": "SEÇÃO DE AUDITORIA CONTÁBIL E CONTRATAÇÕES - SEAUCON",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_contratos_e_beneficios_secobe",
+   "nome": "SEÇÃO DE CONTRATOS E BENEFÍCIOS - SECOBE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_defesa_cibernetica_sedec",
+   "nome": "SEÇÃO DE DEFESA CIBERNÉTICA - SEDEC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_desenvolvimento_e_capacitacao_de_magistrados_sedcam",
+   "nome": "SEÇÃO DE DESENVOLVIMENTO E CAPACITAÇÃO DE MAGISTRADOS - SEDCAM",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 1,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_desenvolvimento_e_capacitacao_de_servidores_sedcas",
+   "nome": "SEÇÃO DE DESENVOLVIMENTO E CAPACITAÇÃO DE SERVIDORES - SEDCAS",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_gestao_de_conhecimento_e_valorizacao_de_pessoal_segecop",
+   "nome": "SEÇÃO DE GESTÃO DE CONHECIMENTO E VALORIZAÇÃO DE PESSOAL - SEGECOP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_gestao_de_desempenho_segede",
+   "nome": "SEÇÃO DE GESTÃO DE DESEMPENHO - SEGEDE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_gestao_documental_e_biblioteca_segedob",
+   "nome": "SEÇÃO DE GESTÃO DOCUMENTAL E BIBLIOTECA - SEGEDOB",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 1,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_ingresso_lotacao_e_remocao_selir",
+   "nome": "SEÇÃO DE INGRESSO, LOTAÇÃO E REMOÇÃO - SELIR",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_legislacao_de_pessoal_selep",
+   "nome": "SEÇÃO DE LEGISLAÇÃO DE PESSOAL - SELEP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_manutencao_predial_semap",
+   "nome": "SEÇÃO DE MANUTENÇÃO PREDIAL - SEMAP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_operacao_de_instalacoes_prediais_seop",
+   "nome": "SEÇÃO DE OPERAÇÃO DE INSTALAÇÕES PREDIAIS - SEOP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 2,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 1,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_projetos_de_tic_seproj",
+   "nome": "SEÇÃO DE PROJETOS DE TIC - SEPROJ",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 2,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_suporte_ao_pje_sesup",
+   "nome": "SEÇÃO DE SUPORTE AO PJE  - SESUP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 2,
+   "forca": 2,
+   "abono": 2,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "assessoria_de_gestao_tecnica_e_administrativa_asstec",
+   "nome": "ASSESSORIA DE GESTÃO TÉCNICA E ADMINISTRATIVA - ASSTEC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_gestao_documental_e_memoria_codom",
+   "nome": "COORDENADORIA DE GESTÃO DOCUMENTAL E MEMÓRIA - CODOM",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_infraestrutura_e_servicos_de_tic_coinf",
+   "nome": "COORDENADORIA DE INFRAESTRUTURA E SERVIÇOS DE TIC - COINF",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_legislacao_de_pessoal_colep",
+   "nome": "COORDENADORIA DE LEGISLAÇÃO DE PESSOAL - COLEP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 1,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 1,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_manutencao_e_operacao_predial_cmope",
+   "nome": "COORDENADORIA DE MANUTENÇÃO E OPERAÇÃO PREDIAL  - CMOPE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_material_e_logistica_comlog",
+   "nome": "COORDENADORIA DE MATERIAL E LOGÍSTICA - COMLOG",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_orcamento_e_financas_cofin",
+   "nome": "COORDENADORIA DE ORÇAMENTO E FINANÇAS - COFIN",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_planejamento_e_apoio_a_gestao_de_tic_cogtic",
+   "nome": "COORDENADORIA DE PLANEJAMENTO E APOIO À GESTÃO DE TIC - COGTIC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "coordenadoria_de_registro_e_pagamento_corep",
+   "nome": "COORDENADORIA DE REGISTRO E PAGAMENTO - COREP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "diretoria_geral_diger",
+   "nome": "DIRETORIA GERAL - DIGER",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_de_governanca_de_contratacoes_digoc",
+   "nome": "DIVISÃO DE GOVERNANÇA DE CONTRATAÇÕES - DIGOC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_tecnica_judiciaria_dtj",
+   "nome": "DIVISÃO TÉCNICA JUDICIÁRIA - DTJ",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "divisao_tecnica_administrativa_dta",
+   "nome": "DIVISÃO TÉCNICA-ADMINISTRATIVA - DTA",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_de_gestao_de_riscos_e_projetos_institucionais_nugerp",
+   "nome": "NÚCLEO DE GESTÃO DE RISCOS E PROJETOS INSTITUCIONAIS - NUGERP",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "nucleo_de_projetos_e_governanca_de_pessoas_nuprog",
+   "nome": "NÚCLEO DE PROJETOS E GOVERNANÇA DE PESSOAS - NUPROG",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secretaria_de_governanca_e_gestao_estrategica_segest",
+   "nome": "SECRETARIA DE GOVERNANÇA E GESTÃO ESTRATÉGICA - SEGEST",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_apoio_a_fiscalizacao_seafi",
+   "nome": "SEÇÃO  DE APOIO À FISCALIZAÇÃO - SEAFI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_pagamento_sepag",
+   "nome": "SEÇÃO  DE PAGAMENTO - SEPAG",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_acessibilidade_e_inclusao_seaci",
+   "nome": "SEÇÃO DE ACESSIBILIDADE E INCLUSÃO - SEACI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_auditoria_de_pessoal_seaupe",
+   "nome": "SEÇÃO DE AUDITORIA DE PESSOAL - SEAUPE",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_auditoria_de_tecnologia_da_informacao_seauti",
+   "nome": "SEÇÃO DE AUDITORIA DE TECNOLOGIA DA INFORMAÇÃO - SEAUTI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_contabilidade_analitica_secan",
+   "nome": "SEÇÃO DE CONTABILIDADE ANALÍTICA – SECAN",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 1,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_contabilidade_gerencial_secog",
+   "nome": "SEÇÃO DE CONTABILIDADE GERENCIAL - SECOG",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_contratos_administrativos_secad",
+   "nome": "SEÇÃO DE CONTRATOS ADMINISTRATIVOS - SECAD",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_gestao_de_contratos_segecon",
+   "nome": "SEÇÃO DE GESTÃO DE CONTRATOS - SEGECON",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_gestao_de_memoria_segem",
+   "nome": "SEÇÃO DE GESTÃO DE MEMÓRIA - SEGEM",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_orcamento_e_planejamento_de_contratos_soplac",
+   "nome": "SEÇÃO DE ORÇAMENTO E PLANEJAMENTO DE CONTRATOS- SOPLAC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_planejamento_de_contratacoes_seplac",
+   "nome": "SEÇÃO DE PLANEJAMENTO DE CONTRATAÇÕES - SEPLAC",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_planejamento_e_execucao_orcamentaria_sepla",
+   "nome": "SEÇÃO DE PLANEJAMENTO E EXECUÇÃO ORÇAMENTÁRIA - SEPLA",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 1,
+   "tec": 0,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_de_sustentabilidade_sesus",
+   "nome": "SEÇÃO DE SUSTENTABILIDADE- SESUS",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "secao_do_laboratorio_de_inovacao_selabi",
+   "nome": "SEÇÃO DO LABORATÓRIO DE  INOVAÇÃO - SELABI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 1,
+   "req": 0,
+   "vaga": 0,
+   "efet": 1,
+   "forca": 1,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_2o_grau_cejusc2",
+   "nome": "CENTRO JUDICIÁRIO DE MÉTODOS CONSENSUAIS DE SOLUÇÃO DE DISPUTAS DO 2º GRAU - CEJUSC2",
+   "trilha": "primeiro",
+   "paradigma": 1,
+   "anl": 0,
+   "tec": 0,
+   "req": 0,
+   "vaga": 1,
+   "efet": 0,
+   "forca": 0,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  },
+  {
+   "id": "presidencia_presi",
+   "nome": "PRESIDÊNCIA - PRESI",
+   "trilha": "admin",
+   "paradigma": null,
+   "anl": 0,
+   "tec": 0,
+   "req": 0,
+   "vaga": 1,
+   "efet": 0,
+   "forca": 0,
+   "abono": 0,
+   "aposent": 0,
+   "afast": null,
+   "semfc": 0,
+   "acervo": null,
+   "igest": null,
+   "igestQuartil": null,
+   "igestDelta": null,
+   "igestPontos": null,
+   "ressalva": null
+  }
+ ]
+};
+const UNIDADES = BASE.unidades;
+const META     = BASE.meta;
+
+const PESOS_PADRAO = { deficit: 35, carga: 35, requisitados: 20, risco: 10 };
+const CFG_PADRAO   = { contarReq: false, pesos: { ...PESOS_PADRAO } };
+
+let cfg        = JSON.parse(JSON.stringify(CFG_PADRAO));
+let alocacoes  = {};   // id -> { n, just }
+let paradigmas = {};   // id -> paradigma corrigido
+let abertos    = {};   // id -> justificativa expandida
+let busca      = '';
+let mostrarTudo = false;
+let syncReady  = false;
+
+/* ---------- sincronização ---------- */
+onSnapshot(STATE_DOC, snap => {
+  if (snap.exists()) {
+    const d = snap.data();
+    cfg        = { ...CFG_PADRAO, ...(d.cfg || {}), pesos: { ...PESOS_PADRAO, ...((d.cfg || {}).pesos || {}) } };
+    alocacoes  = d.alocacoes  || {};
+    paradigmas = d.paradigmas || {};
+  } else {
+    setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, cfg, alocacoes, paradigmas, updatedAt: serverTimestamp() })
+      .catch(e => console.error(e));
+  }
+  syncReady = true;
+  setSync('ok');
+  render();
+}, err => { console.error(err); setSync('error'); });
+
+function setSync(estado) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  if (estado === 'ok')     { el.textContent = '\u25CF sincronizado'; el.style.color = '#22C55E'; }
+  if (estado === 'saving') { el.textContent = '\u21BB salvando…';    el.style.color = '#F59E0B'; }
+  if (estado === 'error')  { el.textContent = '\u2717 erro';          el.style.color = '#EF4444'; }
+}
+
+let salvarTimer = null;
+function salvarBreve() { clearTimeout(salvarTimer); salvarTimer = setTimeout(salvar, 600); }
+
+async function salvar() {
+  if (!syncReady) return;
+  setSync('saving');
+  try {
+    await setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, cfg, alocacoes, paradigmas, updatedAt: serverTimestamp() });
+    setSync('ok');
+  } catch (e) { console.error(e); setSync('error'); }
+}
+
+/* ---------- cálculo ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const nf = (v, d = 0) => v == null ? '—' : v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+const paradigmaDe   = u => (paradigmas[u.id] != null ? paradigmas[u.id] : u.paradigma);
+const forcaDe       = u => cfg.contarReq ? u.forca : u.efet;
+const alocadoDe     = u => (alocacoes[u.id]?.n || 0);
+const justDe        = u => (alocacoes[u.id]?.just || '');
+function deficitDe(u) { const p = paradigmaDe(u); return p == null ? null : p - forcaDe(u); }
+function cargaDe(u)   { const f = forcaDe(u); return (u.acervo && f > 0) ? u.acervo / f : null; }
+
+const COM_ACERVO = UNIDADES.filter(u => u.acervo);
+function faixaCarga() {
+  const vs = COM_ACERVO.map(cargaDe).filter(v => v != null);
+  return { min: Math.min(...vs), max: Math.max(...vs), media: COM_ACERVO.reduce((s, u) => s + u.acervo, 0) / COM_ACERVO.reduce((s, u) => s + forcaDe(u), 0) };
+}
+
+function componentes(u) {
+  const p = paradigmaDe(u), f = forcaDe(u), fx = faixaCarga();
+  const c = {};
+  if (p != null && p > 0) c.deficit = clamp01(Math.max(0, p - f) / p);
+  const car = cargaDe(u);
+  if (car != null && fx.max > fx.min) c.carga = clamp01((car - fx.min) / (fx.max - fx.min));
+  if (u.forca > 0) c.requisitados = clamp01(u.req / u.forca);
+  if (u.efet > 0)  c.risco = clamp01((u.abono + u.aposent) / u.efet);
+  return c;
+}
+
+function indiceDe(u) {
+  const c = componentes(u);
+  let soma = 0, peso = 0;
+  for (const k in c) { const w = cfg.pesos[k] || 0; soma += w * c[k]; peso += w; }
+  return peso === 0 ? 0 : Math.round(100 * soma / peso);
+}
+
+const totalAlocado = () => Object.values(alocacoes).reduce((s, a) => s + (a.n || 0), 0);
+
+/* ---------- métricas ---------- */
+function renderMetricas() {
+  const primeiro = UNIDADES.filter(u => u.trilha === 'primeiro');
+  const defTotal = UNIDADES.reduce((s, u) => { const d = deficitDe(u); return s + (d && d > 0 ? d : 0); }, 0);
+  const excTotal = UNIDADES.reduce((s, u) => { const d = deficitDe(u); return s + (d && d < 0 ? -d : 0); }, 0);
+  const alocado  = totalAlocado();
+  const restante = META.ingresso - alocado;
+  const reqPrim  = primeiro.reduce((s, u) => s + u.req, 0);
+  const fx = faixaCarga();
+  const cards = [
+    { l: 'Servidores a lotar',          v: META.ingresso },
+    { l: 'Já alocados no painel',       v: alocado },
+    { l: 'Saldo',                       v: restante, warn: restante < 0, sub: restante < 0 ? 'alocação excede o ingresso' : '' },
+    { l: 'Déficit total de quadro',     v: defTotal, sub: cfg.contarReq ? 'com requisitados' : 'só quadro próprio' },
+    { l: 'Excedente total',             v: excTotal, sub: cfg.contarReq ? 'com requisitados' : 'só quadro próprio' },
+    { l: 'Requisitados no 1º grau',     v: reqPrim, sub: 'força cedida, reversível' },
+    { l: 'Acervo por servidor',         v: Math.round(fx.media), sub: 'média das Varas' },
+  ];
+  document.getElementById('metrics').innerHTML = cards.map(c =>
+    `<div class="metric-card"><p class="label">${c.l}</p><p class="value${c.warn ? ' warn' : ''}">${nf(c.v)}</p>${c.sub ? `<p class="sub">${esc(c.sub)}</p>` : ''}</div>`
+  ).join('');
+}
+
+/* ---------- quadrantes ---------- */
+function renderQuadrantes() {
+  const pts = COM_ACERVO.map(u => ({ u, x: deficitDe(u), y: cargaDe(u) })).filter(p => p.x != null && p.y != null);
+  const W = 1100, H = 460, M = { t: 22, r: 26, b: 46, l: 62 };
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const x0 = Math.min(-2, Math.min(...xs) - 0.6), x1 = Math.max(2, Math.max(...xs) + 0.6);
+  const y0 = Math.min(...ys) * 0.9, y1 = Math.max(...ys) * 1.06;
+  const media = faixaCarga().media;
+  const px = v => M.l + (v - x0) / (x1 - x0) * (W - M.l - M.r);
+  const py = v => H - M.b - (v - y0) / (y1 - y0) * (H - M.t - M.b);
+  const cx0 = px(0), cy0 = py(media);
+  const cor = u => u.igestQuartil === 4 ? '#DC2626' : u.igestQuartil === 1 ? '#2563EB' : u.igestQuartil === 2 ? '#16A34A' : '#D97706';
+  const rotulo = u => u.nome.replace(/VARA DO TRABALHO DE /,'').replace(/\.ª VARA DE VITÓRIA/,'ª VIT').replace(/ª VARA DO TRABALHO DE /,'ª ').replace(/CACHOEIRO DE ITAPEMIRIM/,'Cachoeiro').replace(/VENDA NOVA DO IMIGRANTE/,'Venda Nova');
+  const svg = `<svg class="quad" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dispersão de déficit de quadro por acervo por servidor">
+    <rect x="${cx0}" y="${M.t}" width="${W - M.r - cx0}" height="${cy0 - M.t}" fill="#FEF2F2"/>
+    <rect x="${M.l}" y="${cy0}" width="${cx0 - M.l}" height="${H - M.b - cy0}" fill="#F0FDF4"/>
+    <line x1="${M.l}" y1="${cy0}" x2="${W - M.r}" y2="${cy0}" stroke="#94A3B8" stroke-dasharray="5 4"/>
+    <line x1="${cx0}" y1="${M.t}" x2="${cx0}" y2="${H - M.b}" stroke="#94A3B8" stroke-dasharray="5 4"/>
+    <line x1="${M.l}" y1="${H - M.b}" x2="${W - M.r}" y2="${H - M.b}" stroke="#334155"/>
+    <line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H - M.b}" stroke="#334155"/>
+    <text x="${W - M.r}" y="${H - 14}" text-anchor="end" font-size="12" fill="#475569">déficit de quadro (paradigma − força) →</text>
+    <text x="14" y="${M.t + 4}" font-size="12" fill="#475569" transform="rotate(-90 14 ${M.t + 4})" text-anchor="end">acervo por servidor →</text>
+    <text x="${cx0 + 10}" y="${M.t + 16}" font-size="11.5" font-weight="bold" fill="#B91C1C">déficit + carga acima da média</text>
+    <text x="${M.l + 10}" y="${H - M.b - 10}" font-size="11.5" font-weight="bold" fill="#15803D">quadro completo e carga abaixo da média</text>
+    <text x="${M.l - 8}" y="${py(media) + 4}" text-anchor="end" font-size="11" fill="#475569">${Math.round(media)}</text>
+    ${pts.map(p => `<g><circle cx="${px(p.x).toFixed(1)}" cy="${py(p.y).toFixed(1)}" r="6.5" fill="${cor(p.u)}" fill-opacity="0.82" stroke="#FFF" stroke-width="1.4"><title>${esc(p.u.nome)} — acervo ${nf(p.u.acervo)}, ${nf(Math.round(p.y))} por servidor, déficit ${p.x > 0 ? '+' : ''}${p.x}, IGEST ${p.u.igest}º (${p.u.igestQuartil}º quartil)</title></circle>
+      <text x="${(px(p.x) + 9).toFixed(1)}" y="${(py(p.y) + 4).toFixed(1)}" font-size="10.5" fill="#334155">${esc(rotulo(p.u))}</text></g>`).join('')}
+  </svg>`;
+  document.getElementById('quad-wrap').innerHTML = svg;
+  document.getElementById('quad-legend').innerHTML =
+    'Cor do ponto = quartil no IGEST: <span style="color:#2563EB;font-weight:700">1º</span> · <span style="color:#16A34A;font-weight:700">2º</span> · <span style="color:#D97706;font-weight:700">3º</span> · <span style="color:#DC2626;font-weight:700">4º</span>. Linha horizontal = média de ' + Math.round(faixaCarga().media) + ' processos por servidor.';
+}
+
+/* ---------- tabelas ---------- */
+function linhaAloc(u) {
+  const n = alocadoDe(u), j = justDe(u);
+  return `<td class="num"><input class="aloc-input" type="number" min="0" max="16" step="1" value="${n}" data-aloc="${u.id}"></td>
+          <td><button class="just-btn" data-just="${u.id}" title="Justificativa">${j ? '\u270E' : '\u002B'}</button></td>`;
+}
+function linhaJust(u, cols) {
+  if (!abertos[u.id]) return '';
+  return `<tr class="just-row"><td colspan="${cols}"><textarea data-txt="${u.id}" placeholder="Justificativa da alocação — critério aplicado, alternativa descartada, condicionantes.">${esc(justDe(u))}</textarea></td></tr>`;
+}
+
+function tabela(el, lista, colunas, { alocavel = true } = {}) {
+  const cols = colunas.length + (alocavel ? 2 : 0);
+  const head = `<thead><tr>${colunas.map(c => `<th class="${c.num ? 'num' : ''}">${c.t}</th>`).join('')}${alocavel ? '<th class="num">Alocar</th><th></th>' : ''}</tr></thead>`;
+  const body = lista.map(u => {
+    const cs = colunas.map(c => `<td class="${c.num ? 'num' : ''}">${c.f(u)}</td>`).join('');
+    return `<tr class="${alocadoDe(u) > 0 ? 'alocada' : ''}">${cs}${alocavel ? linhaAloc(u) : ''}</tr>` + (alocavel ? linhaJust(u, cols) : '');
+  }).join('');
+  el.innerHTML = head + '<tbody>' + (lista.length ? body : `<tr><td colspan="${cols}" style="color:#8A97A5;padding:14px 7px">Nenhuma unidade corresponde ao filtro.</td></tr>`) + '</tbody>';
+}
+
+const cNome = {
+  t: 'Unidade', f: u => {
+    const q = u.igestQuartil;
+    const fl = q === 4 ? '<span class="flag q4">4º quartil</span>' : q === 1 ? '<span class="flag q1">1º quartil</span>' : '';
+    const rev = u.req > 0 && u.req / u.forca >= 0.3 ? '<span class="flag rev">força cedida</span>' : '';
+    const j = justDe(u) ? `<div class="just-preview">${esc(j_trunc(justDe(u)))}</div>` : '';
+    const r = u.ressalva ? `<div class="ressalva">${esc(u.ressalva)}</div>` : '';
+    return `<span class="unidade">${esc(nomeCurto(u.nome))}</span>${fl}${rev}${j}${r}`;
+  }
+};
+const j_trunc = s => s.length > 130 ? s.slice(0, 130) + '…' : s;
+const nomeCurto = n => n.replace(/^(\d+)\.ª VARA DE VITÓRIA$/, '$1ª Vara do Trabalho de Vitória').replace(/\s+-\s+([A-ZÇÃÕÉÍÁÚ0-9]{3,})$/, ' — $1');
+
+const cPar   = { t: 'Paradigma', num: true, f: u => u.paradigma == null ? '—' : `<input class="aloc-input" type="number" min="0" max="60" value="${paradigmaDe(u)}" data-par="${u.id}" title="Paradigma — editável">` };
+const cEfet  = { t: 'Efetivos',  num: true, f: u => `${u.efet}<span style="color:#8A97A5"> (${u.anl}A/${u.tec}T)</span>` };
+const cReq   = { t: 'Requis.',   num: true, f: u => u.req || '—' };
+const cVaga  = { t: 'FC vaga',   num: true, f: u => u.vaga || '—' };
+const cDef   = { t: 'Déficit',   num: true, f: u => { const d = deficitDe(u); return d == null ? '—' : d > 0 ? `<span class="pos">+${d}</span>` : d < 0 ? `<span class="neg">${d}</span>` : '0'; } };
+const cAcer  = { t: 'Acervo',    num: true, f: u => nf(u.acervo) };
+const cCarga = { t: 'Por serv.', num: true, f: u => { const c = cargaDe(u); return c == null ? '—' : nf(Math.round(c)); } };
+const cIgest = { t: 'IGEST',     num: true, f: u => u.igest == null ? '—' : `${nf(u.igest)}º<span style="color:#8A97A5"> ${u.igestDelta > 0 ? '\u2191' : u.igestDelta < 0 ? '\u2193' : '='}</span>` };
+const cRisco = { t: 'Risco saída', num: true, f: u => (u.abono + u.aposent) || '—' };
+const cAfast = { t: 'Afast. >60d', num: true, f: u => u.afast == null ? '—' : (u.afast || 0) };
+const cSinais = { t: 'Sinais', num: true, f: u => {
+  const n = u.req + u.vaga + u.abono + u.aposent + (u.afast || 0);
+  return n ? `<span class="bar" style="width:${Math.max(3, n * 5)}px"></span><span class="idx">${n}</span>` : '—';
+} };
+const cIdx   = { t: 'Índice', num: true, f: u => { const i = indiceDe(u); return `<span class="bar" style="width:${Math.max(3, i * 0.45)}px"></span><span class="idx">${i}</span>`; } };
+
+function filtra(lista) {
+  if (!busca) return lista;
+  const b = busca.toLowerCase();
+  return lista.filter(u => u.nome.toLowerCase().includes(b));
+}
+
+function render() {
+  document.getElementById('ck-req').checked = cfg.contarReq;
+  document.getElementById('lbl-req').textContent = cfg.contarReq
+    ? 'Contando requisitados na força (operação como está hoje)'
+    : 'Só quadro próprio — requisitados fora da conta (capacidade do Tribunal)';
+  document.getElementById('w-def').value = cfg.pesos.deficit;
+  document.getElementById('w-car').value = cfg.pesos.carga;
+  document.getElementById('w-req').value = cfg.pesos.requisitados;
+  document.getElementById('w-ris').value = cfg.pesos.risco;
+  document.getElementById('ck-tudo').checked = mostrarTudo;
+
+  renderMetricas();
+  renderQuadrantes();
+
+  const ord = (a, b) => indiceDe(b) - indiceDe(a) || a.nome.localeCompare(b.nome);
+
+  const eVara = u => /VARA D/.test(u.nome);
+  const varas = filtra(UNIDADES.filter(u => u.trilha === 'primeiro' && eVara(u))).sort(ord);
+  tabela(document.getElementById('t-varas'), varas,
+    [cNome, cPar, cEfet, cReq, cVaga, cDef, cAcer, cCarga, cIgest, cRisco, cIdx]);
+
+  const apoio = filtra(UNIDADES.filter(u => u.trilha === 'primeiro' && !eVara(u))).sort(ord);
+  tabela(document.getElementById('t-apoio'), apoio,
+    [cNome, cPar, cEfet, cReq, cVaga, cDef, cRisco, cAfast, cIdx]);
+
+  const gab = filtra(UNIDADES.filter(u => u.trilha === 'gabinete')).sort(ord);
+  tabela(document.getElementById('t-gab'), gab,
+    [cNome, cPar, cEfet, cReq, cVaga, cDef, cRisco, cAfast, cIdx]);
+
+  let adm = UNIDADES.filter(u => u.trilha === 'admin');
+  if (!mostrarTudo) adm = adm.filter(u => u.req > 0 || u.vaga > 0 || (u.abono + u.aposent) > 0 || (u.afast || 0) > 0 || alocadoDe(u) > 0);
+  const sinais = u => u.req + u.vaga + u.abono + u.aposent + (u.afast || 0);
+  tabela(document.getElementById('t-adm'),
+    filtra(adm).sort((a, b) => sinais(b) - sinais(a) || b.efet - a.efet || a.nome.localeCompare(b.nome)),
+    [cNome, cEfet, cReq, cVaga, cRisco, cAfast, cSinais]);
+
+  const media = faixaCarga().media;
+  const exc = filtra(UNIDADES.filter(u => { const d = deficitDe(u); return d != null && d < 0; }))
+    .sort((a, b) => deficitDe(a) - deficitDe(b));
+  tabela(document.getElementById('t-exc'), exc,
+    [cNome, cPar, cEfet, cReq, cDef, cCarga,
+     { t: 'Carga vs média', f: u => { const c = cargaDe(u); return c == null ? '—' : c < media ? '<span class="neg">abaixo</span>' : '<span class="pos">acima</span>'; } },
+     cIgest], { alocavel: false });
+
+  document.getElementById('f-fontes').textContent =
+    META.fonteLotacao + ' · ' + META.fonteVagas + ' · ' + META.fonteIgest + ' · ' + META.fonteAcervo + '.';
+  document.getElementById('f-k').textContent = META.kMin;
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.aloc != null) {
+    const id = t.dataset.aloc, n = Math.max(0, parseInt(t.value, 10) || 0);
+    alocacoes[id] = { n, just: justDe({ id }) };
+    if (!n && !alocacoes[id].just) delete alocacoes[id];
+    renderMetricas(); salvarBreve();
+  }
+  if (t.dataset.txt != null) {
+    const id = t.dataset.txt;
+    alocacoes[id] = { n: alocacoes[id]?.n || 0, just: t.value };
+    salvarBreve();
+  }
+  if (t.id === 'busca') { busca = t.value; render(); }
+  if (['w-def','w-car','w-req','w-ris'].includes(t.id)) {
+    cfg.pesos = {
+      deficit:      Math.max(0, parseInt(document.getElementById('w-def').value, 10) || 0),
+      carga:        Math.max(0, parseInt(document.getElementById('w-car').value, 10) || 0),
+      requisitados: Math.max(0, parseInt(document.getElementById('w-req').value, 10) || 0),
+      risco:        Math.max(0, parseInt(document.getElementById('w-ris').value, 10) || 0),
+    };
+    render(); salvar();
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.dataset && e.target.dataset.par != null) {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v)) { paradigmas[e.target.dataset.par] = v; render(); salvar(); }
+  }
+  if (e.target.id === 'ck-req')  { cfg.contarReq = e.target.checked; render(); salvar(); }
+  if (e.target.id === 'ck-tudo') { mostrarTudo   = e.target.checked; render(); }
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-just]');
+  if (b) { const id = b.dataset.just; abertos[id] = !abertos[id]; render(); }
+  if (e.target.id === 'btn-reset') { cfg = JSON.parse(JSON.stringify(CFG_PADRAO)); paradigmas = {}; render(); salvar(); }
+});
+
+render();
+</script>
+</body>
+</html>

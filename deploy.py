@@ -24,6 +24,7 @@ Uso:
      # cada arg pode ser  local  ou  local:caminho_no_repo  (sem ':' usa o basename)
   python deploy.py --rebuild ["mensagem"]     # so re-dispara o build (recupera de erro transiente)
   python deploy.py --force "msg" arquivo...   # ignora a checagem de integridade
+  python deploy.py "msg" novo.html -antigo.html   # prefixo "-" remove o arquivo no mesmo commit
 """
 import os, sys, json, base64, time, urllib.request, urllib.error
 
@@ -83,11 +84,14 @@ def integrity(pairs, rules):
     return report
 
 # ---------- commit atomico ----------
-def commit_files(message, pairs):
+def commit_files(message, pairs, removals=()):
     _, ref = api("GET", f"/repos/{REPO}/git/ref/heads/{BRANCH}")
     base = ref["object"]["sha"]
     _, cinfo = api("GET", f"/repos/{REPO}/git/commits/{base}")
     tree = []
+    for repopath in removals:
+        tree.append({"path": repopath, "mode": "100644", "type": "blob", "sha": None})
+        print(f"  REMOVE {repopath}")
     for local, repopath in pairs:
         b64 = base64.b64encode(open(local, "rb").read()).decode()
         st, blob = api("POST", f"/repos/{REPO}/git/blobs", {"content": b64, "encoding": "base64"})
@@ -100,7 +104,7 @@ def commit_files(message, pairs):
     if st >= 300: sys.exit(f"ERRO commit: {st} {nc}")
     st, up = api("PATCH", f"/repos/{REPO}/git/refs/heads/{BRANCH}", {"sha": nc["sha"], "force": False})
     if st >= 300: sys.exit(f"ERRO ref (permissao? workflow files exigem escopo Workflows): {st} {up}")
-    print(f"  commit {nc['sha'][:7]} ({len(pairs)} arquivo(s), 1 build)")
+    print(f"  commit {nc['sha'][:7]} ({len(pairs)} arquivo(s), {len(removals)} remocao(oes), 1 build)")
     return nc["sha"]
 
 # ---------- verificacao do build ----------
@@ -151,6 +155,8 @@ def main():
         ensure_deployed(expect_commit=retrigger_build()); return
     message, files = args[0], args[1:]
     if not files: sys.exit("ERRO: informe ao menos um arquivo.")
+    removals = [a[1:] for a in files if a.startswith("-") and len(a) > 1]
+    files = [a for a in files if not a.startswith("-")]
     pairs = []
     for a in files:
         local, repopath = (a.split(":", 1) if (":" in a and not a.startswith("http")) else (a, os.path.basename(a)))
@@ -171,7 +177,7 @@ def main():
             print("  integridade: OK")
     else:
         print("  (sem checks.json aplicavel; checagem pulada)")
-    ensure_deployed(expect_commit=commit_files(message, pairs))
+    ensure_deployed(expect_commit=commit_files(message, pairs, removals))
 
 if __name__ == "__main__":
     main()
