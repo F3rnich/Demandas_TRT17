@@ -206,6 +206,24 @@ def ler_aba(path, sheet, obrigatoria=True):
                              engine="openpyxl")
 
 
+def sem_dup_comissao(d):
+    """Uma linha por (ref, MATRICULA) entre os ocupantes de FC/CJ.
+
+    A base traz 32 pares (12 pessoas, 20 referencias entre 2021-11 e 2024-02)
+    com DOIS codigos de comissao no mesmo instantaneo de fim de mes, mesma
+    unidade e mesma data de REFERENCIA — nao e troca de funcao no meio do mes.
+    O padrao dominante e CJ-3 + FC-04 (26 dos 32 pares), razao de valor ~4x.
+    Conta-se a pessoa UMA vez e mantem-se o posto de MAIOR valor (o CJ),
+    tratando a linha de FC como residuo da opcao.
+
+    Sem isto, groupby("ref").size() conta LANCAMENTOS e nao pessoas, e o custo
+    mensal soma as duas linhas: ate 3 pessoas e R$ 6.168,84 a mais num mes
+    (0,353%), R$ 63.981,10 no acumulado da serie.
+    """
+    return (d.sort_values("VALOR", ascending=False)
+             .drop_duplicates(subset=["ref", "MATRICULA"], keep="first"))
+
+
 def sup(n):
     """Suprime contagens 0<n<K_MIN (retorna None)."""
     n = int(n)
@@ -248,6 +266,21 @@ def main(path):
     anos_all = sorted(srv["ano"].unique())
     srv_ult = srv[srv["ref"] == ult_ref].copy()
     srv_dez = srv.sort_values("REFERENCIA").groupby(["ano", "MATRICULA"]).tail(1)
+
+    # INVARIANTE: nenhum magistrado e nenhum servidor removido para outro orgao
+    # ocupa FC/CJ. Verificado nas 140 referencias da base (2015-01 a 2026-08):
+    # zero ocorrencias. E por isso que o p11 dava o numero certo mesmo usando o
+    # universo errado. Se deixar de valer, "quem entra no custo" vira decisao de
+    # politica (despesa institucional x acesso dos servidores) e nao pode ser
+    # resolvida em silencio por um filtro: o pipeline para e alguem decide.
+    _intru = df[(~est) & df["CODIGO_COMISSAO"].notna() & (MAG | REMPARA)]
+    if len(_intru):
+        _m = sorted(_intru["ref"].unique())
+        sys.exit(f"ERRO: {len(_intru)} ocupante(s) de FC/CJ sao magistrados ou "
+                 f"removidos-para, em {len(_m)} referencia(s) ({_m[0]}..{_m[-1]}).\n"
+                 f"Isso nunca ocorreu nesta base. Decida antes de publicar se o "
+                 f"custo do painel 10 mede despesa institucional (inclui) ou "
+                 f"acesso dos servidores (exclui) — ver p09 e art. 6 do p13.")
 
     # GRAU por unidade administrativa (fonte confiável — mesma usada no art. 7º/P13).
     # A coluna "GRAU" crua da aba "dados" (XLOOKUP na planilha-fonte) NÃO é usada aqui:
@@ -318,7 +351,7 @@ def main(path):
     }
 
     # ---------------- p09 → Painel 8 — Equidade em comissionamentos (força de servidores) ----------------
-    com = srv_ult[srv_ult["CODIGO_COMISSAO"].notna()]
+    com = sem_dup_comissao(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()])
     def paridade(col, grupos):
         r = {}
         for g in grupos:
@@ -439,10 +472,11 @@ def main(path):
     }
 
     # ---------------- p11 → Painel 10 — Custo dos comissionamentos ----------------
-    comt = ft[ft["CODIGO_COMISSAO"].notna()]
+    # universo igual ao do p09 e do art. 6 do p13 (srv), e uma linha por pessoa
+    comt = sem_dup_comissao(srv[srv["CODIGO_COMISSAO"].notna()])
     custo = comt.groupby("ref")["VALOR"].sum()
     qtd = comt.groupby("ref").size()
-    tipos = ult[ult["CODIGO_COMISSAO"].notna()].groupby("NOME_COMISSAO").agg(
+    tipos = sem_dup_comissao(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()]).groupby("NOME_COMISSAO").agg(
         n=("MATRICULA", "count"), custo=("VALOR", "sum")).sort_values("custo", ascending=False)
     grandes = tipos[tipos["n"] >= K_MIN]
     outras_n = int(tipos[tipos["n"] < K_MIN]["n"].sum())
@@ -459,7 +493,10 @@ def main(path):
         "por_tipo_atual": lista,
         "custo_atual": round(float(custo.get(ult_ref, 0)), 2),
         "valor_medio_atual": round(float(custo.get(ult_ref, 0) / max(qtd.get(ult_ref, 1), 1)), 2),
-        "nota": "Valores nominais (sem correção inflacionária).",
+        "nota": "Valores nominais (sem correção inflacionária). Universo: servidores "
+                "com lotação ativa (exclui estagiários, removidos para outros órgãos e "
+                "magistrados). Um ocupante conta uma vez por mês: quando o registro traz "
+                "dois códigos no mesmo instantâneo, prevalece o posto de maior valor.",
     }
 
     # ---------------- p12 → Painel 11 — Qualificação × cargo ----------------
@@ -511,7 +548,7 @@ def main(path):
     def _a6(g):
         efet = (g["TIPO_SERVIDOR"] == "Cargo efetivo").sum()
         return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
-    com_u = sult[sult["tem_com"]]
+    com_u = sem_dup_comissao(sult[sult["tem_com"]])
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
     por_nivel = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
     por_nivel = [x for x in por_nivel if x["n"] > 0]
