@@ -284,6 +284,16 @@ def main(path):
     refs = sorted(df["ref"].unique())
     ult_ref = refs[-1]
 
+    # Os paineis 6-12 sao SEMPRE reconstruidos da base ACUMULADA. Com base
+    # mensal o p10 fica indefensavel — o Kaplan-Meier nao e agregavel e a coorte
+    # de entrada observavel deixa de existir — e as series do p07/p08/p11 viram
+    # um ponto. Esta guarda vivia so no publicar.py; o lugar dela e aqui, senao
+    # quem rodar o build direto passa por cima da regra.
+    if len(refs) < 24:
+        sys.exit(f"ERRO: a base tem {len(refs)} referencia(s) "
+                 f"({refs[0]}..{refs[-1]}). Os paineis 6-12 exigem a base "
+                 f"acumulada; base mensal nao serve.")
+
     est = df["TIPO_SERVIDOR"].eq("Estagiário")
     ft = df[~est].copy()                 # força de trabalho (sem estagiários)
     ult = ft[ft["ref"] == ult_ref].copy()  # último snapshot
@@ -457,6 +467,41 @@ def main(path):
     sem_fc_inicial = co[~co["chegou"]]
     EIXO_ANOS = [x / 2 for x in range(0, 21)]  # 0 a 10 anos, passo 0,5
 
+    def km_passos(sub):
+        """(tempos, passos) do produto-limite. `tempos` = [(t, evento)].
+
+        Passos cujo conjunto em risco fica abaixo de K_MIN nao entram no
+        produto. Isso NAO altera nenhum ponto publicado: o conjunto em risco e
+        nao-crescente, entao todo ponto do eixo em t >= t_i ja sai como None por
+        n_risco_t < K_MIN. Medido nas cinco curvas — zero pontos afetados. E
+        guarda de k-anonimato, nao correcao de vies; nao remover achando que
+        conserta a cauda.
+        """
+        tempos = [(float(r["t"]), 1) if r["evento"] else (float(r["t_obs"]), 0)
+                  for _, r in sub.iterrows()]
+        passos, surv = [], 1.0
+        for t_i in sorted({t for t, e in tempos if e == 1}):
+            n_i = sum(1 for t, e in tempos if t >= t_i)
+            d_i = sum(1 for t, e in tempos if t == t_i and e == 1)
+            if n_i >= K_MIN:
+                surv *= (1 - d_i / n_i)
+            passos.append((t_i, surv, n_i))
+        return tempos, passos
+
+    def km_mediana(sub):
+        """Mediana de Kaplan-Meier: menor tempo em que a curva alcanca 50% da
+        coorte. NAO confundir com a mediana ingenua sobre quem recebeu
+        (`mediana_anos`), que ignora quem nunca recebeu — exatamente o vies que
+        o KM existe para tratar. None quando a curva nao chega a 50%.
+        """
+        tempos, passos = km_passos(sub)
+        if len(tempos) < K_MIN:
+            return None
+        for t_i, surv, n_i in passos:
+            if n_i >= K_MIN and surv <= 0.5:
+                return round(t_i, 1)
+        return None
+
     def km_curve(sub, return_n=False):
         """% acumulado que recebeu FC/CJ até t anos — Kaplan-Meier (produto-limite).
 
@@ -471,18 +516,7 @@ def main(path):
         mediana de tempo até 1a comissão, entre quem recebe, é < 1 ano — indício de
         que quem não é promovido rápido tende também a sair do tribunal).
         """
-        tempos = [(float(r["t"]), 1) if r["evento"] else (float(r["t_obs"]), 0)
-                  for _, r in sub.iterrows()]
-        n_total = len(tempos)
-        event_times = sorted({t for t, e in tempos if e == 1})
-        km_steps = []  # (tempo_evento, sobrevivencia_apos, n_risco_no_evento)
-        surv = 1.0
-        for t_i in event_times:
-            n_i = sum(1 for t, e in tempos if t >= t_i)
-            d_i = sum(1 for t, e in tempos if t == t_i and e == 1)
-            if n_i >= K_MIN:
-                surv *= (1 - d_i / n_i)
-            km_steps.append((t_i, surv, n_i))
+        tempos, km_steps = km_passos(sub)
         pts, n_pts = [], []
         for t in EIXO_ANOS:
             n_risco_t = sum(1 for tt, e in tempos if tt >= t)
@@ -500,25 +534,35 @@ def main(path):
     def mediana_grp(col, grupos):
         r = {}
         for g in grupos:
-            s = sem_fc_inicial[(sem_fc_inicial[col] == g) & sem_fc_inicial["evento"]]["t"]
+            sub = sem_fc_inicial[sem_fc_inicial[col] == g]
+            s = sub[sub["evento"]]["t"]
             r[g] = {"n": sup(len(s)),
-                    "mediana_anos": round(float(s.median()), 1) if len(s) >= K_MIN else None}
+                    "mediana_anos": round(float(s.median()), 1) if len(s) >= K_MIN else None,
+                    "mediana_km_anos": km_mediana(sub) if len(sub) >= K_MIN else None}
         return r
     curva_geral, n_risco_geral = km_curve(sem_fc_inicial, return_n=True)
     n_risco_geral = [sup(n) for n in n_risco_geral]
+    # sem n_risco, o leitor nao ve onde a curva de um subgrupo fica fina
+    _c_sexo = {g: km_curve(sem_fc_inicial[sem_fc_inicial["sexo"] == g], return_n=True)
+               for g in ["F", "M"]}
+    _c_raca = {g: km_curve(sem_fc_inicial[sem_fc_inicial["raca"] == g], return_n=True)
+               for g in ["Branca", "Negra"]}
     out["p10"] = {
         "n_coorte": int(len(co)),
         "n_chegou_com_fc": int(co["chegou"].sum()),
         "n_entrou_sem_fc": int(len(sem_fc_inicial)),
         "n_conquistou_depois": int(sem_fc_inicial["evento"].sum()),
+        # duas medidas diferentes, as duas publicadas e rotuladas como tais
         "mediana_geral_anos": round(float(
             sem_fc_inicial[sem_fc_inicial["evento"]]["t"].median()), 1),
+        "mediana_km_anos": km_mediana(sem_fc_inicial),
         "eixo_anos": EIXO_ANOS,
         "curva_geral": curva_geral,
         "n_risco_geral": n_risco_geral,
-        "curva_sexo": {g: km_curve(sem_fc_inicial[sem_fc_inicial["sexo"] == g]) for g in ["F", "M"]},
-        "curva_raca": {g: km_curve(sem_fc_inicial[sem_fc_inicial["raca"] == g])
-                       for g in ["Branca", "Negra"]},
+        "curva_sexo": {g: v[0] for g, v in _c_sexo.items()},
+        "n_risco_sexo": {g: [sup(n) for n in v[1]] for g, v in _c_sexo.items()},
+        "curva_raca": {g: v[0] for g, v in _c_raca.items()},
+        "n_risco_raca": {g: [sup(n) for n in v[1]] for g, v in _c_raca.items()},
         "mediana_sexo": mediana_grp("sexo", ["F", "M"]),
         "mediana_raca": mediana_grp("raca", ["Branca", "Negra"]),
         "coorte_desde": str(sorted(first[first > snap0])[0].date()) if len(coorte) else None,

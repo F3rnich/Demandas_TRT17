@@ -90,7 +90,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <section><h2>Medianas</h2><div id="tbl"></div></section>
 
 <div class="metod"><b>UNIVERSO</b><br>Servidores com lotação ativa no TRT-17: exclui estagiários, servidores removidos para outros órgãos e magistrados. É o mesmo universo do Painel 12 (Res. CSJT 296/2021); não coincide com o total de pessoas presentes na base de pessoal.</div>
-<div class="metod"><b>METODOLOGIA</b><br>Coorte restrita a servidores cujo ingresso é observável na base (primeira aparição após jan/2015); quem já estava no quadro em jan/2015 é excluído (censura à esquerda). Quem chega comissionado no primeiro mês é contabilizado à parte. A curva usa o estimador de Kaplan-Meier (produto-limite): quem ainda não recebeu FC/CJ até o fim da observação é tratado como censura à direita (não como "nunca vai receber"), e o risco é recalculado a cada tempo de evento observado — não apenas entre quem já completou o tempo do eixo inteiro. A curva é interrompida a partir do ponto em que o conjunto em observação cai abaixo de 5 pessoas.</div>
+<div class="metod"><b>METODOLOGIA</b><br>Coorte restrita a servidores cujo ingresso é observável na base (primeira aparição após jan/2015); quem já estava no quadro em jan/2015 é excluído (censura à esquerda). Quem chega comissionado no primeiro mês é contabilizado à parte. A curva usa o estimador de Kaplan-Meier (produto-limite): quem ainda não recebeu FC/CJ até o fim da observação é tratado como censura à direita (não como "nunca vai receber"), e o risco é recalculado a cada tempo de evento observado — não apenas entre quem já completou o tempo do eixo inteiro. A curva é interrompida a partir do ponto em que o conjunto em observação cai abaixo de 5 pessoas, indicado sob cada gráfico.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
 células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
@@ -214,19 +214,34 @@ function render(D){const p=D.p10;
     `<div class="kpi"><div class="n">${fmt(p.n_coorte)}</div><div class="l">servidores com entrada observável (desde ${p.coorte_desde})</div></div>
      <div class="kpi"><div class="n">${fmt(p.n_chegou_com_fc)}</div><div class="l">já chegaram comissionados</div></div>
      <div class="kpi"><div class="n">${fmt(p.n_conquistou_depois)}<small>/ ${fmt(p.n_entrou_sem_fc)}</small></div><div class="l">entraram sem função e receberam FC ou CJ depois</div></div>
-     <div class="kpi dest"><div class="n">${p.mediana_geral_anos.toLocaleString('pt-BR')}<small>anos</small></div><div class="l">mediana até a primeira FC ou CJ</div></div>`;
+     <div class="kpi dest"><div class="n">${p.mediana_km_anos!=null?p.mediana_km_anos.toLocaleString('pt-BR',{minimumFractionDigits:1}):'—'}<small>anos</small></div><div class="l">para metade da coorte receber a 1ª FC ou CJ (Kaplan-Meier)</div></div>`;
   const lb=p.eixo_anos.map(v=>v.toLocaleString('pt-BR'));
+  // sem o conjunto em observacao o leitor nao ve onde a curva fica fina
+  const iA=p.eixo_anos.indexOf(3), iB=p.eixo_anos.indexOf(5);
+  const emObs=(nr,rot)=>{const f=i=>nr[i]==null?'< 5':fmt(nr[i]);
+    return `${rot}: ${f(0)} no início · ${f(iA)} aos 3 anos · ${f(iB)} aos 5 anos`;};
+  const obs=(id,linhas)=>{const e=document.getElementById(id);
+    if(e&&e.nextElementSibling)e.nextElementSibling.insertAdjacentHTML('beforeend',
+      ' · Em observação — '+linhas.join(' | '));};
   const op={min:0,max:100,fmtY:v=>Math.round(v)+'%',xTicks:11};
   lineChart(document.getElementById('c-geral'),lb,[{nome:'Geral',cor:C.navy,vals:p.curva_geral}],op);
   lineChart(document.getElementById('c-sexo'),lb,
     [{nome:'F',cor:C.navy,vals:p.curva_sexo.F},{nome:'M',cor:C.amber,vals:p.curva_sexo.M}],op);
   lineChart(document.getElementById('c-raca'),lb,
     [{nome:'Brancas',cor:C.navy,vals:p.curva_raca.Branca},{nome:'Negras',cor:C.amber,vals:p.curva_raca.Negra}],op);
-  let t='<table class="dados"><tr><th>Grupo</th><th>Receberam FC ou CJ (n)</th><th>Mediana até a 1ª FC ou CJ (anos)</th></tr>';
+  obs('c-geral',[emObs(p.n_risco_geral,'coorte')]);
+  obs('c-sexo',[emObs(p.n_risco_sexo.F,'mulheres'),emObs(p.n_risco_sexo.M,'homens')]);
+  obs('c-raca',[emObs(p.n_risco_raca.Branca,'brancas'),emObs(p.n_risco_raca.Negra,'negras')]);
+  let t='<table class="dados"><tr><th>Grupo</th><th>Receberam FC ou CJ (n)</th><th>Mediana entre quem recebeu (anos)</th><th>Metade do grupo recebeu até (anos)</th></tr>';
   [['Mulheres',p.mediana_sexo.F],['Homens',p.mediana_sexo.M],
    ['Pessoas brancas',p.mediana_raca.Branca],['Pessoas negras',p.mediana_raca.Negra]]
-    .forEach(([g,d])=>{t+=`<tr><td>${g}</td><td class="num">${d.n!=null?fmt(d.n):'< 5 (suprimido)'}</td><td class="num">${d.mediana_anos!=null?d.mediana_anos.toLocaleString('pt-BR'):'—'}</td></tr>`});
-  document.getElementById('tbl').innerHTML=t+'</table>';
+    .forEach(([g,d])=>{t+=`<tr><td>${g}</td><td class="num">${d.n!=null?fmt(d.n):'< 5 (suprimido)'}</td><td class="num">${d.mediana_anos!=null?d.mediana_anos.toLocaleString('pt-BR',{minimumFractionDigits:1}):'—'}</td><td class="num">${d.mediana_km_anos!=null?d.mediana_km_anos.toLocaleString('pt-BR',{minimumFractionDigits:1}):'—'}</td></tr>`});
+  document.getElementById('tbl').innerHTML=t+'</table>'+
+    '<p class="desc" style="margin-top:10px">As duas colunas medem coisas diferentes. A <b>mediana entre quem recebeu</b> '+
+    'olha só para quem chegou a receber FC ou CJ e ignora quem nunca recebeu — o mesmo viés que o estimador de '+
+    'Kaplan-Meier existe para tratar. A coluna <b>metade do grupo recebeu até</b> vem da própria curva e considera '+
+    'toda a coorte. Onde as duas divergem muito, é sinal de que o grupo tem menos gente recebendo, e não apenas '+
+    'recebendo mais tarde.</p>';
 }
 </script>
 </body>
