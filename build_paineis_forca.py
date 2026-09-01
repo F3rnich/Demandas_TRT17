@@ -15,8 +15,13 @@ em pasta temporaria, sem alterar o arquivo original.
 
 REGRAS LGPD (aplicadas na origem — nenhum dado individual sai deste script):
   1. Nenhum identificador (NOME, CPF, MATRICULA, NASCIMENTO) é gravado no JSON.
-  2. Supressão de células pequenas: qualquer categoria publicada com 0 < n < 5
-     é agregada em "Outros" ou omitida (k-anonimato, k=5).
+  2. Supressão de células pequenas: qualquer categoria de ATRIBUTO PESSOAL
+     publicada com 0 < n < 5 é agregada ou omitida (k-anonimato, k=5).
+     Contagem de LOTAÇÃO DE UNIDADE administrativa não é cruzamento de atributo
+     pessoal e não entra nesta regra: é dado de estrutura, consta de ato
+     administrativo público, e o art. 14 da Res. CSJT 296/2021 exige justamente
+     a lotação da Escola Judicial como indicador de conformidade. Ver
+     AREAS_INSTITUCIONAIS. Decisão de política de dados, não de código.
   3. Raça/cor só é publicada agrupada: Branca / Negra (pretos+pardos) / Outras ou NI.
   4. Deficiência, doença grave e identidade de gênero NÃO são exportadas
      (categorias com n<5 na base atual — reidentificáveis).
@@ -70,6 +75,10 @@ import pandas as pd
 import numpy as np
 
 K_MIN = 5  # k-anonimato
+
+# Colunas de contagem por unidade que ficam FORA da regra k=5 pela regra 2 do
+# cabecalho: sao lotacao de unidade administrativa, nao atributo pessoal.
+AREAS_INSTITUCIONAIS = {"EJUD"}
 
 # Unidades da Escola Judicial — FONTE UNICA. Nao duplicar esta regex em
 # outros scripts: importe daqui (from build_paineis_forca import EJUD_RE).
@@ -206,6 +215,30 @@ def ler_aba(path, sheet, obrigatoria=True):
                              engine="openpyxl")
 
 
+def guardar_k(tab, rotulo, isentas=frozenset()):
+    """Aborta se alguma coluna publicada tiver celula 0<n<K_MIN em algum mes.
+
+    NAO conserta em silencio: a agregacao correta depende do significado das
+    colunas — juntar "Requisitado" com "Sem vinculo efetivo" e o agrupamento do
+    art. 5 da Res. CSJT 296, enquanto uma dobra automatica pelo menor valor
+    destruiria a serie de T.I. para salvar a da Escola Judicial. Quando esta
+    guarda disparar, decida a agregacao e escreva-a aqui.
+    """
+    ruins = {}
+    for c in tab.columns:
+        if c in isentas:
+            continue
+        n = int(((tab[c] > 0) & (tab[c] < K_MIN)).sum())
+        if n:
+            ruins[c] = n
+    if ruins:
+        sys.exit("ERRO k=%d em %s: %s.\nCelulas com 0<n<%d nao podem ser "
+                 "publicadas. Ver regra 2 no cabecalho deste arquivo."
+                 % (K_MIN, rotulo,
+                    ", ".join("'%s' em %d mes(es)" % (c, n) for c, n in ruins.items()),
+                    K_MIN))
+
+
 def sem_dup_comissao(d):
     """Uma linha por (ref, MATRICULA) entre os ocupantes de FC/CJ.
 
@@ -303,14 +336,22 @@ def main(path):
                                aggfunc="count").fillna(0).astype(int)
     por_vinc = srv.pivot_table(index="ref", columns="TIPO_SERVIDOR",
                                values="MATRICULA", aggfunc="count").fillna(0).astype(int)
-    keep = [c for c in por_vinc.columns if por_vinc[c].max() >= K_MIN]
-    drop = [c for c in por_vinc.columns if c not in keep]
-    if drop:
-        por_vinc["Outros"] = por_vinc[drop].sum(axis=1)
-        por_vinc = por_vinc.drop(columns=drop)
+    # A regra anterior mantinha a coluna se o MAXIMO da serie fosse >= K_MIN,
+    # o que publicava "Sem vinculo efetivo" com 2 a 4 pessoas em 87 dos 140
+    # meses. O art. 5 da Res. CSJT 296 ja trata requisitados e comissionados
+    # sem vinculo como um grupo unico ("fora das carreiras judiciarias
+    # federais"); juntos o par nunca fica abaixo de 41.
+    PAR_ART5 = ["Requisitado", "Sem vínculo efetivo"]
+    _p5 = [c for c in PAR_ART5 if c in por_vinc.columns]
+    if len(_p5) > 1:
+        por_vinc["Requisitado ou sem vínculo efetivo"] = por_vinc[_p5].sum(axis=1)
+        por_vinc = por_vinc.drop(columns=_p5)
     grau = srv[srv["grau_u"].isin(["1º", "2º"])]
     por_grau = grau.pivot_table(index="ref", columns="grau_u", values="MATRICULA",
                                 aggfunc="count").fillna(0).astype(int)
+    guardar_k(por_area, "p07.por_area", AREAS_INSTITUCIONAIS)
+    guardar_k(por_vinc, "p07.por_vinculo")
+    guardar_k(por_grau, "p07.por_grau")
     out["p07"] = {
         "refs": refs,
         "total": [int(serie_total.get(r, 0)) for r in refs],
@@ -550,8 +591,25 @@ def main(path):
         return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
     com_u = sem_dup_comissao(sult[sult["tem_com"]])
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
-    por_nivel = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
-    por_nivel = [x for x in por_nivel if x["n"] > 0]
+    _pn = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
+    _pn = [x for x in _pn if x["n"] > 0]
+    # k=5: os niveis com poucos ocupantes vao para um balde unico, como o p11 ja
+    # faz com "Demais funcoes". Dobra em ordem crescente ate o balde chegar a
+    # K_MIN — senao o balde seria ele proprio uma celula pequena, e o total
+    # publicado (n_com) o devolveria por subtracao.
+    _ord = sorted(_pn, key=lambda x: x["n"])
+    _balde, _fica = [], []
+    for x in _ord:
+        if x["n"] < K_MIN or (_balde and sum(y["n"] for y in _balde) < K_MIN):
+            _balde.append(x)
+        else:
+            _fica.append(x)
+    por_nivel = [x for x in _pn if x in _fica]
+    if _balde:
+        _s = sum(x["n"] for x in _balde)
+        if _s < K_MIN:
+            sys.exit("ERRO k=%d: 'Demais níveis' ficaria com n=%d." % (K_MIN, _s))
+        por_nivel.append({"nivel": "Demais níveis (agregado)", "n": _s})
     art6 = {"pct": _serS(_a6), "teto": 80.0, "proxy": True, "pct_atual": _a6(sult),
             "n_com": int(len(com_u)), "n_efet": int((sult["TIPO_SERVIDOR"] == "Cargo efetivo").sum()),
             "n_cj": int(com_u["CODIGO_COMISSAO"].str.startswith("CJ", na=False).sum()),

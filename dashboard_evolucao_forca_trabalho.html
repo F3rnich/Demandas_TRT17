@@ -91,12 +91,13 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <p class="desc">Todos os vínculos, inclusive estagiários — útil para dimensionar a dependência de força de trabalho não efetiva.</p>
 <div class="chart"><div class="leg" id="leg-vinc"></div><div id="c-vinc"></div><div class="fonte">Fonte: base de pessoal SGP</div></div></section>
 
-<div class="metod"><b>METODOLOGIA</b><br>Snapshots mensais da base de pessoal da SGP (jan/2015 até a referência indicada). Força de trabalho = todos os vínculos exceto estagiários, salvo no gráfico de vínculos, que os inclui como categoria própria.</div>
+<div class="metod"><b>UNIVERSO</b><br>Servidores com lotação ativa no TRT-17: exclui estagiários, servidores removidos para outros órgãos e magistrados. É o mesmo universo do Painel 12 (Res. CSJT 296/2021); não coincide com o total de pessoas presentes na base de pessoal.</div>
+<div class="metod"><b>METODOLOGIA</b><br>Snapshots mensais da base de pessoal da SGP (jan/2015 até a referência indicada). Requisitados e comissionados sem vínculo efetivo aparecem em uma série única, conforme o agrupamento do art. 5º da Res. CSJT 296/2021 — fora das carreiras judiciárias federais. Contagens nominais, sem projeção.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
 células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
 grupos agregados; dados de deficiência, saúde e identidade de gênero não são exportados para esta página.
-A base de origem não é versionada nem publicada.</div>
+A base de origem não é versionada nem publicada. Contagem de lotação de unidade administrativa — por exemplo, a da Escola Judicial — é dado de estrutura, constante de ato administrativo, e não se sujeita à supressão de células pequenas aplicada aos cruzamentos de atributo pessoal.</div>
 </div>
 <a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
 <script>
@@ -227,7 +228,7 @@ function render(D){const p=D.p07,rot=r=>r.replace('-','/');
   const sG=Object.entries(p.por_grau).map(([k,v])=>({nome:k+' grau',cor:cg[k]||C.blue,vals:v}));
   document.getElementById('leg-grau').innerHTML=sG.map(s=>`<span><i style="background:${s.cor}"></i>${s.nome}</span>`).join('');
   lineChart(document.getElementById('c-grau'),labels,sG);
-  const cv={'Cargo efetivo':C.navy,'Estagiário':C.amber,'Requisitado':C.teal,'Removido':C.blue,'Outros':C.mut,'Sem vínculo efetivo':C.wine};
+  const cv={'Cargo efetivo':C.navy,'Estagiário':C.amber,'Requisitado':C.teal,'Removido':C.blue,'Outros':C.mut,'Sem vínculo efetivo':C.wine,'Requisitado ou sem vínculo efetivo':C.teal};
   const sV=Object.entries(p.por_vinculo).map(([k,v])=>({nome:k,cor:cv[k]||C.mut,vals:v}));
   document.getElementById('leg-vinc').innerHTML=sV.map(s=>`<span><i style="background:${s.cor}"></i>${s.nome}</span>`).join('');
   lineChart(document.getElementById('c-vinc'),labels,sV);
