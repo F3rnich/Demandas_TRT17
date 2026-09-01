@@ -86,6 +86,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="chart"><div class="leg"><span><i style="background:#0C4A45"></i>% com pós-graduação</span></div><div id="c-pos"></div>
 <div class="fonte">Fonte: base de pessoal SGP · última referência de cada ano</div></div></section>
 
+<div class="metod"><b>UNIVERSO</b><br>Servidores com lotação ativa no TRT-17: exclui estagiários, servidores removidos para outros órgãos e magistrados. É o mesmo universo do Painel 12 (Res. CSJT 296/2021); não coincide com o total de pessoas presentes na base de pessoal.</div>
 <div class="metod"><b>METODOLOGIA</b><br>Escolaridade conforme registro funcional na referência atual. Cargos agregados em Analista Judiciário, Técnico Judiciário e Demais. Células com menos de 5 servidores são suprimidas.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
@@ -204,9 +205,10 @@ fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
   '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
 </script>
 <script>
+// p12 = Painel 11 (Qualificação por cargo). A chave do JSON nao acompanha o numero do painel; ver MAPA_PAINEIS em build_paineis_forca.py.
 function render(D){const p=D.p12;
   document.getElementById('kpis').innerHTML=
-    `<div class="kpi dest"><div class="n">${p.pct_pos_atual.toLocaleString('pt-BR')}<small>%</small></div><div class="l">da força de trabalho tem pós-graduação</div></div>
+    `<div class="kpi dest"><div class="n">${p.pct_pos_atual.toLocaleString('pt-BR')}<small>%</small></div><div class="l">dos servidores com lotação ativa tem pós-graduação</div></div>
      <div class="kpi"><div class="n">${p.pct_pos_tecnicos.toLocaleString('pt-BR')}<small>%</small></div><div class="l">dos Técnicos Judiciários têm pós-graduação (exigência do cargo: nível médio)</div></div>`;
   const cores={'Analista Judiciário':C.navy,'Técnico Judiciário':C.amber,'Demais':C.teal};
   document.getElementById('leg-esc').innerHTML=p.cargos.map(c=>`<span><i style="background:${cores[c]||C.mut}"></i>${c}</span>`).join('');

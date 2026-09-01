@@ -221,6 +221,7 @@ fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
 </script>
 <script>
 function render(D){
+  // p13 = Painel 12 (Apoio indireto — Res. CSJT 296). A chave do JSON nao acompanha o numero do painel; ver MAPA_PAINEIS em build_paineis_forca.py.
   const p=D.p13, rot=r=>r.replace('-','/'), br=n=>n.toLocaleString('pt-BR');
   document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia.replace(/^(\d{4})-(\d{2})$/,'$2/$1');
   const farol=[

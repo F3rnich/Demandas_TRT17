@@ -24,6 +24,38 @@ REGRAS LGPD (aplicadas na origem — nenhum dado individual sai deste script):
 
 A BASE NUNCA ENTRA NO REPOSITÓRIO. Apenas este script e o JSON agregado.
 """
+# -------------------------------------------------------------------------
+# MAPA_PAINEIS — chave do JSON  x  numero do painel no hub
+#
+# As chaves p07..p13 sao IDENTIFICADORES OPACOS E ESTAVEIS. Elas NAO
+# acompanham o numero de exibicao do painel: esse numero ja andou uma vez
+# (remocao do painel Copa) e vai andar de novo se algum painel entrar ou
+# sair da faixa 6-12.
+#
+# NAO renomeie as chaves para 'acertar' a numeracao: isso quebraria os 7
+# HTMLs consumidores, o checks.json e a comparacao retroativa do
+# atualizar.py — e o desalinhamento voltaria na proxima mudanca.
+#
+#   chave | painel | titulo                         | arquivo
+#   ------+--------+--------------------------------+--------------------------------------------
+#   p07   |   6    | Evolução da força de trabalho  | dashboard_evolucao_forca_trabalho.html
+#   p08   |   7    | Envelhecimento demográfico     | dashboard_envelhecimento_demografico.html
+#   p09   |   8    | Equidade nos comissionamentos  | dashboard_equidade_comissionamentos.html
+#   p10   |   9    | Tempo até a primeira comissão  | dashboard_tempo_primeira_comissao.html
+#   p11   |   10   | Custo dos comissionamentos     | dashboard_custo_comissionamentos.html
+#   p12   |   11   | Qualificação por cargo         | dashboard_qualificacao_cargo.html
+#   p13   |   12   | Apoio indireto — Res. CSJT 296 | dashboard_apoio_indireto_csjt296.html
+# -------------------------------------------------------------------------
+MAPA_PAINEIS = {
+    "p07": ( 6, "Evolução da força de trabalho", "dashboard_evolucao_forca_trabalho.html"),
+    "p08": ( 7, "Envelhecimento demográfico", "dashboard_envelhecimento_demografico.html"),
+    "p09": ( 8, "Equidade nos comissionamentos", "dashboard_equidade_comissionamentos.html"),
+    "p10": ( 9, "Tempo até a primeira comissão", "dashboard_tempo_primeira_comissao.html"),
+    "p11": (10, "Custo dos comissionamentos", "dashboard_custo_comissionamentos.html"),
+    "p12": (11, "Qualificação por cargo", "dashboard_qualificacao_cargo.html"),
+    "p13": (12, "Apoio indireto — Res. CSJT 296", "dashboard_apoio_indireto_csjt296.html"),
+}
+
 import sys, json, os, shutil, subprocess, tempfile
 from pathlib import Path
 import pandas as pd
@@ -224,7 +256,7 @@ def main(path):
     out = {"gerado_de": "base local SGP (não versionada)",
            "ultima_referencia": ult_ref, "k_anonimato": K_MIN}
 
-    # ---------------- P07 — Evolução histórica (servidores) ----------------
+    # ---------------- p07 → Painel 6 — Evolução histórica (servidores) ----------------
     serie_total = srv.groupby("ref").size()
     por_area = srv.pivot_table(index="ref", columns="AREA", values="MATRICULA",
                                aggfunc="count").fillna(0).astype(int)
@@ -249,37 +281,35 @@ def main(path):
                      for c in por_grau.columns},
     }
 
-    # ---------------- P08 — Envelhecimento ----------------
+    # ---------------- p08 → Painel 7 — Envelhecimento ----------------
     bins = [0, 30, 35, 40, 45, 50, 55, 60, 200]
     labs = ["< 30", "30–34", "35–39", "40–44", "45–49", "50–54", "55–59", "60 +"]
-    ult["fx"] = pd.cut(ult["IDADE"], bins=bins, labels=labs, right=False)
+    srv_ult["fx"] = pd.cut(srv_ult["IDADE"], bins=bins, labels=labs, right=False)
     pir = {}
     for sx, nome in [("M", "Masculino"), ("F", "Feminino")]:
-        s = ult[ult["SEXO"] == sx]["fx"].value_counts().reindex(labs).fillna(0)
+        s = srv_ult[srv_ult["SEXO"] == sx]["fx"].value_counts().reindex(labs).fillna(0)
         pir[nome] = [sup(v) if v else 0 for v in s]
-    anos = sorted(ft["ano"].unique())
-    ft_dez = ft.sort_values("REFERENCIA").groupby(["ano", "MATRICULA"]).tail(1)
-    idade_media = ft_dez.groupby("ano")["IDADE"].mean().round(1)
-    p55 = ft_dez.groupby("ano").apply(
+    idade_media = srv_dez.groupby("ano")["IDADE"].mean().round(1)
+    p55 = srv_dez.groupby("ano").apply(
         lambda g: round(100 * (g["IDADE"] >= 55).mean(), 1), include_groups=False)
-    fx_area = ult.pivot_table(index="AREA", columns=pd.cut(
-        ult["IDADE"], [0, 45, 55, 200], labels=["< 45", "45–54", "55 +"], right=False),
+    fx_area = srv_ult.pivot_table(index="AREA", columns=pd.cut(
+        srv_ult["IDADE"], [0, 45, 55, 200], labels=["< 45", "45–54", "55 +"], right=False),
         values="MATRICULA", aggfunc="count", observed=True).fillna(0).astype(int)
     out["p08"] = {
         "faixas": labs, "piramide": pir,
-        "anos": [int(a) for a in anos],
-        "idade_media": [float(idade_media.get(a, np.nan)) for a in anos],
-        "pct_55mais": [float(p55.get(a, np.nan)) for a in anos],
+        "anos": [int(a) for a in anos_all],
+        "idade_media": [float(idade_media.get(a, np.nan)) for a in anos_all],
+        "pct_55mais": [float(p55.get(a, np.nan)) for a in anos_all],
         "idade_por_area": {str(i): [sup(v) if v else 0 for v in fx_area.loc[i]]
                            for i in fx_area.index},
         "idade_area_faixas": list(fx_area.columns.astype(str)),
-        "idade_media_atual": round(float(ult["IDADE"].mean()), 1),
-        "n_55mais_atual": int((ult["IDADE"] >= 55).sum()),
-        "n_60mais_atual": int((ult["IDADE"] >= 60).sum()),
-        "total_atual": int(len(ult)),
+        "idade_media_atual": round(float(srv_ult["IDADE"].mean()), 1),
+        "n_55mais_atual": int((srv_ult["IDADE"] >= 55).sum()),
+        "n_60mais_atual": int((srv_ult["IDADE"] >= 60).sum()),
+        "total_atual": int(len(srv_ult)),
     }
 
-    # ---------------- P09 — Equidade em comissionamentos (força de servidores) ----------------
+    # ---------------- p09 → Painel 8 — Equidade em comissionamentos (força de servidores) ----------------
     com = srv_ult[srv_ult["CODIGO_COMISSAO"].notna()]
     def paridade(col, grupos):
         r = {}
@@ -311,7 +341,7 @@ def main(path):
             ip_serie[chave].append(round(pc / pf, 2) if pf > 0 else None)
     out["p09"]["serie_paridade"] = ip_serie
 
-    # ---------------- P10 — Tempo até a primeira comissão ----------------
+    # ---------------- p10 → Painel 9 — Tempo até a primeira comissão ----------------
     snap0 = ft["REFERENCIA"].min()
     fim_obs = ft["REFERENCIA"].max()
     first = ft.groupby("MATRICULA")["REFERENCIA"].min()
@@ -400,7 +430,7 @@ def main(path):
         "coorte_desde": str(sorted(first[first > snap0])[0].date()) if len(coorte) else None,
     }
 
-    # ---------------- P11 — Custo dos comissionamentos ----------------
+    # ---------------- p11 → Painel 10 — Custo dos comissionamentos ----------------
     comt = ft[ft["CODIGO_COMISSAO"].notna()]
     custo = comt.groupby("ref")["VALOR"].sum()
     qtd = comt.groupby("ref").size()
@@ -424,7 +454,7 @@ def main(path):
         "nota": "Valores nominais (sem correção inflacionária).",
     }
 
-    # ---------------- P12 — Qualificação × cargo ----------------
+    # ---------------- p12 → Painel 11 — Qualificação × cargo ----------------
     ordem_esc = ["ENSINO FUNDAMENTAL", "ENSINO MÉDIO", "SUPERIOR INCOMPLETO",
                  "GRADUAÇÃO", "SUPERIOR", "ESPECIALIZAÇÃO", "MESTRADO", "DOUTORADO"]
     def cargo_agg(c):
@@ -432,25 +462,25 @@ def main(path):
         if "ANALISTA" in c: return "Analista Judiciário"
         if "TÉCNICO" in c or "TECNICO" in c: return "Técnico Judiciário"
         return "Demais"
-    ult["cargo_g"] = ult["CARGO"].map(cargo_agg)
-    esc = ult.pivot_table(index="ESCOLARIDADE", columns="cargo_g", values="MATRICULA",
+    srv_ult["cargo_g"] = srv_ult["CARGO"].map(cargo_agg)
+    esc = srv_ult.pivot_table(index="ESCOLARIDADE", columns="cargo_g", values="MATRICULA",
                           aggfunc="count").fillna(0).astype(int)
     esc = esc.reindex([e for e in ordem_esc if e in esc.index])
     pos = ["ESPECIALIZAÇÃO", "MESTRADO", "DOUTORADO"]
-    serie_pos = ft_dez.groupby("ano").apply(
+    serie_pos = srv_dez.groupby("ano").apply(
         lambda g: round(100 * g["ESCOLARIDADE"].isin(pos).mean(), 1), include_groups=False)
     out["p12"] = {
         "escolaridades": list(esc.index),
         "cargos": list(esc.columns),
         "matriz": {c: [sup(v) if v else 0 for v in esc[c]] for c in esc.columns},
-        "anos": [int(a) for a in anos],
-        "pct_pos_graduados": [float(serie_pos.get(a, np.nan)) for a in anos],
-        "pct_pos_atual": round(100 * ult["ESCOLARIDADE"].isin(pos).mean(), 1),
-        "pct_pos_tecnicos": round(100 * ult.loc[ult["cargo_g"] == "Técnico Judiciário",
+        "anos": [int(a) for a in anos_all],
+        "pct_pos_graduados": [float(serie_pos.get(a, np.nan)) for a in anos_all],
+        "pct_pos_atual": round(100 * srv_ult["ESCOLARIDADE"].isin(pos).mean(), 1),
+        "pct_pos_tecnicos": round(100 * srv_ult.loc[srv_ult["cargo_g"] == "Técnico Judiciário",
                                                 "ESCOLARIDADE"].isin(pos).mean(), 1),
     }
 
-    # ---------------- P13 — Conformidade estrutural Res. CSJT 296/2021 ----------------
+    # ---------------- p13 → Painel 12 — Conformidade estrutural Res. CSJT 296/2021 ----------------
     _EJUD = EJUD_RE
     srv["ejud"] = srv["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
     srv["tem_com"] = srv["CODIGO_COMISSAO"].notna()
@@ -518,7 +548,7 @@ def main(path):
 
     with open("dados_paineis_forca.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"OK — dados_paineis_forca.json gerado ({ult_ref}, {len(ult)} servidores no último snapshot)")
+    print(f"OK — dados_paineis_forca.json gerado ({ult_ref}, {len(srv_ult)} servidores no último snapshot)")
 
 if __name__ == "__main__":
     # argumento opcional: se omitido, localiza a planilha na pasta atual

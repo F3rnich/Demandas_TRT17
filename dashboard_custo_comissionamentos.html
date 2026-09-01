@@ -212,6 +212,7 @@ fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
   '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
 </script>
 <script>
+// p11 = Painel 10 (Custo dos comissionamentos). A chave do JSON nao acompanha o numero do painel; ver MAPA_PAINEIS em build_paineis_forca.py.
 function render(D){const p=D.p11,rot=r=>r.replace('-','/');
   document.getElementById('kpis').innerHTML=
     `<div class="kpi"><div class="n">${fmtBRL(p.custo_atual)}</div><div class="l">despesa mensal atual com FC/CJ</div></div>

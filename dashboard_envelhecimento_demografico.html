@@ -79,7 +79,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="kpis" id="kpis"></div>
 <section><h2>Pirâmide etária atual</h2>
 <p class="desc">Distribuição da força de trabalho por faixa etária e sexo na referência mais recente. Barras suprimidas indicam células com menos de 5 servidores.</p>
-<div class="chart"><div id="c-pir"></div><div class="fonte">Fonte: base de pessoal SGP · referência atual · exclui estagiários</div></div></section>
+<div class="chart"><div id="c-pir"></div><div class="fonte">Fonte: base de pessoal SGP · referência atual · exclui estagiários, removidos-para e magistrados</div></div></section>
 <section><h2>Envelhecimento do quadro</h2>
 <p class="desc">Idade média e percentual de servidores com 55 anos ou mais, ano a ano (posição de dezembro ou última referência do ano).</p>
 <div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>Idade média (anos)</span><span><i style="background:#D8A241"></i>% com 55 anos ou mais</span></div><div id="c-env"></div>
@@ -88,6 +88,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <p class="desc">Onde está concentrado o risco de perda de conhecimento por aposentadoria: servidores 55+ por área.</p>
 <div class="chart"><div class="leg" id="leg-fa"></div><div id="c-area"></div><div class="fonte">Fonte: base de pessoal SGP · referência atual</div></div></section>
 
+<div class="metod"><b>UNIVERSO</b><br>Servidores com lotação ativa no TRT-17: exclui estagiários, servidores removidos para outros órgãos e magistrados. É o mesmo universo do Painel 12 (Res. CSJT 296/2021); não coincide com o total de pessoas presentes na base de pessoal.</div>
 <div class="metod"><b>METODOLOGIA</b><br>Idade apurada na referência de cada snapshot. Séries anuais usam a última referência de cada ano. O corte de 55 anos é proxy de proximidade de aposentadoria; a projeção formal de desligamentos está no painel de BI da SGP.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
@@ -210,6 +211,7 @@ fetch('dados_paineis_forca.json').then(r=>r.json()).then(D=>{
   '<p style="color:#B3541E;font-family:var(--mono)">Falha ao carregar dados_paineis_forca.json.</p>');console.error(e)});
 </script>
 <script>
+// p08 = Painel 7 (Envelhecimento demográfico). A chave do JSON nao acompanha o numero do painel; ver MAPA_PAINEIS em build_paineis_forca.py.
 function render(D){const p=D.p08;
   document.getElementById('kpis').innerHTML=
     `<div class="kpi"><div class="n">${p.idade_media_atual.toLocaleString('pt-BR')}<small>anos</small></div><div class="l">idade média da força de trabalho</div></div>
