@@ -27,24 +27,31 @@ A BASE NUNCA ENTRA NO REPOSITÓRIO. Apenas este script e o JSON agregado.
 # -------------------------------------------------------------------------
 # MAPA_PAINEIS — chave do JSON  x  numero do painel no hub
 #
-# As chaves p07..p13 sao IDENTIFICADORES OPACOS E ESTAVEIS. Elas NAO
-# acompanham o numero de exibicao do painel: esse numero ja andou uma vez
-# (remocao do painel Copa) e vai andar de novo se algum painel entrar ou
-# sair da faixa 6-12.
+# As chaves sao IDENTIFICADORES OPACOS E ESTAVEIS. Elas NAO acompanham o
+# numero de exibicao do painel: esse numero ja andou uma vez (remocao do
+# painel Copa) e vai andar de novo se algum painel entrar ou sair da lista.
 #
-# NAO renomeie as chaves para 'acertar' a numeracao: isso quebraria os 7
-# HTMLs consumidores, o checks.json e a comparacao retroativa do
-# atualizar.py — e o desalinhamento voltaria na proxima mudanca.
+# NAO renomeie as chaves para 'acertar' a numeracao: isso quebraria os HTMLs
+# consumidores, o checks.json e a comparacao retroativa do atualizar.py — e o
+# desalinhamento voltaria na proxima mudanca.
 #
-#   chave | painel | titulo                         | arquivo
-#   ------+--------+--------------------------------+--------------------------------------------
-#   p07   |   6    | Evolução da força de trabalho  | dashboard_evolucao_forca_trabalho.html
-#   p08   |   7    | Envelhecimento demográfico     | dashboard_envelhecimento_demografico.html
-#   p09   |   8    | Equidade nos comissionamentos  | dashboard_equidade_comissionamentos.html
-#   p10   |   9    | Tempo até a primeira comissão  | dashboard_tempo_primeira_comissao.html
-#   p11   |   10   | Custo dos comissionamentos     | dashboard_custo_comissionamentos.html
-#   p12   |   11   | Qualificação por cargo         | dashboard_qualificacao_cargo.html
-#   p13   |   12   | Apoio indireto — Res. CSJT 296 | dashboard_apoio_indireto_csjt296.html
+# Chaves novas NAO seguem mais o padrao pNN justamente por isso: use um nome
+# semantico (ver "risco_sucessorio"), que nenhuma renumeracao invalida.
+#
+#   chave            | painel | titulo                         | arquivo
+#   -----------------+--------+--------------------------------+--------------------------------------------
+#   p07              |   6    | Evolução da força de trabalho  | dashboard_evolucao_forca_trabalho.html
+#   p08              |   7    | Envelhecimento demográfico     | dashboard_envelhecimento_demografico.html
+#   p09              |   8    | Equidade nos comissionamentos  | dashboard_equidade_comissionamentos.html
+#   p10              |   9    | Tempo até a primeira comissão  | dashboard_tempo_primeira_comissao.html
+#   p11              |   10   | Custo dos comissionamentos     | dashboard_custo_comissionamentos.html
+#   p12              |   11   | Qualificação por cargo         | dashboard_qualificacao_cargo.html
+#   p13              |   12   | Apoio indireto — Res. CSJT 296 | dashboard_apoio_indireto_csjt296.html
+#   risco_sucessorio |   17   | Risco sucessório               | dashboard_risco_sucessorio.html
+#
+# O Painel 17 e MISTO: so a tabela etaria vem daqui. As demais secoes sao
+# apuracao manual (matriz de criticidade e registro de designacao previa),
+# que nao existem na base de pessoal — vao carimbadas como tal no HTML.
 # -------------------------------------------------------------------------
 MAPA_PAINEIS = {
     "p07": ( 6, "Evolução da força de trabalho", "dashboard_evolucao_forca_trabalho.html"),
@@ -54,6 +61,7 @@ MAPA_PAINEIS = {
     "p11": (10, "Custo dos comissionamentos", "dashboard_custo_comissionamentos.html"),
     "p12": (11, "Qualificação por cargo", "dashboard_qualificacao_cargo.html"),
     "p13": (12, "Apoio indireto — Res. CSJT 296", "dashboard_apoio_indireto_csjt296.html"),
+    "risco_sucessorio": (17, "Risco sucessório", "dashboard_risco_sucessorio.html"),
 }
 
 import sys, json, os, shutil, subprocess, tempfile
@@ -544,6 +552,32 @@ def main(path):
             "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores, conforme Anexo IV). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
             "art7": "DESCRITIVO — distribuição da força de apoio direto de servidores (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
         },
+    }
+
+    # ---------------- risco_sucessorio → Painel 17 — Quadro etário ----------------
+    # Universo: o MESMO srv dos paineis 6-12 (sem estagiarios, sem removidos-para,
+    # sem magistrados), restrito ao vinculo "Cargo efetivo". Equivale a
+    # "servidores efetivos ativos, exceto magistrados" — e coincide, por
+    # construcao, com p07["por_vinculo"]["Cargo efetivo"] da ultima referencia.
+    # So esta secao do Painel 17 sai daqui; o resto do painel e apuracao manual.
+    ef = srv_ult[srv_ult["TIPO_SERVIDOR"] == "Cargo efetivo"]
+    rs_bins = [0, 40, 50, 55, 60, 65, 200]
+    rs_labs = ["Até 39 anos", "40 a 49 anos", "50 a 54 anos",
+               "55 a 59 anos", "60 a 64 anos", "65 anos ou mais"]
+    rs_fx = (pd.cut(ef["IDADE"], rs_bins, labels=rs_labs, right=False)
+             .value_counts().reindex(rs_labs).fillna(0))
+    out["risco_sucessorio"] = {
+        "ultima_referencia": ult_ref,
+        "universo": "Servidores efetivos ativos, exceto magistrados "
+                    "(vínculo \"Cargo efetivo\" na força de servidores com lotação ativa; "
+                    "exclui estagiários e servidores removidos para outros órgãos).",
+        "faixas": rs_labs,
+        "contagens": [sup(v) if v else 0 for v in rs_fx],
+        "total": int(len(ef)),
+        "idade_mediana": round(float(ef["IDADE"].median()), 1),
+        "idade_media": round(float(ef["IDADE"].mean()), 1),
+        "n_55mais": int((ef["IDADE"] >= 55).sum()),
+        "n_60mais": int((ef["IDADE"] >= 60).sum()),
     }
 
     with open("dados_paineis_forca.json", "w", encoding="utf-8") as f:

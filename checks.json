@@ -189,7 +189,8 @@
       "p11",
       "p12",
       "p13",
-      "k_anonimato"
+      "k_anonimato",
+      "risco_sucessorio"
     ],
     "must_not_contain": [
       "CPF",
@@ -320,11 +321,16 @@
       "favicon.svg",
       "sgp-hub-back",
       "Risco Sucessório",
-      "Nota metodológica"
+      "Nota metodológica",
+      "dados_paineis_forca.json",
+      "risco_sucessorio",
+      "rs-faixas",
+      "render(D)"
     ],
     "must_not_contain": [
       "UAE",
-      "firebaseConfig"
+      "firebaseConfig",
+      "Idade mediana de 47 anos"
     ]
   },
   "dashboard_alocacao_ingresso_2026.html": {

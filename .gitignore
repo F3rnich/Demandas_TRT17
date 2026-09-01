@@ -25,6 +25,9 @@ __pycache__/
 *.log
 conv_planilha_*/
 conv_base_*/
+_publicar_estado.json
+_backup_*/
+_publicado_*.json
 
 # Sistema
 Thumbs.db
