@@ -206,6 +206,7 @@
     <div class="direita">
       <label class="chave"><input type="checkbox" id="ck-req"><span id="ck-req-txt"></span></label>
       <button class="link" id="ir-plano">Ver o plano</button>
+      <button class="link" id="restaurar-plano">Restaurar o plano do relatório</button>
     </div>
   </div>
 </div>
@@ -299,7 +300,24 @@ const firebaseConfig = {
 };
 const db        = getFirestore(initializeApp(firebaseConfig));
 const STATE_DOC = doc(db, 'estado', 'alocacao_ingresso_2026');
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+
+// Plano proposto no relatório de lotação. É semeado no Firestore na primeira carga e a
+// cada mudança de SCHEMA_VERSION, para que painel e relatório abram com a mesma
+// distribuição. Alterações feitas na tela substituem estes valores e são preservadas.
+const PLANO_RELATORIO = {
+  '1_a_vara_de_vitoria': { n: 2, just: 'Bloco A — fechamento de claro. Dois claros. Única Vara de Vitória abaixo do paradigma e sem nenhum servidor cedido para amortecer. Perfil sugerido: 1 analista e 1 técnico.' },
+  'central_de_mandados_ceman': { n: 2, just: 'Bloco A — fechamento de claro (1) e bloco B — risco (1). Um claro em cargo cuja especialidade só se exerce nesta unidade, somado à maior exposição isolada do Regional: onze dos quarenta e um servidores podem se aposentar sem aviso prévio. Perfil sugerido: 2 oficiais de justiça avaliadores federais.' },
+  '9_a_vara_de_vitoria': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, somado a duas saídas previstas e a três servidores em condição especial. Perfil sugerido: 1 técnico.' },
+  'gabinete_da_desembargadora_fatima_gomes_ferreira_fgf': { n: 1, just: 'Bloco A — fechamento de claro. Um claro somado a um afastamento superior a 60 dias: a força efetivamente disponível é de nove em onze. Perfil sugerido: 1 técnico.' },
+  'centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_1o_grau_cejusc1': { n: 1, just: 'Bloco A — fechamento de claro. Um claro em unidade de quatro posições: a lacuna é de um quarto da lotação. Perfil sugerido: 1 técnico.' },
+  'centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_2o_grau_cejusc2': { n: 1, just: 'Bloco A — fechamento de claro. Unidade de uma única posição, hoje vazia, com a função comissionada deslocada para outra unidade. Perfil sugerido: 1 analista.' },
+  'gabinete_do_desembargador_mario_ribeiro_cantarino_neto_mrcn': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, sem servidor cedido na unidade. Perfil sugerido: 1 técnico.' },
+  'grupo_de_assistentes_de_juizes_do_trabalho_substitutos_gajus': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, com uma das funções do grupo deslocada para outra unidade. Perfil sugerido: 1 analista.' },
+  '2a_vara_do_trabalho_de_cachoeiro_de_itapemirim': { n: 2, just: 'Bloco B — maior índice de risco do Regional. Metade da força é cedida por outros órgãos, e cinco desses servidores cobrem lacuna de quadro próprio: devolvidos, abrem cinco claros de uma vez. Perfil sugerido: 2 técnicos.' },
+  'vara_do_trabalho_de_aracruz': { n: 2, just: 'Bloco B — segundo maior índice de risco. Quatro servidores cedidos cobrem integralmente a lacuna de quadro próprio, e há duas saídas previstas. Perfil sugerido: 2 técnicos.' },
+  'coordenadoria_de_policia_judicial_copjud': { n: 2, just: 'Bloco B — terceiro maior índice de risco. Sete saídas previstas entre vinte e oito agentes, mais um afastamento prolongado. A especialidade é exclusiva desta unidade. Perfil sugerido: 2 agentes da polícia judicial.' },
+};
 
 const BASE = {
  "meta": {
@@ -4269,13 +4287,17 @@ const CORTE = 15;
 
 /* ---------- sincronização ---------- */
 onSnapshot(STATE_DOC, snap => {
-  if (snap.exists()) {
-    const d = snap.data();
+  const d = snap.exists() ? snap.data() : null;
+  if (d && d.schemaVersion === SCHEMA_VERSION) {
     cfg = { ...CFG_PADRAO, contarReq: (d.cfg || {}).contarReq ?? CFG_PADRAO.contarReq };
     alocacoes  = d.alocacoes  || {};
     paradigmas = d.paradigmas || {};
   } else {
-    setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, cfg, alocacoes, paradigmas, updatedAt: serverTimestamp() }).catch(console.error);
+    // Primeira carga, ou versão anterior do critério: semeia o plano do relatório.
+    alocacoes  = JSON.parse(JSON.stringify(PLANO_RELATORIO));
+    paradigmas = (d && d.paradigmas) || {};
+    setDoc(STATE_DOC, { schemaVersion: SCHEMA_VERSION, cfg, alocacoes, paradigmas, updatedAt: serverTimestamp() })
+      .catch(console.error);
   }
   pronto = true;
   sinal('ok');
@@ -4314,7 +4336,7 @@ function risco(u) {
   const cobre = u.paradigma ? Math.min(u.cedidos, Math.max(0, u.paradigma - u.efetivos)) : u.cedidos;
   const c = { cedidos: cobre / ESCALA, sucessao: (u.abono + u.aposent) / ESCALA, afast: u.afast / ESCALA };
   let s = 0;
-  for (const k in c) s += PESOS_RISCO[k] * clamp01(c[k]);
+  for (const k in c) s += PESOS_RISCO[k] * c01(c[k]);
   return Math.round(s / (PESOS_RISCO.cedidos + PESOS_RISCO.sucessao + PESOS_RISCO.afast) * 100);
 }
 const claroDe = u => { const l = lacuna(u); return l && l > 0 ? l : 0; };
@@ -4520,6 +4542,10 @@ document.addEventListener('click', e => {
   if (e.target.id === 'ver-tudo')  { verTudo = true;  desenhar(); return; }
   if (e.target.id === 'ver-menos') { verTudo = false; desenhar(); document.getElementById('sec-falta').scrollIntoView({ block: 'start' }); return; }
   if (e.target.id === 'ir-plano')  { document.getElementById('sec-plano').scrollIntoView({ block: 'start' }); }
+  if (e.target.id === 'restaurar-plano') {
+    alocacoes = JSON.parse(JSON.stringify(PLANO_RELATORIO));
+    desenhar(); gravar();
+  }
 });
 
 document.addEventListener('input', e => {
