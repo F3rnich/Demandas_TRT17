@@ -300,23 +300,23 @@ const firebaseConfig = {
 };
 const db        = getFirestore(initializeApp(firebaseConfig));
 const STATE_DOC = doc(db, 'estado', 'alocacao_ingresso_2026');
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 // Plano proposto no relatório de lotação. É semeado no Firestore na primeira carga e a
 // cada mudança de SCHEMA_VERSION, para que painel e relatório abram com a mesma
 // distribuição. Alterações feitas na tela substituem estes valores e são preservadas.
 const PLANO_RELATORIO = {
   '1_a_vara_de_vitoria': { n: 2, just: 'Bloco A — fechamento de claro. Dois claros. Única Vara de Vitória abaixo do paradigma e sem nenhum servidor cedido para amortecer. Perfil sugerido: 1 analista e 1 técnico.' },
-  'central_de_mandados_ceman': { n: 2, just: 'Bloco A — fechamento de claro (1) e bloco B — risco (1). Um claro em cargo cuja especialidade só se exerce nesta unidade, somado à maior exposição isolada do Regional: onze dos quarenta e um servidores podem se aposentar sem aviso prévio. Perfil sugerido: 2 oficiais de justiça avaliadores federais.' },
+  'central_de_mandados_ceman': { n: 1, just: 'Bloco A — fechamento de claro. Um claro em cargo cuja especialidade só se exerce nesta unidade. Perfil sugerido: 1 oficial de justiça avaliador federal.' },
   '9_a_vara_de_vitoria': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, somado a duas saídas previstas e a três servidores em condição especial. Perfil sugerido: 1 técnico.' },
   'gabinete_da_desembargadora_fatima_gomes_ferreira_fgf': { n: 1, just: 'Bloco A — fechamento de claro. Um claro somado a um afastamento superior a 60 dias: a força efetivamente disponível é de nove em onze. Perfil sugerido: 1 técnico.' },
   'centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_1o_grau_cejusc1': { n: 1, just: 'Bloco A — fechamento de claro. Um claro em unidade de quatro posições: a lacuna é de um quarto da lotação. Perfil sugerido: 1 técnico.' },
   'centro_judiciario_de_metodos_consensuais_de_solucao_de_disputas_do_2o_grau_cejusc2': { n: 1, just: 'Bloco A — fechamento de claro. Unidade de uma única posição, hoje vazia, com a função comissionada deslocada para outra unidade. Perfil sugerido: 1 analista.' },
   'gabinete_do_desembargador_mario_ribeiro_cantarino_neto_mrcn': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, sem servidor cedido na unidade. Perfil sugerido: 1 técnico.' },
   'grupo_de_assistentes_de_juizes_do_trabalho_substitutos_gajus': { n: 1, just: 'Bloco A — fechamento de claro. Um claro, com uma das funções do grupo deslocada para outra unidade. Perfil sugerido: 1 analista.' },
-  '2a_vara_do_trabalho_de_cachoeiro_de_itapemirim': { n: 2, just: 'Bloco B — maior índice de risco do Regional. Metade da força é cedida por outros órgãos, e cinco desses servidores cobrem lacuna de quadro próprio: devolvidos, abrem cinco claros de uma vez. Perfil sugerido: 2 técnicos.' },
-  'vara_do_trabalho_de_aracruz': { n: 2, just: 'Bloco B — segundo maior índice de risco. Quatro servidores cedidos cobrem integralmente a lacuna de quadro próprio, e há duas saídas previstas. Perfil sugerido: 2 técnicos.' },
-  'coordenadoria_de_policia_judicial_copjud': { n: 2, just: 'Bloco B — terceiro maior índice de risco. Sete saídas previstas entre vinte e oito agentes, mais um afastamento prolongado. A especialidade é exclusiva desta unidade. Perfil sugerido: 2 agentes da polícia judicial.' },
+  '2a_vara_do_trabalho_de_cachoeiro_de_itapemirim': { n: 2, just: 'Bloco C — maior índice de risco do Regional. Metade da força é cedida por outros órgãos, e cinco desses servidores cobrem lacuna de quadro próprio: devolvidos, abrem cinco claros de uma vez. Perfil sugerido: 2 técnicos.' },
+  'vara_do_trabalho_de_aracruz': { n: 2, just: 'Bloco C — segundo maior índice de risco. Quatro servidores cedidos cobrem integralmente a lacuna de quadro próprio, e há duas saídas previstas. Perfil sugerido: 2 técnicos.' },
+  'secretaria_de_tecnologia_da_informacao_e_comunicacoes_setic': { n: 3, just: 'Bloco B — recomendação da correição do CSJT. Provimento integral das três vagas de tecnologia da informação. Não há claro de lotação apurado em unidade de TI: as três posições são cargos efetivos vagos do quadro, e o provimento decorre de fundamento correicional, não do índice. A distribuição entre as seções da área cabe à própria Secretaria. Perfil sugerido: 3 técnicos de tecnologia da informação.' },
 };
 
 const BASE = {
