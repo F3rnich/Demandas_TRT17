@@ -89,7 +89,8 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div class="fonte">Fonte: base de pessoal SGP · última referência de cada ano</div></div></section>
 <section><h2>Síntese</h2><div id="tbl"></div></section>
 
-<div class="metod"><b>METODOLOGIA</b><br>Raça/cor agregada em Branca / Negra (pretos e pardos) / Outras ou não informada. Índice de paridade = participação do grupo entre comissionados ÷ participação na força de trabalho. Valores de FC nominais. Grupos com menos de 5 pessoas não têm valor médio publicado.</div>
+<div class="metod"><b>UNIVERSO</b><br>Servidores com lotação ativa no TRT-17: exclui estagiários, servidores removidos para outros órgãos e magistrados. É o mesmo universo do Painel 12 (Res. CSJT 296/2021); não coincide com o total de pessoas presentes na base de pessoal.</div>
+<div class="metod"><b>METODOLOGIA</b><br>Raça/cor agregada em Branca / Negra (pretos e pardos) / Outras ou não informada. Índice de paridade = participação do grupo entre comissionados ÷ participação na força de trabalho. Valores de FC nominais. Grupos com menos de 5 comissionados não têm contagem, percentual, índice de paridade nem valor médio publicados: o percentual e o índice reconstruiriam a contagem a partir dos totais.</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas. Nenhum dado identificado ou identificável é publicado:
 células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); raça/cor é divulgada apenas em
@@ -212,11 +213,11 @@ function render(D){const p=D.p09;
   document.getElementById('kpis').innerHTML=
     `<div class="kpi"><div class="n">${fmt(p.total_comissionados)}</div><div class="l">servidores com FC/CJ (${(100*p.total_comissionados/p.total_forca).toFixed(0)}% da força)</div></div>
      <div class="kpi"><div class="n">${fmtBRL(p.valor_medio_geral)}</div><div class="l">valor médio da função</div></div>
-     <div class="kpi dest"><div class="n">${p.sexo.F.indice_paridade.toLocaleString('pt-BR')}</div><div class="l">índice de paridade — mulheres</div></div>
-     <div class="kpi dest"><div class="n">${p.raca.Negra.indice_paridade.toLocaleString('pt-BR')}</div><div class="l">índice de paridade — pessoas negras</div></div>`;
+     <div class="kpi dest"><div class="n">${p.sexo.F.indice_paridade!=null?p.sexo.F.indice_paridade.toLocaleString('pt-BR'):'—'}</div><div class="l">índice de paridade — mulheres</div></div>
+     <div class="kpi dest"><div class="n">${p.raca.Negra.indice_paridade!=null?p.raca.Negra.indice_paridade.toLocaleString('pt-BR'):'—'}</div><div class="l">índice de paridade — pessoas negras</div></div>`;
   const itens=[];
   [['Mulheres',p.sexo.F],['Homens',p.sexo.M],['Pessoas brancas',p.raca.Branca],['Pessoas negras',p.raca.Negra]]
-    .forEach(([g,d])=>{if(d)itens.push({grupo:g,a:d.pct_forca,b:d.pct_com})});
+    .forEach(([g,d])=>{if(d&&d.pct_com!=null)itens.push({grupo:g,a:d.pct_forca,b:d.pct_com})});
   dumbbell(document.getElementById('c-acesso'),itens,'% na força de trabalho','% entre comissionados');
   const vals=[];
   [['Homens',p.sexo.M,C.navy],['Mulheres',p.sexo.F,C.amber],['Pessoas brancas',p.raca.Branca,C.navy],['Pessoas negras',p.raca.Negra,C.amber]]
@@ -230,7 +231,7 @@ function render(D){const p=D.p09;
   let t='<table class="dados"><tr><th>Grupo</th><th>% força</th><th>% comissionados</th><th>Índice de paridade</th><th>Valor médio FC</th></tr>';
   [['Mulheres',p.sexo.F],['Homens',p.sexo.M],['Pessoas brancas',p.raca.Branca],['Pessoas negras',p.raca.Negra],['Outras/NI',p.raca['Outras/NI']]]
     .forEach(([g,d])=>{if(!d)return;
-    t+=`<tr><td>${g}</td><td class="num">${d.pct_forca.toLocaleString('pt-BR')}%</td><td class="num">${d.pct_com.toLocaleString('pt-BR')}%</td><td class="num">${d.indice_paridade!=null?d.indice_paridade.toLocaleString('pt-BR'):'—'}</td><td class="num">${d.valor_medio_fc!=null?fmtBRL(d.valor_medio_fc):'suprimido (n<5)'}</td></tr>`});
+    t+=`<tr><td>${g}</td><td class="num">${d.pct_forca.toLocaleString('pt-BR')}%</td><td class="num">${d.pct_com!=null?d.pct_com.toLocaleString('pt-BR')+'%':'suprimido (n<5)'}</td><td class="num">${d.indice_paridade!=null?d.indice_paridade.toLocaleString('pt-BR'):'—'}</td><td class="num">${d.valor_medio_fc!=null?fmtBRL(d.valor_medio_fc):'suprimido (n<5)'}</td></tr>`});
   document.getElementById('tbl').innerHTML=t+'</table>';
 }
 </script>

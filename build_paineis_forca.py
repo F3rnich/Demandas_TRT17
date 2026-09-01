@@ -400,9 +400,15 @@ def main(path):
             if n_f < K_MIN: continue
             pf = 100 * n_f / len(srv_ult); pc = 100 * n_c / len(com)
             vm = com.loc[com[col] == g, "VALOR"]
+            # n_com passava pelo sup(), mas pct_com e indice_paridade saiam
+            # crus — e total_comissionados e n_forca sao publicados, entao
+            # n_com = pct_com * total / 100 devolvia o valor exato. A supressao
+            # era decorativa: os derivados tem de cair junto.
+            oculto = n_c < K_MIN
             r[g] = {"n_forca": n_f, "pct_forca": round(pf, 1),
-                    "n_com": sup(n_c), "pct_com": round(pc, 1),
-                    "indice_paridade": round(pc / pf, 2) if pf else None,
+                    "n_com": None if oculto else n_c,
+                    "pct_com": None if oculto else round(pc, 1),
+                    "indice_paridade": None if (oculto or not pf) else round(pc / pf, 2),
                     "valor_medio_fc": round(float(vm.mean()), 2) if len(vm) >= K_MIN else None}
         return r
     out["p09"] = {
@@ -419,18 +425,24 @@ def main(path):
         if len(c) < K_MIN: continue
         ip_serie["anos"].append(int(a))
         for chave, col, val in [("F", "SEXO", "F"), ("Negra", "raca_g", "Negra")]:
+            n_sub = int((c[col] == val).sum())   # o grupo ENTRE comissionados
             pf = (g[col] == val).mean(); pc = (c[col] == val).mean()
-            ip_serie[chave].append(round(pc / pf, 2) if pf > 0 else None)
+            ip_serie[chave].append(round(pc / pf, 2)
+                                   if (n_sub >= K_MIN and pf > 0) else None)
     out["p09"]["serie_paridade"] = ip_serie
 
     # ---------------- p10 → Painel 9 — Tempo até a primeira comissão ----------------
-    snap0 = ft["REFERENCIA"].min()
-    fim_obs = ft["REFERENCIA"].max()
-    first = ft.groupby("MATRICULA")["REFERENCIA"].min()
-    last = ft.groupby("MATRICULA")["REFERENCIA"].max()
+    # Universo = srv, como no p09 e no art. 6 do p13. Com `ft`, a coorte
+    # carregava 16 magistrados e 1 removido-para que NUNCA recebem FC/CJ: 17
+    # nao-eventos permanentes que so faziam o denominador crescer. O efeito era
+    # grande e para baixo — em 3 anos a curva geral ia de 66,8% para 60,4%, e o
+    # gap por sexo encolhia de 21,8 para 18,9 p.p. num painel sobre equidade.
+    snap0 = srv["REFERENCIA"].min()
+    first = srv.groupby("MATRICULA")["REFERENCIA"].min()
+    last = srv.groupby("MATRICULA")["REFERENCIA"].max()
     coorte = first[first > snap0].index  # entrada observável
-    fc1 = ft[ft["CODIGO_COMISSAO"].notna()].groupby("MATRICULA")["REFERENCIA"].min()
-    atrib = ft.sort_values("REFERENCIA").groupby("MATRICULA").first()  # atributos na entrada
+    fc1 = srv[srv["CODIGO_COMISSAO"].notna()].groupby("MATRICULA")["REFERENCIA"].min()
+    atrib = srv.sort_values("REFERENCIA").groupby("MATRICULA").first()  # atributos na entrada
     rows = []
     for m in coorte:
         ent = first[m]
