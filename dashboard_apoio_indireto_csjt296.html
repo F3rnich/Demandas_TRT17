@@ -85,7 +85,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 
 <section><h2>Art. 6º — Comissionamentos sobre cargos efetivos</h2>
 <p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ÷ cargos efetivos de servidores providos com lotação ativa. A linha tracejada marca o teto de 80% do art. 6º. <b>Indicador por aproximação:</b> a norma mede o quantitativo de cargos efetivos <i>autorizados</i> (inclui vagos); esta base traz apenas postos ocupados, o que superestima a razão. Não se emite veredito de conformidade.</p>
-<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC) ÷ efetivos</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC) ÷ efetivos autorizados</span><span><i style="background:#8DA0AB"></i>proxy anterior (só providos)</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
 <div class="fonte">Res. CSJT nº 296/2021, art. 6º</div></div>
 <div style="margin-top:14px"><table class="dados" id="t-art6"><thead><tr><th>Nível</th><th>Ocupados</th></tr></thead><tbody></tbody></table></div></section>
 
@@ -107,7 +107,7 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <section><h2>Referência normativa e notas metodológicas</h2>
 <div id="norma" class="desc" style="max-width:none"></div></section>
 
-<div class="metod"><b>METODOLOGIA</b><br>Força de trabalho = servidores com lotação ativa no TRT-17, excluídos estagiários, servidores removidos para outros órgãos e magistrados (estes entram apenas no público-alvo do art. 14). Os quatro indicadores-farol usam essa base; o art. 6º toma como denominador os cargos efetivos providos com lotação ativa. A classificação de área (fim/meio/T.I.) e a identificação da Escola Judicial seguem a base da SGP. Percentuais nominais, sem projeção. Na composição do art. 6º, os níveis com menos de 5 ocupantes aparecem agregados em "Demais níveis".</div>
+<div class="metod"><b>METODOLOGIA</b><br>Força de trabalho = servidores com lotação ativa no TRT-17, excluídos estagiários, servidores removidos para outros órgãos e magistrados (estes entram apenas no público-alvo do art. 14). Os quatro indicadores-farol usam essa base; o art. 6º toma como denominador os cargos efetivos AUTORIZADOS: os providos com lotação ativa mais os vagos, estes vindos dos quadros mensais de Cargos Efetivos Vagos do portal de transparência. Ficam de fora as vagas de Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008, mesma exclusão que o tribunal aplica no total dos seus quadros. A linha cinza tracejada mostra o proxy usado até agosto de 2026, que só considerava cargos providos e por isso superestimava a razão. A classificação de área (fim/meio/T.I.) e a identificação da Escola Judicial seguem a base da SGP. Percentuais nominais, sem projeção. Na composição do art. 6º, os níveis com menos de 5 ocupantes aparecem agregados em "Demais níveis".</div>
 <div class="lgpd"><b>PROTEÇÃO DE DADOS · LGPD</b><br>
 Este painel exibe exclusivamente estatísticas agregadas de estrutura e lotação (Tabela de Lotação de Pessoal, art. 39 da Res.). Nenhum dado identificado ou identificável é publicado: células com menos de 5 registros são suprimidas ou agregadas (k-anonimato, k=5); atributos sensíveis (raça, deficiência, saúde, identidade de gênero) não são exportados para esta página. A base de origem não é versionada nem publicada. Contagem de lotação de unidade administrativa — por exemplo, a da Escola Judicial — é dado de estrutura, constante de ato administrativo, e não se sujeita à supressão de células pequenas aplicada aos cruzamentos de atributo pessoal.</div>
 </div>
@@ -226,13 +226,14 @@ function render(D){
   document.getElementById('ref-base').textContent='REF. '+D.ultima_referencia.replace(/^(\d{4})-(\d{2})$/,'$2/$1');
   const farol=[
     {t:'Art. 5º', v:p.art5.pct_atual, l:'fora das carreiras judiciárias', ok:p.art5.pct_atual<=20, lim:'teto 20%'},
-    {t:'Art. 6º', v:p.art6.pct_atual, l:'comissões ÷ efetivos', proxy:true, lim:'teto 80% · proxy'},
+    {t:'Art. 6º', v:p.art6.pct_atual, l:'comissões ÷ efetivos autorizados',
+     proxy:p.art6.proxy||p.art6.pct_atual==null, ok:p.art6.pct_atual<=p.art6.teto, lim:'teto 80%'},
     {t:'Art. 12', v:p.art12.pct_atual, l:'apoio indireto (meio)', ok:p.art12.pct_atual>=20&&p.art12.pct_atual<=30, lim:'faixa 20–30%'},
     {t:'Art. 14', v:p.art14.pct_atual, l:'lotação Escola Judicial', ok:p.art14.pct_atual>=0.7&&p.art14.pct_atual<=1.0, lim:'faixa 0,7–1,0%'},
   ];
   document.getElementById('kpis').innerHTML=farol.map(f=>{
     const chip=f.proxy
-      ? `<span class="badge" style="background:#EEF3F5;color:#5C6E79;border:1px solid #C4D3D9">PROXY · VER RESSALVA</span>`
+      ? `<span class="badge" style="background:#EEF3F5;color:#5C6E79;border:1px solid #C4D3D9">SEM QUADRO DE VAGOS</span>`
       : `<span class="badge ${f.ok?'ok':'warn'}">${f.ok?'DENTRO':'FORA'}</span>`;
     return `<div class="kpi${(f.ok&&!f.proxy)?' dest':''}"><div class="n">${br(f.v)}<small>%</small></div>`+
     `<div class="l"><b>${f.t}</b> · ${f.l} ${chip}`+
@@ -244,12 +245,18 @@ function render(D){
   document.getElementById('a12-stats').innerHTML=
     `área meio ${br(p.art12.n_meio)} · área fim ${br(p.art12.n_fim)} · excluídos do cálculo: T.I.C. ${br(p.art12.n_tic)}, Escola Judicial ${br(p.art12.n_ejud)}`;
   // Art. 6
-  lineChart(document.getElementById('c-art6'),L,[{nome:'%',cor:C.navy,vals:p.art6.pct}],
+  lineChart(document.getElementById('c-art6'),L,[
+      {nome:'% autorizados',cor:C.navy,vals:p.art6.pct},
+      {nome:'% só providos (proxy anterior)',cor:C.mut,vals:p.art6.pct_proxy,tracejado:true}],
     {min:60,max:90,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
   document.querySelector('#t-art6 tbody').innerHTML=
     p.art6.por_nivel.map(x=>`<tr><td>${x.nivel}</td><td class="num">${br(x.n)}</td></tr>`).join('')+
     `<tr style="font-weight:700"><td>Total (CJ ${br(p.art6.n_cj)} + FC ${br(p.art6.n_fc)})</td><td class="num">${br(p.art6.n_com)}</td></tr>`+
-    `<tr><td>Cargos efetivos providos (denominador)</td><td class="num">${br(p.art6.n_efet)}</td></tr>`;
+    `<tr><td>Cargos efetivos providos</td><td class="num">${br(p.art6.n_efet)}</td></tr>`+
+    (p.art6.n_vagos!=null
+      ? `<tr><td>Cargos efetivos vagos (quadro de ${p.art6.vagos_referencia.split('-').reverse().join('/')})</td><td class="num">${br(p.art6.n_vagos)}</td></tr>`+
+        `<tr style="font-weight:700"><td>Cargos efetivos autorizados (denominador)</td><td class="num">${br(p.art6.n_efet_autorizados)}</td></tr>`
+      : `<tr><td colspan="2">Sem quadro de cargos vagos para esta referência — razão não calculada.</td></tr>`);
   // Art. 5
   lineChart(document.getElementById('c-art5'),L,[{nome:'%',cor:C.navy,vals:p.art5.pct}],
     {min:0,max:25,banda:[p.art5.teto,p.art5.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});

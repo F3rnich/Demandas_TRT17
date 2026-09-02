@@ -33,3 +33,15 @@ _publicado_*.json
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Cargos Efetivos Vagos — portal de transparencia do TRT-17.
+# Arquivos PUBLICOS, sem dado pessoal (cargo/area/especialidade + quantitativo):
+# sao o denominador real do art. 6 da Res. CSJT 296 e DEVEM ser versionados, para
+# o painel 12 ser reproduzivel sem depender de quem tem a pasta.
+# Excecao explicita ao *.xlsx / *.pdf acima. Nada fora desta pasta entra.
+!cargos_vagos/*.xlsx
+!cargos_vagos/*.pdf
+
+# Ferramentas locais de publicacao — contem logica de deploy, nao entram no repo
+publicar.py
+fechar_pendencias.py

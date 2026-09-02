@@ -174,10 +174,12 @@
       "c-art6",
       "c-art14",
       "render(D)",
-      "Conformidade estrutural"
+      "Conformidade estrutural",
+      "efetivos autorizados"
     ],
     "must_not_contain": [
-      "CPF"
+      "CPF",
+      "PROXY · VER RESSALVA"
     ]
   },
   "dados_paineis_forca.json": {
@@ -190,7 +192,8 @@
       "p12",
       "p13",
       "k_anonimato",
-      "risco_sucessorio"
+      "risco_sucessorio",
+      "n_efet_autorizados"
     ],
     "must_not_contain": [
       "CPF",
@@ -346,6 +349,17 @@
     ],
     "must_not_contain": [
       "acoes_reestruturacao_2026"
+    ]
+  },
+  "ler_vagos.py": {
+    "must_contain": [
+      "DIVERGENCIA_NA_ORIGEM",
+      "EXTINCAO",
+      "pdftotext",
+      "Res. CSJT 47/2008"
+    ],
+    "must_not_contain": [
+      "github_pat_"
     ]
   }
 }

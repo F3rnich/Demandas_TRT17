@@ -306,6 +306,22 @@ def main(path):
     srv = df[(~est) & (~REMPARA) & (~MAG)].copy()
     srv["raca_g"] = srv["RAÇA"].map(raca_grp)
     srv["ano"] = srv["REFERENCIA"].dt.year
+
+    # Escola Judicial: a EJUD_RE e a FONTE UNICA, tambem para o p07 e o p08.
+    # A coluna AREA da planilha passou a classificar a "Secretaria da Escola
+    # Judicial" como Meio (mudou numa gravacao da base em 01/09/2026), enquanto a
+    # regex continua reconhecendo a unidade. Os paineis 6 e 12 ficaram
+    # discordando — 4 contra 6 — e o art. 14 cairia de 0,743% para 0,496%, abaixo
+    # do piso, so por causa de uma coluna derivada da planilha. Mesmo defeito ja
+    # documentado para a coluna GRAU. A regex manda; a coluna AREA fica para
+    # Fim / Meio / T.I.
+    srv["ejud"] = srv["UNIDADE_ADMINISTRATIVA"].str.contains(
+        EJUD_RE, case=False, na=False, regex=True)
+    srv["area_g"] = np.where(srv["ejud"], "EJUD", srv["AREA"].astype(str))
+    _div = int((srv["ejud"] != srv["AREA"].astype(str).str.upper().eq("EJUD")).sum())
+    if _div:
+        print(f"[aviso] {_div} linha(s) em que a coluna AREA discorda da EJUD_RE "
+              f"(prevalece a regex).")
     anos_all = sorted(srv["ano"].unique())
     srv_ult = srv[srv["ref"] == ult_ref].copy()
     srv_dez = srv.sort_values("REFERENCIA").groupby(["ano", "MATRICULA"]).tail(1)
@@ -342,7 +358,7 @@ def main(path):
 
     # ---------------- p07 → Painel 6 — Evolução histórica (servidores) ----------------
     serie_total = srv.groupby("ref").size()
-    por_area = srv.pivot_table(index="ref", columns="AREA", values="MATRICULA",
+    por_area = srv.pivot_table(index="ref", columns="area_g", values="MATRICULA",
                                aggfunc="count").fillna(0).astype(int)
     por_vinc = srv.pivot_table(index="ref", columns="TIPO_SERVIDOR",
                                values="MATRICULA", aggfunc="count").fillna(0).astype(int)
@@ -384,7 +400,7 @@ def main(path):
     idade_media = srv_dez.groupby("ano")["IDADE"].mean().round(1)
     p55 = srv_dez.groupby("ano").apply(
         lambda g: round(100 * (g["IDADE"] >= 55).mean(), 1), include_groups=False)
-    fx_area = srv_ult.pivot_table(index="AREA", columns=pd.cut(
+    fx_area = srv_ult.pivot_table(index="area_g", columns=pd.cut(
         srv_ult["IDADE"], [0, 45, 55, 200], labels=["< 45", "45–54", "55 +"], right=False),
         values="MATRICULA", aggfunc="count", observed=True).fillna(0).astype(int)
     out["p08"] = {
@@ -623,8 +639,7 @@ def main(path):
     }
 
     # ---------------- p13 → Painel 12 — Conformidade estrutural Res. CSJT 296/2021 ----------------
-    _EJUD = EJUD_RE
-    srv["ejud"] = srv["UNIDADE_ADMINISTRATIVA"].str.contains(_EJUD, case=False, na=False, regex=True)
+    _EJUD = EJUD_RE      # srv["ejud"] ja foi calculado no topo, com esta mesma regex
     srv["tem_com"] = srv["CODIGO_COMISSAO"].notna()
     sult = srv[srv["ref"] == ult_ref]
     # público-alvo do art. 14 = servidores ativos + magistrados providos ativos
@@ -645,6 +660,26 @@ def main(path):
     def _a6(g):
         efet = (g["TIPO_SERVIDOR"] == "Cargo efetivo").sum()
         return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
+
+    # DENOMINADOR REAL do art. 6: a norma mede cargos efetivos AUTORIZADOS, que
+    # incluem os vagos. A base de pessoal so traz postos ocupados — os vagos vem
+    # dos quadros mensais do portal de transparencia (ver ler_vagos.py e
+    # cargos_vagos/LEIA-ME.md). Mes sem quadro fica None, nunca estimado.
+    from ler_vagos import ler as _ler_vagos
+    _vagos = _ler_vagos()
+    _sem = [r for r in refs if r >= min(_vagos) and r not in _vagos]
+    if _sem:
+        print(f"[aviso] art. 6: {len(_sem)} mes(es) sem quadro de cargos vagos "
+              f"({', '.join(_sem)}) — a razao real fica vazia neles.")
+
+    def _a6_real(r):
+        g = srv[srv["ref"] == r]
+        efet = int((g["TIPO_SERVIDOR"] == "Cargo efetivo").sum())
+        v = _vagos.get(r)
+        if not efet or v is None:
+            return None
+        return round(100 * int(g["tem_com"].sum()) / (efet + v["vagos"]), 2)
+
     com_u = sem_dup_comissao(sult[sult["tem_com"]])
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
     _pn = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
@@ -666,10 +701,20 @@ def main(path):
         if _s < K_MIN:
             sys.exit("ERRO k=%d: 'Demais níveis' ficaria com n=%d." % (K_MIN, _s))
         por_nivel.append({"nivel": "Demais níveis (agregado)", "n": _s})
-    art6 = {"pct": _serS(_a6), "teto": 80.0, "proxy": True, "pct_atual": _a6(sult),
-            "n_com": int(len(com_u)), "n_efet": int((sult["TIPO_SERVIDOR"] == "Cargo efetivo").sum()),
+    _n_efet = int((sult["TIPO_SERVIDOR"] == "Cargo efetivo").sum())
+    _v_ult = _vagos.get(ult_ref)
+    _n_aut = (_n_efet + _v_ult["vagos"]) if _v_ult else None
+    art6 = {"pct": [_a6_real(r) for r in refs], "pct_proxy": _serS(_a6),
+            "teto": 80.0, "proxy": False,
+            "pct_atual": round(100 * len(com_u) / _n_aut, 2) if _n_aut else None,
+            "pct_atual_proxy": _a6(sult),
+            "n_com": int(len(com_u)), "n_efet": _n_efet,
+            "n_vagos": _v_ult["vagos"] if _v_ult else None, "n_efet_autorizados": _n_aut,
+            "vagos_referencia": _v_ult["data"] if _v_ult else None,
+            "vagos_desde": min(_vagos), "vagos_meses_sem_dado": _sem,
             "n_cj": int(com_u["CODIGO_COMISSAO"].str.startswith("CJ", na=False).sum()),
-            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()), "por_nivel": por_nivel}
+            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()),
+            "por_nivel": por_nivel}
 
     def _a12(g):
         b = g[(g["AREA"] != "T.I.") & (~g["ejud"])]
@@ -698,7 +743,7 @@ def main(path):
         "notas": {
             "forca": "Força de trabalho de servidores = servidores com lotação ativa no TRT-17 (exclui estagiários, servidores removidos para outros órgãos e magistrados).",
             "art5": "Fora das carreiras judiciárias federais = requisitados de outros órgãos + comissionados sem vínculo. Teto de 20% (art. 5º).",
-            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos de servidores providos com lotação ativa. Teto de 80% (art. 6º). PROXY: a norma mede o quantitativo de cargos efetivos AUTORIZADOS (inclui vagos); a base traz apenas postos ocupados, o que superestima a razão. Não se emite veredito de conformidade.",
+            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos AUTORIZADOS — os providos com lotação ativa mais os vagos. Teto de 80% (art. 6º). Os cargos vagos vêm dos quadros mensais de Cargos Efetivos Vagos do portal de transparência do TRT-17. Não entram no denominador as vagas de Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008 (à medida que vagam, não são providos): é a mesma exclusão que o próprio tribunal aplica no total dos seus quadros. A série com denominador apenas de cargos providos, usada até agosto de 2026, continua publicada em pct_proxy para comparação.",
             "art12": "Servidores da área meio ÷ (área fim + meio), excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). Faixa 20%–30% para tribunais de pequeno porte.",
             "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores, conforme Anexo IV). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
             "art7": "DESCRITIVO — distribuição da força de apoio direto de servidores (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
