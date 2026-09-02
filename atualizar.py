@@ -269,7 +269,7 @@ def main():
     if not token and not so_checar:
         print("ERRO: variavel GITHUB_PAT nao configurada.\n"
               "  Rode UMA VEZ (com o token de verdade, sem aspas):\n"
-              "     setx GITHUB_PAT ghp_xxxxxxxxxxxx\n"
+              "     setx GITHUB_PAT <cole_aqui_o_token>\n"
               "  Depois feche e abra o CMD.")
         return 1
     if token in ("seu_token", "seu_token_aqui", "<seu_token>"):

@@ -209,7 +209,10 @@
       "EJUD_RE"
     ],
     "must_not_contain": [
-      "github_pat_"
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
     ]
   },
   "dashboard_afastamentos.html": {
@@ -281,7 +284,10 @@
       "def comparar"
     ],
     "must_not_contain": [
-      "github_pat_"
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
     ]
   },
   "diagnostico.py": {
@@ -290,7 +296,10 @@
       "resolver_base"
     ],
     "must_not_contain": [
-      "github_pat_"
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
     ]
   },
   "ATUALIZAR PAINEIS.bat": {
@@ -359,7 +368,36 @@
       "Res. CSJT 47/2008"
     ],
     "must_not_contain": [
-      "github_pat_"
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "deploy.py": {
+    "must_contain": [
+      "GITHUB_PAT",
+      "def commit_files",
+      "pages/builds/latest"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "validate_checks.py": {
+    "must_contain": [
+      "must_contain",
+      "must_not_contain",
+      "checks.json"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
     ]
   }
 }
