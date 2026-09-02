@@ -749,6 +749,19 @@ def main(path):
     g1 = int((fim_u["grau"] == "1º").sum()); g2 = int((fim_u["grau"] == "2º").sum())
     art7 = {"grau1": g1, "grau2": g2, "nd": int(len(fim_u) - g1 - g2), "total": int(len(fim_u))}
 
+    # As contagens escalares do p13 nao passam por sup(). Sao grandes hoje, mas
+    # nada garante que continuem — art7.nd (grau nao determinado) e a que mais
+    # oscila. As de lotacao de unidade ficam fora pela regra 2 do cabecalho.
+    _esc = {"art5.n_atual": art5["n_atual"], "art12.n_tic": art12["n_tic"],
+            "art12.n_meio": art12["n_meio"], "art12.n_fim": art12["n_fim"],
+            "art7.nd": art7["nd"], "art7.grau1": art7["grau1"],
+            "art7.grau2": art7["grau2"]}
+    _peq = {k: v for k, v in _esc.items() if 0 < v < K_MIN}
+    if _peq:
+        sys.exit("ERRO k=%d no p13: %s. Contagem publicada com menos de %d "
+                 "pessoas — agregue ou suprima antes de publicar."
+                 % (K_MIN, ", ".join("%s=%d" % kv for kv in sorted(_peq.items())), K_MIN))
+
     out["p13"] = {
         "refs": refs, "ultima_referencia": ult_ref, "forca_atual": int(len(sult)),
         "art5": art5, "art6": art6, "art12": art12, "art14": art14, "art7": art7,

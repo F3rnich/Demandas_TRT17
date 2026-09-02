@@ -141,13 +141,20 @@ def checar_base():
         n_unid, n_rot = int(na_ejud.sum()), int(rot_ejud.sum())
         divergem = int((na_ejud & ~rot_ejud).sum() + (~na_ejud & rot_ejud).sum())
         print(f"  EJUD    : {n_unid} por lotacao / {n_rot} por rotulo AREA"
-              + (f"  [{divergem} DIVERGEM]" if divergem else "  [coerente]"))
+              + (f"  [{divergem} divergem — prevalece a lotacao]" if divergem
+                 else "  [coerente]"))
         if divergem:
-            ERROS.append(
-                f"{divergem} servidor(es) com divergencia entre AREA e "
-                f"UNIDADE_ADMINISTRATIVA na EJUD em {ult:%Y-%m}. Isso faz o "
-                f"painel 6 e o painel 12 mostrarem numeros diferentes. "
-                f"Corrija a coluna AREA na origem.")
+            # Ate 01/09/2026 isso era ERRO bloqueante, e com razao: o p07 lia a
+            # coluna AREA e o p13 lia a EJUD_RE, entao os paineis 6 e 12
+            # mostravam numeros diferentes. Desde 02/09/2026 o build deriva a
+            # Escola Judicial da EJUD_RE — a FONTE UNICA — tambem no p07 e no
+            # p08, e a coerencia entre os dois paineis e conferida adiante, no
+            # comparar(). Aqui virou aviso: nao bloqueia mais.
+            print(f"  [aviso] {divergem} servidor(es) com a coluna AREA "
+                  f"divergindo da UNIDADE_ADMINISTRATIVA na EJUD em "
+                  f"{ult:%Y-%m}. Nao bloqueia — o build usa a EJUD_RE. Ainda "
+                  f"assim vale corrigir a coluna na origem: ela e derivada de "
+                  f"formula e desanda a cada gravacao da planilha.")
     return path, comp[-1] if comp else None
 
 
