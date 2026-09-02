@@ -21,7 +21,8 @@ REGRAS LGPD (aplicadas na origem — nenhum dado individual sai deste script):
      pessoal e não entra nesta regra: é dado de estrutura, consta de ato
      administrativo público, e o art. 14 da Res. CSJT 296/2021 exige justamente
      a lotação da Escola Judicial como indicador de conformidade. Ver
-     AREAS_INSTITUCIONAIS. Decisão de política de dados, não de código.
+     AREAS_INSTITUCIONAIS. Decisão de política de dados, não de código,
+     tomada em 01/09/2026 e conferida com o encarregado de dados do tribunal.
   3. Raça/cor só é publicada agrupada: Branca / Negra (pretos+pardos) / Outras ou NI.
   4. Deficiência, doença grave e identidade de gênero NÃO são exportadas
      (categorias com n<5 na base atual — reidentificáveis).
@@ -239,22 +240,32 @@ def guardar_k(tab, rotulo, isentas=frozenset()):
                     K_MIN))
 
 
-def sem_dup_comissao(d):
-    """Uma linha por (ref, MATRICULA) entre os ocupantes de FC/CJ.
+def exigir_um_por_pessoa(d, onde):
+    """Uma linha por (ref, MATRICULA) entre os ocupantes de FC/CJ — ou aborta.
 
-    A base traz 32 pares (12 pessoas, 20 referencias entre 2021-11 e 2024-02)
-    com DOIS codigos de comissao no mesmo instantaneo de fim de mes, mesma
-    unidade e mesma data de REFERENCIA — nao e troca de funcao no meio do mes.
-    O padrao dominante e CJ-3 + FC-04 (26 dos 32 pares), razao de valor ~4x.
-    Conta-se a pessoa UMA vez e mantem-se o posto de MAIOR valor (o CJ),
-    tratando a linha de FC como residuo da opcao.
+    A base ja trouxe 32 pares (12 pessoas, 20 referencias entre 2021-11 e
+    2024-02) com DOIS codigos de comissao no mesmo instantaneo de fim de mes,
+    mesma unidade, mesma data de REFERENCIA — nao era troca de funcao no meio do
+    mes. Foram corrigidos NA ORIGEM em 01/09/2026, caso a caso: em 29 prevaleceu
+    o posto de maior valor, em 3 o de menor (2023-01, 2023-06 e 2023-11), e Leo
+    confirmou que foi analise individual, nao regra mecanica.
 
-    Sem isto, groupby("ref").size() conta LANCAMENTOS e nao pessoas, e o custo
-    mensal soma as duas linhas: ate 3 pessoas e R$ 6.168,84 a mais num mes
-    (0,353%), R$ 63.981,10 no acumulado da serie.
+    Por isso aqui NAO ha regra de desempate. Havia uma — ficava o de maior valor —
+    e ela contava as pessoas certo, mas escolher sozinho qual posto vale mexe no
+    custo publicado em silencio, e a analise caso a caso mostrou que a escolha nem
+    sempre e a mesma. Duplicidade nova e defeito de dado: o pipeline para e
+    alguem decide, como foi feito nas duas vezes.
     """
-    return (d.sort_values("VALOR", ascending=False)
-             .drop_duplicates(subset=["ref", "MATRICULA"], keep="first"))
+    dup = d[d.duplicated(subset=["ref", "MATRICULA"], keep=False)]
+    if len(dup):
+        meses = sorted(set(dup["ref"]))
+        sys.exit("ERRO: %d registro(s) de FC/CJ em que a mesma pessoa aparece mais "
+                 "de uma vez no mesmo mes, em %s.\n"
+                 "  Meses afetados: %s.\n"
+                 "  Corrija na base, caso a caso. Nao ha regra de desempate aqui de "
+                 "proposito — ver a docstring de exigir_um_por_pessoa."
+                 % (len(dup), onde, ", ".join(meses)))
+    return d
 
 
 def sup(n):
@@ -418,7 +429,7 @@ def main(path):
     }
 
     # ---------------- p09 → Painel 8 — Equidade em comissionamentos (força de servidores) ----------------
-    com = sem_dup_comissao(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()])
+    com = exigir_um_por_pessoa(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()], "p09")
     def paridade(col, grupos):
         r = {}
         for g in grupos:
@@ -585,11 +596,12 @@ def main(path):
     }
 
     # ---------------- p11 → Painel 10 — Custo dos comissionamentos ----------------
-    # universo igual ao do p09 e do art. 6 do p13 (srv), e uma linha por pessoa
-    comt = sem_dup_comissao(srv[srv["CODIGO_COMISSAO"].notna()])
+    # universo igual ao do p09 e do art. 6 do p13 (srv). A duplicidade que existia
+    # ate 01/09/2026 foi corrigida na base; aqui so resta a guarda que aborta.
+    comt = exigir_um_por_pessoa(srv[srv["CODIGO_COMISSAO"].notna()], "p11 (serie)")
     custo = comt.groupby("ref")["VALOR"].sum()
     qtd = comt.groupby("ref").size()
-    tipos = sem_dup_comissao(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()]).groupby("NOME_COMISSAO").agg(
+    tipos = exigir_um_por_pessoa(srv_ult[srv_ult["CODIGO_COMISSAO"].notna()], "p11 (por tipo)").groupby("NOME_COMISSAO").agg(
         n=("MATRICULA", "count"), custo=("VALOR", "sum")).sort_values("custo", ascending=False)
     grandes = tipos[tipos["n"] >= K_MIN]
     outras_n = int(tipos[tipos["n"] < K_MIN]["n"].sum())
@@ -680,7 +692,7 @@ def main(path):
             return None
         return round(100 * int(g["tem_com"].sum()) / (efet + v["vagos"]), 2)
 
-    com_u = sem_dup_comissao(sult[sult["tem_com"]])
+    com_u = exigir_um_por_pessoa(sult[sult["tem_com"]], "p13 art. 6")
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
     _pn = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
     _pn = [x for x in _pn if x["n"] > 0]
@@ -743,7 +755,7 @@ def main(path):
         "notas": {
             "forca": "Força de trabalho de servidores = servidores com lotação ativa no TRT-17 (exclui estagiários, servidores removidos para outros órgãos e magistrados).",
             "art5": "Fora das carreiras judiciárias federais = requisitados de outros órgãos + comissionados sem vínculo. Teto de 20% (art. 5º).",
-            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos AUTORIZADOS — os providos com lotação ativa mais os vagos. Teto de 80% (art. 6º). Os cargos vagos vêm dos quadros mensais de Cargos Efetivos Vagos do portal de transparência do TRT-17. Não entram no denominador as vagas de Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008 (à medida que vagam, não são providos): é a mesma exclusão que o próprio tribunal aplica no total dos seus quadros. A série com denominador apenas de cargos providos, usada até agosto de 2026, continua publicada em pct_proxy para comparação.",
+            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos AUTORIZADOS — os providos com lotação ativa mais os vagos. Teto de 80% (art. 6º). Os cargos vagos vêm dos quadros mensais de Cargos Efetivos Vagos do portal de transparência do TRT-17. Não entram no denominador as vagas de Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008 (à medida que vagam, não são providos): é a mesma exclusão que o próprio tribunal aplica no total dos seus quadros. Entram no denominador as vagas marcadas como dependentes de autorização para provimento, coluna que consta apenas dos quadros de abril a outubro de 2025: continuam sendo cargos autorizados. Fevereiro e abril de 2022 e janeiro de 2024 não têm quadro publicado no portal — a razão fica vazia nesses meses, sem estimativa. A série com denominador apenas de cargos providos, usada até agosto de 2026, continua publicada em pct_proxy para comparação.",
             "art12": "Servidores da área meio ÷ (área fim + meio), excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). Faixa 20%–30% para tribunais de pequeno porte.",
             "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores, conforme Anexo IV). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
             "art7": "DESCRITIVO — distribuição da força de apoio direto de servidores (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
