@@ -67,10 +67,17 @@
       "</html>",
       "favicon.svg",
       "sgp-hub-back",
-      "firebaseConfig",
-      "equidade_racial_capacitacao_enap"
+      "Agosto/2026",
+      "Julho/2026",
+      "Apuração encerrada"
     ],
-    "must_not_contain": []
+    "must_not_contain": [
+      "firebaseConfig",
+      "onSnapshot",
+      "btn-add-mes",
+      "gstatic.com",
+      "CPF"
+    ]
   },
   "dashboard_evolucao_forca_trabalho.html": {
     "must_contain": [
