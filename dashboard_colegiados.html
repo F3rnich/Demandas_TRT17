@@ -106,8 +106,6 @@ const UAE_INIT=[
   {id:'GTCPS',     sigla:'GTCPS',     nome:'GT 7º Concurso Público para Servidores',                            uaeIds:['LEONARDO'] },
   {id:'SUBCOCANDE',sigla:'SUBCOCANDE',nome:'Subcomitê de Apoio a Candidatos com Deficiência',                   uaeIds:['NARA','RODOLFO'], multiUae:true,
    uaeNota:'UAE exercida em alternância pela SGP conforme o cargo avaliado (técnico/analista).'},
-  {id:'UMF',       sigla:'UMF',       nome:'GT de Monitoramento e Fiscalização — Trabalho Decente e Direitos Humanos', uaeIds:[],
-   uaeNota:'Ato TRT-17ª PRESI nº 72/2026 (SEI 0001321-21.2026.5.17.0500), art. 5º: SGP designada UAE. Composição exclusiva de magistrados. Publicação no DEJT prevista após 31/8/2026. Representante UAE a definir.'},
 ];
 
 const PART=[
@@ -208,10 +206,11 @@ function normCol(c){
   const ids = Array.isArray(c.uaeIds) ? c.uaeIds.filter(Boolean) : (c.uaeId ? [c.uaeId] : []);
   const o = {...c, uaeIds: ids}; delete o.uaeId; return o;
 }
-// Reconcilia o estado remoto com o catálogo UAE_INIT: injeta colegiados novos e
-// reaplica a configuração (sigla, nome, multiUae, nota), que não é editável na UI.
+// Reconcilia o estado remoto com o catálogo UAE_INIT: injeta colegiados novos,
+// remove os que saíram do catálogo, e reaplica a configuração (sigla, nome,
+// multiUae, nota), que não é editável na UI.
 function reconcile(cols){
-  const out = (cols||[]).map(normCol);
+  const out = (cols||[]).map(normCol).filter(c=>UAE_INIT.some(d=>d.id===c.id));
   const seen = new Set(out.map(c=>c.id));
   UAE_INIT.forEach(d=>{ if(!seen.has(d.id)) out.push(normCol(JSON.parse(JSON.stringify(d)))); });
   return out.map(c=>{
@@ -220,13 +219,18 @@ function reconcile(cols){
   });
 }
 function applyRemoteData(data){
-  const before = (data.cols||[]).length;
+  const beforeIds = new Set((data.cols||[]).map(c=>c.id));
   S.cols      = reconcile(data.cols);
+  const afterIds = new Set(S.cols.map(c=>c.id));
   S.lastSaved = data.savedAt?.toDate?.()?.toISOString() || null;
-  S.dirty     = S.cols.length > before;
+  const added   = [...afterIds].some(id=>!beforeIds.has(id));
+  const removed = [...beforeIds].some(id=>!afterIds.has(id));
+  S.dirty     = added || removed;
   S.remoteWhileDirty = null;
   S.syncStatus = 'synced';
-  if(S.dirty) toast('Colegiado novo do catálogo incorporado. Clique "↑ Salvar" para persistir.','#3B82F6',7000);
+  if(added && removed)  toast('Catálogo de colegiados mudou (itens adicionados e removidos). Clique "↑ Salvar" para persistir.','#3B82F6',7000);
+  else if(added)        toast('Colegiado novo do catálogo incorporado. Clique "↑ Salvar" para persistir.','#3B82F6',7000);
+  else if(removed)      toast('Colegiado removido do catálogo. Clique "↑ Salvar" para persistir.','#3B82F6',7000);
 }
 
 // Listener em tempo real
