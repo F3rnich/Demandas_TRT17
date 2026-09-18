@@ -84,8 +84,8 @@ table.dados td.num{font-family:var(--mono);text-align:right}
 <div id="a12-stats" class="fonte"></div></div></section>
 
 <section><h2>Art. 6º — Comissionamentos sobre cargos efetivos</h2>
-<p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ÷ cargos efetivos <b>autorizados</b> — os providos com lotação ativa mais os vagos, estes vindos dos quadros mensais de Cargos Efetivos Vagos do portal de transparência. A linha vermelha marca o teto de 80% do art. 6º. A linha cinza tracejada mostra o indicador por aproximação usado até agosto de 2026, que considerava apenas cargos providos e por isso superestimava a razão — era ele que impedia o veredito de conformidade.</p>
-<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC existentes) ÷ efetivos autorizados</span><span><i style="background:#8DA0AB"></i>proxy anterior (só providos)</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
+<p class="desc">Cargos em comissão (CJ) e funções comissionadas (FC) ÷ cargos efetivos <b>autorizados</b> — os providos com lotação ativa mais os vagos, estes vindos dos quadros mensais de Cargos Efetivos Vagos do portal de transparência. A linha vermelha marca o teto de 80% do art. 6º. Metodologia por aproximação (só cargos providos, sem os cedidos a outros órgãos nem as FC/CJ vagas), usada até agosto de 2026 e que superestimava a razão a ponto de nunca acusar não conformidade, foi descontinuada — ver decisoes-paineis-trt17.md, D12.</p>
+<div class="chart"><div class="leg"><span><i style="background:#003A5C"></i>% (CJ+FC existentes) ÷ efetivos autorizados</span><span><i style="background:#B3541E"></i>teto 80%</span></div><div id="c-art6"></div>
 <div class="fonte">Res. CSJT nº 296/2021, art. 6º<span id="a6-lacunas"></span></div></div>
 <div style="margin-top:14px"><p class="fonte" style="margin-bottom:4px">Numerador — CJ/FC existentes na estrutura, por nível</p><table class="dados" id="t-art6"><thead><tr><th>Nível</th><th>Existentes</th><th>Vagos</th></tr></thead><tbody></tbody></table></div>
 <div style="margin-top:14px"><p class="fonte" style="margin-bottom:4px">Denominador — cargos efetivos autorizados</p><table class="dados" id="t-art6-efet"><thead><tr><th>Categoria</th><th>Quantidade</th></tr></thead><tbody></tbody></table></div></section>
@@ -114,7 +114,7 @@ Este painel exibe exclusivamente estatísticas agregadas de estrutura e lotaçã
 </div>
 <a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
 <script>
-const C={navy:'#003A5C',teal:'#0C4A45',amber:'#D8A241',yellow:'#FFD040',mut:'#8DA0AB',line:'#D5E2E6',blue:'#1B8EC1',wine:'#8A2A3B'};
+const C={navy:'#003A5C',teal:'#0C4A45',amber:'#D8A241',yellow:'#FFD040',mut:'#8DA0AB',line:'#D5E2E6',blue:'#1B8EC1',wine:'#8A2A3B',warn:'#B3541E'};
 const fmt=n=>n==null?'—':n.toLocaleString('pt-BR');
 const fmtBRL=n=>n==null?'—':n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
@@ -247,8 +247,7 @@ function render(D){
     `área meio ${br(p.art12.n_meio)} · área fim ${br(p.art12.n_fim)} · excluídos do cálculo: T.I.C. ${br(p.art12.n_tic)}, Escola Judicial ${br(p.art12.n_ejud)}`;
   // Art. 6
   lineChart(document.getElementById('c-art6'),L,[
-      {nome:'% autorizados',cor:C.navy,vals:p.art6.pct},
-      {nome:'% só providos (proxy anterior)',cor:C.mut,vals:p.art6.pct_proxy,tracejado:true}],
+      {nome:'% autorizados',cor:C.navy,vals:p.art6.pct}],
     {min:60,max:95,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
   const lac=p.art6.vagos_meses_sem_dado||[];
   document.getElementById('a6-lacunas').textContent = lac.length
