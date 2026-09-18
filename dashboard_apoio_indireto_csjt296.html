@@ -245,11 +245,14 @@ function render(D){
     {min:10,max:35,banda:[p.art12.faixa_min,p.art12.faixa_max],fmtY:v=>Math.round(v)+'%'});
   document.getElementById('a12-stats').innerHTML=
     `área meio ${br(p.art12.n_meio)} · área fim ${br(p.art12.n_fim)} · excluídos do cálculo: T.I.C. ${br(p.art12.n_tic)}, Escola Judicial ${br(p.art12.n_ejud)}`;
-  // Art. 6
-  lineChart(document.getElementById('c-art6'),L,[
-      {nome:'% autorizados',cor:C.navy,vals:p.art6.pct}],
-    {min:60,max:95,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
-  const lac=p.art6.vagos_meses_sem_dado||[];
+  // Art. 6 -- exibe so a partir de 2022-09: antes disso a Lota Real tem uma
+  // reducao estrutural de ~93 postos CJ/FC (set/2022), gerando um patamar sem
+  // relacao com o periodo recente e forcando o eixo a abrir mao de detalhe.
+  const i6=p.refs.indexOf('2022-09'), L6=L.slice(i6>=0?i6:0);
+  lineChart(document.getElementById('c-art6'),L6,[
+      {nome:'% autorizados',cor:C.navy,vals:p.art6.pct.slice(i6>=0?i6:0)}],
+    {min:70,max:85,banda:[p.art6.teto,p.art6.teto],bandaCor:C.warn,fmtY:v=>Math.round(v)+'%'});
+  const lac=(p.art6.vagos_meses_sem_dado||[]).filter(m=>m>='2022-09');
   document.getElementById('a6-lacunas').textContent = lac.length
     ? ' · sem quadro de cargos vagos publicado em ' + lac.map(rot).join(', ')
       + ' — a razão não é calculada nesses meses'
