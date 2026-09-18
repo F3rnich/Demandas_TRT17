@@ -673,33 +673,82 @@ def main(path):
         efet = (g["TIPO_SERVIDOR"] == "Cargo efetivo").sum()
         return round(100 * g["tem_com"].sum() / efet, 2) if efet else None
 
-    # DENOMINADOR REAL do art. 6: a norma mede cargos efetivos AUTORIZADOS, que
-    # incluem os vagos. A base de pessoal so traz postos ocupados — os vagos vem
-    # dos quadros mensais do portal de transparencia (ver ler_vagos.py e
-    # cargos_vagos/LEIA-ME.md). Mes sem quadro fica None, nunca estimado.
+    # CORRECAO (18/09/2026, Leo): o art. 6 compara ESTRUTURAS, nao pessoas. Os
+    # dois lados da razao antiga contavam so quem esta la, nao o que existe.
+    # Apuracao nominal paralela pro relatorio de transicao (Res. CNJ 95/2009,
+    # processo SEI 0001357-63.2026.5.17.0500) validou em 11 e 14/09/2026:
+    #
+    # DENOMINADOR: cargo efetivo cujo titular foi removido para outro orgao
+    # ("Removido para") TAMBEM conta -- o cargo continua do quadro do TRT-17,
+    # so mudou onde a pessoa trabalha (prova: TIPO_SERVIDOR continua "Cargo
+    # efetivo" nesses casos; quem chega de outro tribunal por remocao tem
+    # TIPO_SERVIDOR = "Removido", nunca fica com o cargo aqui -- e a mesma
+    # assimetria que ja justifica excluir esse grupo de "srv" no resto do build).
+    # Em 14/09/2026: 673 providos (647 lotacao ativa + 26 cedidos) + 41 vagos = 714.
+    #
+    # NUMERADOR: entram as FC/CJ EXISTENTES na estrutura, ocupadas ou vagas --
+    # nao so as ocupadas. Contar so ocupadas permitiria ficar dentro do teto so
+    # deixando funcao sem designar. Fonte: ler_lota_real.py (planilhas "Lota
+    # Real" da SGP, unico documento que lista o posto de comissao mesmo vago).
+    # Em 11/09/2026, apuracao nominal linha a linha: 563 postos (547 ocupados =
+    # 93 CJ + 454 FC, mais 16 FC vagas: 1 FC-02, 4 FC-03, 5 FC-04, 6 FC-05; CJ
+    # sem vaga). Razao corrigida: 563/714 = 78,85% -- numero ja publicado no
+    # relatorio de transicao entregue a DIGER. O residuo de ~0,4% entre a base
+    # de pessoal e a Lota Real nos ocupados (ver ler_lota_real.py) some aqui:
+    # so o total ocupado+vago importa no numerador, nao a divisao entre eles.
     from ler_vagos import ler as _ler_vagos
+    from ler_lota_real import ler as _ler_lota_real
     _vagos = _ler_vagos()
-    _sem = [r for r in refs if r >= min(_vagos) and r not in _vagos]
+    _lota = _ler_lota_real()
+    _sem = sorted({r for r in refs if r >= min(_vagos) and r not in _vagos} |
+                  {r for r in refs if r >= min(_lota) and r not in _lota})
     if _sem:
         print(f"[aviso] art. 6: {len(_sem)} mes(es) sem quadro de cargos vagos "
-              f"({', '.join(_sem)}) — a razao real fica vazia neles.")
+              f"e/ou sem Lota Real ({', '.join(_sem)}) — a razao real fica vazia neles.")
+
+    def _cedidos(r):
+        # cargo efetivo cujo titular foi removido para outro orgao -- nota acima
+        return int(((df["ref"] == r) & REMPARA & (df["TIPO_SERVIDOR"] == "Cargo efetivo")).sum())
 
     def _a6_real(r):
         g = srv[srv["ref"] == r]
         efet = int((g["TIPO_SERVIDOR"] == "Cargo efetivo").sum())
         v = _vagos.get(r)
-        if not efet or v is None:
+        lr = _lota.get(r)
+        denom = (efet + _cedidos(r) + v["vagos"]) if v else None
+        if not denom or lr is None:
             return None
-        return round(100 * int(g["tem_com"].sum()) / (efet + v["vagos"]), 2)
+        return round(100 * lr["total_geral"] / denom, 2)
 
+    # guarda de qualidade: mesma pessoa nao pode ter dois registros de FC/CJ no
+    # mes (ver "sete guardas" do estado do build). com_u nao alimenta mais o
+    # numerador (ver NUMERADOR acima), mas o teste continua rodando, e serve de
+    # conferencia cruzada com a Lota Real logo abaixo.
     com_u = exigir_um_por_pessoa(sult[sult["tem_com"]], "p13 art. 6")
+    _lota_ult = _lota.get(ult_ref)
+    if _lota_ult is None:
+        sys.exit(f"ERRO: sem Lota Real para {ult_ref} — art. 6 sem numerador para o snapshot atual.")
+    _div = abs(len(com_u) - _lota_ult["total_ocupado"])
+    if _lota_ult["total_ocupado"] and _div / _lota_ult["total_ocupado"] > 0.01:
+        print(f"[aviso] art. 6: base de pessoal tem {len(com_u)} comissionamento(s) ocupado(s) "
+              f"em {ult_ref}, Lota Real tem {_lota_ult['total_ocupado']} — diferenca de {_div} "
+              f"(>1%), conferir.")
+
+    def _disp_para_lota(n):
+        letra, num = n.split("-")
+        return f"{letra}-{int(num):02d}"
+
     niveis = ["CJ-4", "CJ-3", "CJ-2", "CJ-1", "FC-06", "FC-05", "FC-04", "FC-03", "FC-02"]
-    _pn = [{"nivel": n, "n": int((com_u["CODIGO_COMISSAO"] == n).sum())} for n in niveis]
+    _pn = [{"nivel": n, "n": v["total"], "vago": v["vago"]}
+           for n in niveis
+           for v in [_lota_ult["niveis"].get(_disp_para_lota(n))] if v]
     _pn = [x for x in _pn if x["n"] > 0]
-    # k=5: os niveis com poucos ocupantes vao para um balde unico, como o p11 ja
+    # k=5: os niveis com poucos postos vao para um balde unico, como o p11 ja
     # faz com "Demais funcoes". Dobra em ordem crescente ate o balde chegar a
     # K_MIN — senao o balde seria ele proprio uma celula pequena, e o total
-    # publicado (n_com) o devolveria por subtracao.
+    # publicado (n_com) o devolveria por subtracao. Postos vagos nao sao dado
+    # pessoal (ninguem os ocupa), mas o balde segue a mesma regra do total pra
+    # nao destacar por subtracao um nivel que devesse ficar agregado.
     _ord = sorted(_pn, key=lambda x: x["n"])
     _balde, _fica = [], []
     for x in _ord:
@@ -710,22 +759,25 @@ def main(path):
     por_nivel = [x for x in _pn if x in _fica]
     if _balde:
         _s = sum(x["n"] for x in _balde)
+        _sv = sum(x["vago"] for x in _balde)
         if _s < K_MIN:
             sys.exit("ERRO k=%d: 'Demais níveis' ficaria com n=%d." % (K_MIN, _s))
-        por_nivel.append({"nivel": "Demais níveis (agregado)", "n": _s})
+        por_nivel.append({"nivel": "Demais níveis (agregado)", "n": _s, "vago": _sv})
     _n_efet = int((sult["TIPO_SERVIDOR"] == "Cargo efetivo").sum())
+    _n_cedidos = _cedidos(ult_ref)
     _v_ult = _vagos.get(ult_ref)
-    _n_aut = (_n_efet + _v_ult["vagos"]) if _v_ult else None
+    _n_aut = (_n_efet + _n_cedidos + _v_ult["vagos"]) if _v_ult else None
     art6 = {"pct": [_a6_real(r) for r in refs], "pct_proxy": _serS(_a6),
             "teto": 80.0, "proxy": False,
-            "pct_atual": round(100 * len(com_u) / _n_aut, 2) if _n_aut else None,
+            "pct_atual": round(100 * _lota_ult["total_geral"] / _n_aut, 2) if _n_aut else None,
             "pct_atual_proxy": _a6(sult),
-            "n_com": int(len(com_u)), "n_efet": _n_efet,
+            "n_com": _lota_ult["total_geral"], "n_com_vagos": _lota_ult["total_vago"],
+            "n_efet": _n_efet, "n_cedidos": _n_cedidos,
             "n_vagos": _v_ult["vagos"] if _v_ult else None, "n_efet_autorizados": _n_aut,
             "vagos_referencia": _v_ult["data"] if _v_ult else None,
             "vagos_desde": min(_vagos), "vagos_meses_sem_dado": _sem,
-            "n_cj": int(com_u["CODIGO_COMISSAO"].str.startswith("CJ", na=False).sum()),
-            "n_fc": int(com_u["CODIGO_COMISSAO"].str.startswith("FC", na=False).sum()),
+            "n_cj": sum(v["total"] for k, v in _lota_ult["niveis"].items() if k.startswith("CJ")),
+            "n_fc": sum(v["total"] for k, v in _lota_ult["niveis"].items() if k.startswith("FC")),
             "por_nivel": por_nivel}
 
     def _a12(g):
@@ -768,7 +820,7 @@ def main(path):
         "notas": {
             "forca": "Força de trabalho de servidores = servidores com lotação ativa no TRT-17 (exclui estagiários, servidores removidos para outros órgãos e magistrados).",
             "art5": "Fora das carreiras judiciárias federais = requisitados de outros órgãos + comissionados sem vínculo. Teto de 20% (art. 5º).",
-            "art6": "Cargos em comissão (CJ) + funções comissionadas (FC) ÷ cargos efetivos AUTORIZADOS — os providos com lotação ativa mais os vagos. Teto de 80% (art. 6º). Os cargos vagos vêm dos quadros mensais de Cargos Efetivos Vagos do portal de transparência do TRT-17. Não entram no denominador as vagas de Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008 (à medida que vagam, não são providos): é a mesma exclusão que o próprio tribunal aplica no total dos seus quadros. Entram no denominador as vagas marcadas como dependentes de autorização para provimento, coluna que consta apenas dos quadros de abril a outubro de 2025: continuam sendo cargos autorizados. Fevereiro e abril de 2022 e janeiro de 2024 não têm quadro publicado no portal — a razão fica vazia nesses meses, sem estimativa. A série com denominador apenas de cargos providos, usada até agosto de 2026, continua publicada em pct_proxy para comparação.",
+            "art6": "Cargos em comissão (CJ) e funções comissionadas (FC) EXISTENTES na estrutura — ocupados ou vagos — ÷ cargos efetivos AUTORIZADOS — providos (com lotação ativa ou cedidos a outro órgão) mais os vagos. Teto de 80% (art. 6º). O artigo compara estruturas, não pessoas: contar só ocupados/providos dos dois lados permitiria ficar dentro do teto deixando função sem designar, e deixaria de fora cargos que continuam do quadro do TRT-17 mesmo com o titular removido para outro órgão. Cargos efetivos vagos vêm dos quadros mensais de Cargos Efetivos Vagos do portal de transparência do TRT-17 (exclui Auxiliar Judiciário — Administrativa — Apoio de Serviços Diversos, cargo em extinção pela Res. CSJT 47/2008; inclui as vagas dependentes de autorização para provimento, coluna que consta só nos quadros de abril a outubro de 2025 — continuam autorizadas). CJ/FC existentes, ocupados ou vagos, vêm das planilhas mensais Lota Real da SGP. Fevereiro e abril de 2022 e janeiro de 2024 não têm quadro de vagos publicado no portal — a razão fica vazia nesses meses (e em qualquer mês sem Lota Real), sem estimativa. A metodologia anterior (só ocupados/providos nos dois lados) continua publicada em pct_proxy para comparação. Correção de 18/09/2026, Leo, validada contra apuração nominal linha a linha de 11 e 14/09/2026 usada no relatório de transição (SEI 0001357-63.2026.5.17.0500): 563 postos de CJ/FC (547 ocupados + 16 vagos) ÷ 714 cargos efetivos autorizados (673 providos + 41 vagos) = 78,85%.",
             "art12": "Servidores da área meio ÷ (área fim + meio), excluídos T.I.C. e Escola Judicial (art. 12, parágrafo único). Faixa 20%–30% para tribunais de pequeno porte.",
             "art14": "Lotação da Escola Judicial ÷ público-alvo (magistrados providos + força de servidores, conforme Anexo IV). Faixa 0,7%–1,0% para tribunais de pequeno porte (art. 14, caput, III).",
             "art7": "DESCRITIVO — distribuição da força de apoio direto de servidores (área fim) entre 1º e 2º graus. NÃO é aferição de conformidade: o art. 7º exige proporção à média de casos novos por grau, dado não presente nesta base.",
