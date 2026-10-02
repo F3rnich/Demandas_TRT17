@@ -49,8 +49,13 @@ LIXO = ("Quantitativo", "CARGOS EFETIVOS VAGOS", "Cargos efetivos vagos",
 
 
 def _texto(p):
-    r = subprocess.run(["pdftotext", "-layout", str(p), "-"],
-                       capture_output=True, text=True)
+    try:
+        r = subprocess.run(["pdftotext", "-layout", str(p), "-"],
+                           capture_output=True, text=True, encoding="utf-8")
+    except FileNotFoundError:
+        sys.exit("ERRO: 'pdftotext' (Poppler) nao esta instalado/no PATH.\n"
+                 "  Windows: winget install oschwartz10612.Poppler  (ou scoop install poppler)\n"
+                 "  Depois feche e abra o CMD e rode de novo.")
     if r.returncode != 0:
         sys.exit("ERRO: pdftotext falhou em %s: %s" % (p.name, r.stderr[:200]))
     return r.stdout

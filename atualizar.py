@@ -166,7 +166,9 @@ def rodar_build():
     titulo("2. BUILD")
     r = subprocess.run([sys.executable, "build_paineis_forca.py"],
                        capture_output=True, text=True)
-    print(r.stdout.strip() or r.stderr.strip()[-1500:])
+    print(r.stdout.strip())
+    if r.returncode != 0 and r.stderr.strip():
+        print("\n--- ERRO DO BUILD (stderr) ---\n" + r.stderr.strip()[-3000:])
     if r.returncode != 0 or not Path(JSON_NOME).exists():
         ERROS.append("O build falhou.")
         return False
