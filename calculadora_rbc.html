@@ -234,11 +234,11 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   </div>
   <div class="bloco">
     <h3>Relatórios do RH</h3>
-    <p class="muted small" style="margin:0 0 12px">Envie os PDFs exportados do sistema. A calculadora reconhece cada relatório pelo conteúdo. Se a progressão vier como imagem da tela, ela é lida por reconhecimento de texto e você confere o resultado.</p>
+    <p class="muted small" style="margin:0 0 12px">Envie os relatórios exportados do sistema (PDF, CSV, XLS ou XLSX). A calculadora reconhece cada um pelo conteúdo. Se a progressão vier como imagem da tela, ela é lida por reconhecimento de texto e você confere o resultado.</p>
     <div class="drop" id="dropRel" role="button" tabindex="0" aria-label="Escolher relatórios do RH">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI e ATS</span></div>
-      <input type="file" id="fileRel" multiple accept=".pdf" hidden>
+      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI e ATS — em PDF, CSV ou planilha</span></div>
+      <input type="file" id="fileRel" multiple accept=".pdf,.csv,.txt,.xls,.xlsx,.ods" hidden>
     </div>
     <ul class="arqs" id="filesRel"></ul>
     <div id="relTabelas" style="margin-top:12px"></div>
@@ -1140,7 +1140,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
 (function (root) {
   'use strict';
   const DT = /(\d{2})\/(\d{2})\/(\d{4})/g;
-  const isoBR = s => { const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(s); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
+  const isoBR = s => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null; };
   const datas = s => [...s.matchAll(DT)].map(m => `${m[3]}-${m[2]}-${m[1]}`).filter(d => d > '1902');
 
   function linhas(pages) {
@@ -1216,7 +1216,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     }
     return out;
   }
-  const DT1 = /^\d{2}\/\d{2}\/\d{4}$/;
+  const DT1 = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
   function colunaDe(txt) {
     const t = txt.toUpperCase();
     if (/REVOGA/.test(t)) return 'revog';
@@ -1230,55 +1230,136 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     if (/SITUA/.test(t)) return 'situacao';
     return 'outro';
   }
+  // divide um item de texto em palavras, estimando a posição x de cada uma (o PDF pode juntar células num item só)
+  function tokens(l) {
+    const out = [];
+    for (const t of l) {
+      const w = 2 * (t.c - t.x), n = t.s.length || 1;
+      const re = /\S+/g; let m;
+      while ((m = re.exec(t.s))) { const x = t.x + w * m.index / n, ww = w * m[0].length / n; out.push({ s: m[0], x, c: x + ww / 2 }); }
+    }
+    return out;
+  }
+  const temData = l => l.some(t => /\d{1,2}\/\d{1,2}\/\d{4}/.test(t.s));
   function parseProgressao(pages) {
     const L = linhasItens(pages);
-    const iDado = L.findIndex(l => l.length && DT1.test(l[0].s));
-    if (iDado < 0) return [];
-    // cabeçalho: linhas com texto logo acima da primeira linha de dados (até 3), agrupadas por coluna (centro em x)
-    const cab = [];
-    for (let i = iDado - 1; i >= 0 && i >= iDado - 3; i--) {
-      if (!L[i].some(t => /[A-Za-zÀ-ú]/.test(t.s)) || L[i].some(t => DT1.test(t.s))) break;
-      for (const t of L[i]) cab.push(t);
-    }
+    // cabeçalho: a linha que tem "Classe" e "Padrão" (e até duas linhas sem data logo acima ou abaixo, para rótulos em 2 linhas)
+    const txt = l => l.map(t => t.s).join(' ').toUpperCase();
+    const iCab = L.findIndex(l => /CLASSE/.test(txt(l)) && /PADR/.test(txt(l)));
+    if (iCab < 0) return parseProgressaoRegex(pages);
+    const cab = [...L[iCab]];
+    for (const d of [-1, -2, 1]) { const l = L[iCab + d]; if (!l || temData(l) || !l.some(t => /[A-Za-zÀ-ú]/.test(t.s))) { if (d < 0) continue; else break; } cab.push(...l); }
     const grupos = [];
     for (const t of cab.sort((a, b) => a.c - b.c)) {
-      const g = grupos.find(g => Math.abs(g.c - t.c) < 22 || (t.x >= g.x0 - 4 && t.x <= g.x1 + 4));
+      const g = grupos.find(g => Math.abs(g.c - t.c) < 18 || (t.c >= g.x0 && t.c <= g.x1));
       if (g) { g.txt.push(t); g.x0 = Math.min(g.x0, t.x); g.x1 = Math.max(g.x1, t.x + 2 * (t.c - t.x)); g.c = (g.x0 + g.x1) / 2; }
       else grupos.push({ c: t.c, x0: t.x, x1: t.x + 2 * (t.c - t.x), txt: [t] });
     }
-    for (const g of grupos) g.col = colunaDe(g.txt.map(t => t.s).join(' '));
-    const temCab = grupos.some(g => g.col === 'ini') && grupos.some(g => g.col === 'classe');
-    if (!temCab) return parseProgressaoRegex(pages);
+    for (const g of grupos) g.col = colunaDe(g.txt.sort((a, b) => a.x - b.x).map(t => t.s).join(' '));
+    if (!grupos.some(g => g.col === 'classe')) return parseProgressaoRegex(pages);
     const out = [];
-    for (let i = iDado; i < L.length; i++) {
-      const l = L[i]; if (!l.length || !DT1.test(l[0].s)) continue;
+    for (let i = iCab + 1; i < L.length; i++) {
+      const tk = tokens(L[i]); if (!tk.some(t => DT1.test(t.s))) continue;
       const v = {};
-      for (const t of l) {
-        let best = null, bd = 1e9; for (const g of grupos) { const d = Math.abs(g.c - t.c); if (d < bd) { bd = d; best = g; } }
-        // tokens com várias palavras (ex.: "C 15") ficam juntos; separa data no início
+      for (const t of tk) {
+        let best = null, bd = 1e9; for (const g of grupos) { const d = t.c < g.x0 ? g.x0 - t.c : t.c > g.x1 ? t.c - g.x1 : 0; const dd = d * 1000 + Math.abs(g.c - t.c); if (dd < bd) { bd = dd; best = g; } }
         (v[best.col] = v[best.col] || []).push(t.s);
       }
       const j = k => (v[k] || []).join(' ').trim();
-      const ini = isoBR(j('ini') || l[0].s), fim = j('fim') ? isoBR(j('fim')) : null;
+      const dt = k => { const m = /\d{1,2}\/\d{1,2}\/\d{4}/.exec(j(k)); return m ? isoBR(m[0]) : null; };
+      const ini = dt('ini') || isoBR(tk.find(t => DT1.test(t.s)).s), fim = dt('fim');
       let classe = j('classe'), padrao = j('padrao');
       if (!padrao && /\s/.test(classe)) { const m = /^(.*\S)\s+(\S+)$/.exec(classe); classe = m[1]; padrao = m[2]; }
+      if (!classe && /\s/.test(padrao)) { const m = /^(\S+)\s+(.*)$/.exec(padrao); classe = m[1]; padrao = m[2]; }
       const sit = j('situacao').toUpperCase();
-      const revogada = !!(j('revog') && isoBR(j('revog'))) || /REVOG|CANCEL|INV[AÁ]LID|ANULAD|SEM EFEITO/.test(sit);
+      const revogada = !!dt('revog') || /REVOG|CANCEL|INV[AÁ]LID|ANULAD|SEM EFEITO|TORNAD/.test(sit);
       if (!ini || !classe) continue;
       out.push({ ini, fim, revogada, classe: classe.toUpperCase().replace(/\s*-\s*/, '-'), padrao: padrao.toUpperCase(), tipo: j('tipo') });
     }
-    return out.sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0);
+    return out.length ? out.sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0) : parseProgressaoRegex(pages);
   }
+
+  // ---------------------------------------------------------------- relatórios em planilha (CSV, XLS, XLSX)
+  // rows: matriz de células (texto). Reconhece o cabeçalho pelos nomes das colunas e o tipo pelo cabeçalho e pelo nome do arquivo.
+  const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+  function dataCel(v) {
+    const s = String(v == null ? '' : v).trim(); let m;
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(s))) { const y = m[3].length === 2 ? ((+m[3] < 50 ? '20' : '19') + m[3]) : m[3]; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s))) return `${m[1]}-${m[2]}-${m[3]}`;
+    if (/^\d{4,5}(\.\d+)?$/.test(s) && +s > 20000 && +s < 80000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(+s) * 864e5); return d.toISOString().slice(0, 10); }
+    return null;
+  }
+  function tabelaRelatorio(rows, nomeArq) {
+    const nome = norm(nomeArq);
+    let iH = -1, H = null;
+    for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      const h = rows[i].map(norm); const t = h.join(' | ');
+      const k = [/CLASSE/, /PADR/, /FUN[CÇ]/, /DESIGNA|NOMEA/, /DISPENSA|EXONERA/, /INCORPORA|QUINTOS|DECIMOS|FRACAO/, /ANUENIO|PERCENTUAL/, /SUBSTITU/, /MUDANCA|ALTERACAO|INICIO|VIGENCIA|CONCESSAO/, /FIM|TERMINO/].filter(r => r.test(t)).length;
+      if (k >= 2) { iH = i; H = h; break; }
+    }
+    if (iH < 0) return { tipo: null, rows: [] };
+    const ht = H.join(' | ');
+    const tipo = (/CLASSE/.test(ht) && /PADR/.test(ht)) || /PROGRESS|ENQUADRA/.test(nome) ? 'PROGRESSAO'
+      : /SUBSTITU/.test(ht) || /SUBSTITU/.test(nome) ? 'SUBSTITUICOES'
+      : /INCORPORA|QUINTOS|DECIMOS|FRACAO|VPNI/.test(ht) || /VPNI|QUINTOS|DECIMOS/.test(nome) ? 'VPNI'
+      : /ANUENIO|PERCENTUAL ACUM|ADICIONAL POR TEMPO/.test(ht) || /\bATS\b|ANUENIO/.test(nome) ? 'ATS'
+      : /FUN[CÇ]|COMISS/.test(ht) || /FUNC/.test(nome) ? 'FUNCOES' : null;
+    const col = (...res) => H.findIndex(h => h && res.some(r => r.test(h)));
+    const cIni = col(/MUDANCA/, /DATA DA ALTERACAO|DT\.? ALTERACAO$/, /INICIO|INICIAL|DESIGNA|NOMEA|CONCESSAO|VIGENCIA|A PARTIR/, /^DATA$/);
+    const cFim = col(/FIM|FINAL|TERMINO|DISPENSA|EXONERA/), cRev = col(/REVOGA/), cSit = col(/SITUA/);
+    const cCl = col(/^CLASSE/), cPd = col(/PADR/), cPct = col(/PERCENTUAL ACUM|ACUMULADO/, /PERCENTUAL|%/);
+    const out = [];
+    for (const r of rows.slice(iH + 1)) {
+      const cel = i => i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '';
+      const linha = r.map(x => String(x == null ? '' : x)).join(' ');
+      const ini = dataCel(cel(cIni)) || (r.map(dataCel).find(Boolean) || null); if (!ini) continue;
+      const fim = dataCel(cel(cFim));
+      if (tipo === 'PROGRESSAO') {
+        let classe = cel(cCl), padrao = cel(cPd); if (!classe) continue;
+        const revogada = !!dataCel(cel(cRev)) || /REVOG|CANCEL|INV[AÁ]LID|ANULAD|SEM EFEITO/i.test(cel(cSit));
+        out.push({ ini, fim, revogada, classe: classe.toUpperCase().replace(/\s*-\s*/, '-'), padrao: padrao.toUpperCase() });
+      } else if (tipo === 'FUNCOES' || tipo === 'SUBSTITUICOES') {
+        const m = /\b((?:FC|CJ|DAS)\s*-?\s*\d+)\b/i.exec(linha); if (!m) continue;
+        const cod = m[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?(\d)$/, '$1-0$2').replace(/^(FC|CJ|DAS)(\d)/, '$1-$2');
+        const cNome = col(/DESCRI|DENOMINA|^FUNCAO$|NOME DA FUN/);
+        out.push({ cod, nome: cNome >= 0 ? cel(cNome) : '', ini, fim });
+      } else if (tipo === 'VPNI') {
+        const m = /\b((?:FC|CJ|DAS)\s*-?\s*\d+)\b/i.exec(linha); if (!m) continue;
+        if (/\bSIM\b/i.test(cel(col(/PERDA/)))) continue;
+        out.push({ cod: m[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)(\d)/, '$1-$2'), tipo: /QUINT/i.test(linha) ? 'QUINTOS' : 'DECIMOS', natureza: /JUDIC/i.test(linha) ? 'JUDICIAL' : 'ADMINISTRATIVA', ini, fim });
+      } else if (tipo === 'ATS') {
+        const pct = parseFloat(String(cel(cPct)).replace('%', '').replace(',', '.')); if (!isFinite(pct)) continue;
+        out.push({ ini, pct });
+      }
+    }
+    return { tipo, rows: out.sort((a, b) => a.ini < b.ini ? -1 : 1) };
+  }
+  // CSV: separador detectado (; , tab) e aspas
+  function lerCSV(texto) {
+    const linha1 = texto.split(/\r?\n/).find(l => l.trim()) || '';
+    const sep = [';', '\t', ','].sort((a, b) => linha1.split(b).length - linha1.split(a).length)[0];
+    const rows = []; let row = [], cur = '', q = false;
+    for (let i = 0; i < texto.length; i++) {
+      const ch = texto[i];
+      if (q) { if (ch === '"') { if (texto[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; continue; }
+      if (ch === '"') q = true; else if (ch === sep) { row.push(cur); cur = ''; } else if (ch === '\n') { row.push(cur.replace(/\r$/, '')); rows.push(row); row = []; cur = ''; } else cur += ch;
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
   // formato antigo, sem cabeçalho identificável
   function parseProgressaoRegex(pages) {
     const out = [];
     for (const l of linhas(pages)) {
-      const m = /(\d{2}\/\d{2}\/\d{4})(?:\s+(\d{2}\/\d{2}\/\d{4}))?(?:\s+(\d{2}\/\d{2}\/\d{4}))?\s+((?:N[ISA]-)?[A-D])\s+([IVX]+|\d{1,2})\b/.exec(l);
-      if (!m) continue;
-      out.push({ ini: isoBR(m[1]), fim: m[2] ? isoBR(m[2]) : null, revogada: !!m[3], classe: m[4], padrao: m[5] });
+      const m = /^\D{0,40}?(\d{1,2}\/\d{1,2}\/\d{4})(?:\s+(\d{1,2}\/\d{1,2}\/\d{4}))?/.exec(l); if (!m) continue;
+      const resto = l.slice(m.index + m[0].length);
+      const cp = /(?:^|\s)((?:N[ISA]\s*-\s*)?[A-D]|N[ASI])\s*-?\s*([IVX]{1,3}|\d{1,2})(?=\s|$)/.exec(resto); if (!cp) continue;
+      out.push({ ini: isoBR(m[1]), fim: m[2] ? isoBR(m[2]) : null, revogada: /REVOG|CANCEL|INV[AÁ]LID/i.test(resto), classe: cp[1].replace(/\s/g, '').toUpperCase(), padrao: cp[2].toUpperCase() });
     }
     return out.sort((a, b) => a.ini < b.ini ? -1 : 1);
   }
+
 
   // progressão lida por OCR (relatório em imagem): datas confiáveis, classe/padrão só como pista
   function parseProgressaoTexto(texto) {
@@ -1323,7 +1404,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     return [...out.values()].sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : (a.revogada ? -1 : 1));
   }
 
-  const api = { parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
+  const api = { tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBCRelatorios = api;
 })(typeof self !== 'undefined' ? self : this);
 
@@ -1492,10 +1573,19 @@ async function lerRelatorios(list){
   for(const f of fila){
     const info={nome:f.name,tipo:null,n:0,erro:'',st:'lendo',msg:'Lendo…'}; S.relArqs.push(info); renderArqRel();
     try{
-      if(!/\.pdf$/i.test(f.name)) throw new Error('Envie o relatório em PDF, como exportado do sistema.');
+      let tipo, rows;
+      if(/\.(csv|txt|xlsx?|ods)$/i.test(f.name)){
+        // planilha ou CSV exportado do sistema de RH: colunas reconhecidas pelo cabeçalho
+        const buf=await f.arrayBuffer(); let m2;
+        if(/\.(csv|txt)$/i.test(f.name)){ let t=new TextDecoder('utf-8').decode(buf); if(t.includes('\uFFFD')) t=new TextDecoder('windows-1252').decode(buf); m2=RR.lerCSV(t); }
+        else { const wb=XLSX.read(buf,{type:'array',cellDates:false}); m2=[]; for(const n of wb.SheetNames){ m2=m2.concat(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,dateNF:'dd/mm/yyyy',defval:''})); } }
+        const r=RR.tabelaRelatorio(m2,f.name); tipo=r.tipo;
+        if(!tipo) throw new Error('Planilha não reconhecida: confira se a primeira linha tem os nomes das colunas (ex.: Dt. Mudança, Data Fim, Classe, Padrão).');
+        rows=r.rows.map(o=>Object.assign({},o,{fim:o.fim||''},tipo==='PROGRESSAO'?{origem:'relatorio'}:{}));
+      } else {
+      if(!/\.pdf$/i.test(f.name)) throw new Error('Formato não aceito. Envie PDF, CSV, XLS ou XLSX.');
       const {doc,pages}=await pdfDoc(await f.arrayBuffer());
       const chars=pages.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.str.trim().length,0),0);
-      let tipo, rows;
       if(chars<30){
         tipo='PROGRESSAO'; info.ocr=true;
         rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel();})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
@@ -1506,9 +1596,10 @@ async function lerRelatorios(list){
         const fn={FUNCOES:RR.parseFuncoes,SUBSTITUICOES:RR.parseFuncoes,VPNI:RR.parseVPNI,ATS:RR.parseATS,PROGRESSAO:RR.parseProgressao}[tipo];
         rows=fn(pages).map(r=>{ const o=Object.assign({},r); delete o.perda; delete o.concedido; if(!o.fim) o.fim=''; if(tipo==='PROGRESSAO') o.origem='relatorio'; if(tipo==='SUBSTITUICOES') delete o.nome; return o; });
       }
+      }
       S.relArqs=S.relArqs.filter(a=>a===info||a.tipo!==tipo);
       info.tipo=tipo; info.n=rows.length; S.rel[tipo]=rows;
-      if(!rows.length) info.erro='Nenhuma linha encontrada. Preencha a tabela abaixo.';
+      if(!rows.length) info.erro='Nenhuma linha encontrada. Preencha a tabela abaixo ou envie o mesmo relatório em CSV/XLSX.';
       if(tipo==='SUBSTITUICOES') info.msgFim='formato ainda não testado: confira as linhas';
     }catch(e){ console.error(e); info.erro=e.message||String(e); }
     info.st='ok'; renderArqRel();
