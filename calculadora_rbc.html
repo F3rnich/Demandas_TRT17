@@ -1202,16 +1202,82 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     }
     return out.sort((a, b) => a.ini < b.ini ? -1 : 1);
   }
-  // progressão: quando o relatório vier com texto (data inicial, data final, revogação, classe, padrão)
+  // progressão com texto: as colunas são identificadas pelo cabeçalho (posição x), porque o relatório traz várias datas
+  // por linha (mudança, fim, publicação e alteração do ato). Formatos vistos:
+  //  - "Dt. Mudança | Data Fim | Nº Ato Public. | Dt. Ato Public. | Nº do Ato Alteração | Dt. Ato Alteração | Nº de Protocolo | Classe | Padrão | Tipo | Situação"
+  //  - "Data da Alteração | Data Fim Alteração | Data da Revogação | Classe | Padrão | Nível da Referência | Tipo do Documento | Nº Documento | Data Documento"
+  function linhasItens(pages) {
+    const out = [];
+    for (const pg of pages) {
+      const its = pg.items.filter(i => i.str && i.str.trim()).sort((a, b) => a.y - b.y || a.x - b.x);
+      const ls = [];
+      for (const it of its) { const l = ls[ls.length - 1]; if (l && Math.abs(l.y - it.y) <= 2.5) l.t.push(it); else ls.push({ y: it.y, t: [it] }); }
+      for (const l of ls) { l.t.sort((a, b) => a.x - b.x); out.push(l.t.map(i => ({ s: i.str.trim(), x: i.x, c: i.x + (i.w || i.str.length * 4) / 2 }))); }
+    }
+    return out;
+  }
+  const DT1 = /^\d{2}\/\d{2}\/\d{4}$/;
+  function colunaDe(txt) {
+    const t = txt.toUpperCase();
+    if (/REVOGA/.test(t)) return 'revog';
+    if (/FIM/.test(t)) return 'fim';
+    if (/\bATO\b|PROTOCOLO|PUBLIC|DOCUMENTO|N[ºO°]\.?\s/.test(t)) return 'outro';
+    if (/MUDAN|ALTERA|IN[IÍ]CIO|VIG[EÊ]NCIA/.test(t)) return 'ini';
+    if (/^CLASSE/.test(t)) return 'classe';
+    if (/PADR/.test(t)) return 'padrao';
+    if (/N[IÍ]VEL/.test(t)) return 'nivel';
+    if (/^TIPO/.test(t)) return 'tipo';
+    if (/SITUA/.test(t)) return 'situacao';
+    return 'outro';
+  }
   function parseProgressao(pages) {
+    const L = linhasItens(pages);
+    const iDado = L.findIndex(l => l.length && DT1.test(l[0].s));
+    if (iDado < 0) return [];
+    // cabeçalho: linhas com texto logo acima da primeira linha de dados (até 3), agrupadas por coluna (centro em x)
+    const cab = [];
+    for (let i = iDado - 1; i >= 0 && i >= iDado - 3; i--) {
+      if (!L[i].some(t => /[A-Za-zÀ-ú]/.test(t.s)) || L[i].some(t => DT1.test(t.s))) break;
+      for (const t of L[i]) cab.push(t);
+    }
+    const grupos = [];
+    for (const t of cab.sort((a, b) => a.c - b.c)) {
+      const g = grupos.find(g => Math.abs(g.c - t.c) < 22 || (t.x >= g.x0 - 4 && t.x <= g.x1 + 4));
+      if (g) { g.txt.push(t); g.x0 = Math.min(g.x0, t.x); g.x1 = Math.max(g.x1, t.x + 2 * (t.c - t.x)); g.c = (g.x0 + g.x1) / 2; }
+      else grupos.push({ c: t.c, x0: t.x, x1: t.x + 2 * (t.c - t.x), txt: [t] });
+    }
+    for (const g of grupos) g.col = colunaDe(g.txt.map(t => t.s).join(' '));
+    const temCab = grupos.some(g => g.col === 'ini') && grupos.some(g => g.col === 'classe');
+    if (!temCab) return parseProgressaoRegex(pages);
+    const out = [];
+    for (let i = iDado; i < L.length; i++) {
+      const l = L[i]; if (!l.length || !DT1.test(l[0].s)) continue;
+      const v = {};
+      for (const t of l) {
+        let best = null, bd = 1e9; for (const g of grupos) { const d = Math.abs(g.c - t.c); if (d < bd) { bd = d; best = g; } }
+        // tokens com várias palavras (ex.: "C 15") ficam juntos; separa data no início
+        (v[best.col] = v[best.col] || []).push(t.s);
+      }
+      const j = k => (v[k] || []).join(' ').trim();
+      const ini = isoBR(j('ini') || l[0].s), fim = j('fim') ? isoBR(j('fim')) : null;
+      let classe = j('classe'), padrao = j('padrao');
+      if (!padrao && /\s/.test(classe)) { const m = /^(.*\S)\s+(\S+)$/.exec(classe); classe = m[1]; padrao = m[2]; }
+      const sit = j('situacao').toUpperCase();
+      const revogada = !!(j('revog') && isoBR(j('revog'))) || /REVOG|CANCEL|INV[AÁ]LID|ANULAD|SEM EFEITO/.test(sit);
+      if (!ini || !classe) continue;
+      out.push({ ini, fim, revogada, classe: classe.toUpperCase().replace(/\s*-\s*/, '-'), padrao: padrao.toUpperCase(), tipo: j('tipo') });
+    }
+    return out.sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0);
+  }
+  // formato antigo, sem cabeçalho identificável
+  function parseProgressaoRegex(pages) {
     const out = [];
     for (const l of linhas(pages)) {
-      const ds = [...l.matchAll(DT)]; if (!ds.length) continue;
       const m = /(\d{2}\/\d{2}\/\d{4})(?:\s+(\d{2}\/\d{2}\/\d{4}))?(?:\s+(\d{2}\/\d{2}\/\d{4}))?\s+((?:N[ISA]-)?[A-D])\s+([IVX]+|\d{1,2})\b/.exec(l);
       if (!m) continue;
       out.push({ ini: isoBR(m[1]), fim: m[2] ? isoBR(m[2]) : null, revogada: !!m[3], classe: m[4], padrao: m[5] });
     }
-    return out.filter(p => !p.revogada).sort((a, b) => a.ini < b.ini ? -1 : 1);
+    return out.sort((a, b) => a.ini < b.ini ? -1 : 1);
   }
 
   // progressão lida por OCR (relatório em imagem): datas confiáveis, classe/padrão só como pista
@@ -1541,6 +1607,14 @@ function aplicarTabelaAntiga(){
     l.vFicha=l.v; l.v=v; l.total=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); l.daTabela=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
+  // mês de ingresso ou de desligamento sem ficha (ex.: posse em 30/06, primeira ficha em julho): o proporcional costuma vir
+  // na folha seguinte; se nada foi ligado ao mês, a RBC usa a tabela pelos dias de exercício
+  const ls=S.res.linhas, bordas=[ls[0],ls[ls.length-1]];
+  for(const l of bordas){
+    if(!l||l.fonte||l.daTabela||Math.abs(l.total)>0.005) continue; const e=S.espBy[l.comp]; if(!e) continue;
+    l.v=Object.assign({},e.inc); l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.borda=true;
+    l.pssCalc=RBC.pssDevida(l.total,l.comp);
+  }
 }
 // ------------------------------------------------------------ benefício especial (Lei 12.618/2012, art. 3º, § 2º)
 // Base = remuneração que serviu de base a contribuição efetivamente mantida, desde 07/1994. Períodos com contribuição
@@ -1603,7 +1677,7 @@ function contagens(){
   const parc=[]; for(const l of R.log) if(l.tipo==='retroativo') for(const a of l.aloc) if(a.fracao<1&&vale(a.comp)) parc.push({cat:l.cat,pagoEm:l.pagoEm,...a});
   const anos=anosConf(R); const sit={};
   for(const l of R.linhas){ const a=anos[l.comp.slice(0,4)];
-    sit[l.comp]= !l.fonte?'none' : !l.conferir?'nv' : Math.abs(l.dif)<=0.5?'ok' : (a.ok?'comp':'att'); }
+    sit[l.comp]= (!l.fonte&&(l===R.linhas[0]||l===R.linhas[R.linhas.length-1]))?'nv' : !l.fonte?'none' : !l.conferir?'nv' : Math.abs(l.dif)<=0.5?'ok' : (a.ok?'comp':'att'); }
   const lv=Object.values(anos).filter(a=>a.verif);
   const cmp=S.cmp||[]; const divMes=new Set(cmp.filter(m=>m.itens.length).map(m=>m.comp));
   return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]&&vale(p.comp)), pendTodos:R.pend, parc, sit, anos, divMes,
@@ -1675,10 +1749,14 @@ function renderArquivos(){
 function faixas(lista){ const fx=[]; for(const k of [...lista].sort()){ const u=fx[fx.length-1]; if(u && RBC.addM(u[1],1)===k) u[1]=k; else fx.push([k,k]); } return fx.map(f=>f[0]===f[1]?mesTxt(f[0]):mesTxt(f[0])+' a '+mesTxt(f[1])).join(', '); }
 function renderCobertura(){
   const el=$('cobertura'); if(!S.res){ el.innerHTML=S.recs.length?'<div class="aviso att"><span class="ic">!</span><div>Confira as datas de ingresso e desligamento na etapa 1.</div></div>':''; return; }
-  const sem=S.res.linhas.filter(l=>!l.fonte&&!l.daTabela).map(l=>l.comp), tab=S.res.linhas.filter(l=>!l.fonte&&l.daTabela).map(l=>l.comp);
-  el.innerHTML = (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração, como nos demais meses anteriores a 07/1994. Função e substituição sem tabela precisam ser lançadas na etapa 3.</div></div>`:'') + (sem.length
-    ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${sem.length} mês(es): <b>${faixas(sem)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
-    : tab.length?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
+  const ls=S.res.linhas, ehBorda=l=>l===ls[0]||l===ls[ls.length-1];
+  // mês de ingresso/desligamento sem ficha, mas com valor ligado a ele (atrasado da folha seguinte), não é falta de ficha
+  const sem=ls.filter(l=>!l.fonte&&!l.daTabela&&!(ehBorda(l)&&Math.abs(l.total)>0.005)).map(l=>l.comp);
+  const tab=ls.filter(l=>!l.fonte&&l.daTabela&&!l.borda).map(l=>l.comp), borda=ls.filter(l=>!l.fonte&&(l.borda||(ehBorda(l)&&!l.daTabela&&Math.abs(l.total)>0.005)));
+  const semBorda=sem.filter(k=>ehBorda(ls.find(l=>l.comp===k))), semMeio=sem.filter(k=>!semBorda.includes(k));
+  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês na etapa 4.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração, como nos demais meses anteriores a 07/1994. Função e substituição sem tabela precisam ser lançadas na etapa 3.</div></div>`:'') + (semMeio.length
+    ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${semMeio.length} mês(es): <b>${faixas(semMeio)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
+    : (tab.length||borda.length||semBorda.length)?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
 }
 const OPC_CAT = ['VB','GAJ','ATS','VPI','VPNI','VPNI_JUD','FC','SUBST','AQ','AQ_TREIN','GAE','GAS','APJ','DIF2886','GEXTRA','REDUTOR','V1323_VB','V1323_GAJ','V1323_ATS','V1323_VPNI','V1323_FC','VPI_DED','FALTAS','V1198','PSS','GN','PASSIVO','IGNORAR','CLASSIFICAR'];
 const catSelect = (k,sel) => `<select data-k="${esc(k)}" aria-label="Categoria">${OPC_CAT.map(c=>`<option value="${c}"${c===sel?' selected':''}>${esc(c==='CLASSIFICAR'?'— escolha —':nome(c))}</option>`).join('')}</select>`;
