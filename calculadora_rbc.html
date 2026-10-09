@@ -319,7 +319,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px;align-items:center">
       <label class="chk"><input type="checkbox" id="r_gas"> GAS conta na RBC <span class="dica">(não é base de contribuição)</span></label>
-      <label class="chk"><input type="checkbox" id="r_aqTrein"> AQ-Treinamento conta na RBC</label>
+      <label class="chk">AQ-Treinamento na RBC <select id="r_aqTrein" style="width:auto;height:36px"><option value="ficha">conforme a ficha</option><option value="sim">sempre</option><option value="nao">nunca</option></select></label>
       <label class="chk"><input type="checkbox" id="r_descontarFaltas"> Descontar faltas</label>
       <label class="chk"><input type="checkbox" id="r_teto"> Contribuição limitada ao teto do INSS</label>
       <button class="btn link" id="r_reset">Voltar ao padrão</button>
@@ -543,7 +543,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
    */
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
-  const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: true, conferirDesde: '2002-01', teto: false,
+  const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: 'ficha', conferirDesde: '2002-01', teto: false,
     ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06' };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
@@ -701,7 +701,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     const incide = (c, k) => {
       if (c === 'FC' || c === 'SUBST' || c === 'V1323_FC') return k <= regras.fcAte;
       if (c === 'ATS' || c === 'V1323_ATS') return k >= regras.atsDesde;
-      if (c === 'AQ_TREIN') return !!regras.aqTrein;
+      if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? 'ficha' : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas;
       if (c === 'FALTAS') return regras.descontarFaltas !== false;
       if (c === 'V1198') return !em1198(k);
@@ -710,12 +710,28 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     const linhas = [];
     for (const k of meses) {
       const v = {}; let tot = 0;
-      for (const c of REMUN) { const x = r2(g(k, c)); if (Math.abs(x) >= 0.005 && incide(c, k)) { v[c] = x; tot += x; } }
+      for (const c of REMUN) { const x = r2(g(k, c)); if (Math.abs(x) >= 0.005 && incide(c, k) === true) { v[c] = x; tot += x; } }
       const atsPct = v.ATS && v.VB ? Math.round(v.ATS / v.VB * 1000) / 1000 : null;
       const ref = (opts.refs && opts.refs[k]) || inferirRef(opts.tabela, k, g(k, 'VB'));
       const alocs = log.filter(l => l.aloc && l.aloc.some(a => a.comp === k && a.fracao < 1));
       const bruto = {}; for (const c of REMUN) { const x = r2(g(k, c)); if (Math.abs(x) >= 0.005) bruto[c] = x; }
       linhas.push({ comp: k, ref, v, bruto, atsPct, total: r2(tot), pssFicha: r2(pss[k] || 0), fonte: fontes[k] || '', parcialInferido: alocs.map(l => ({ cat: l.cat, ...l.aloc.find(a => a.comp === k) })) });
+    }
+    // 5b) AQ-Treinamento "pela ficha" (decisão DIPROF, 09/10/2026): entra na base no ano em que a contribuição descontada
+    // mostra que houve desconto sobre ele (ano a ano, para absorver atrasados); sem ficha conferível, fica fora
+    const aqTreinAnos = {};
+    if (regras.aqTrein === 'ficha') {
+      for (const y of [...new Set(meses.map(k => k.slice(0, 4)))]) {
+        const ls = linhas.filter(l => l.comp.startsWith(y) && l.fonte && l.comp >= regras.conferirDesde);
+        const at = ls.filter(l => Math.abs(g(l.comp, 'AQ_TREIN')) >= 0.005); if (!at.length) continue;
+        const f = ls.reduce((a, l) => a + l.pssFicha, 0);
+        const sem = ls.reduce((a, l) => a + pssDevida(l.total, l.comp, regras.teto), 0);
+        const com = ls.reduce((a, l) => a + pssDevida(l.total + r2(g(l.comp, 'AQ_TREIN')), l.comp, regras.teto), 0);
+        // entra se, com ele, a diferença do ano diminui e o resíduo fica abaixo de metade da contribuição sobre o AQ-Treinamento
+        // (ou de R$ 5); na dúvida, fica fora
+        aqTreinAnos[y] = Math.abs(f - com) < Math.abs(f - sem) && Math.abs(f - com) <= Math.max(5, 0.5 * (com - sem));
+      }
+      for (const l of linhas) if (aqTreinAnos[l.comp.slice(0, 4)]) { const x = r2(g(l.comp, 'AQ_TREIN')); if (Math.abs(x) >= 0.005) { l.v.AQ_TREIN = x; l.total = r2(l.total + x); } }
     }
     // 6) gratificação natalina
     const gns = [];
@@ -749,7 +765,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     const ehTratado = p => tratados.has(p.id) || (opts.manual || []).some(m => m.cat === p.cat && m.valor && Math.abs(m.valor - p.valor) < 0.01);
     const pendInc = pend.filter(p => incide(p.cat, p.comp) && !ehTratado(p));
     const logInc = log.filter(l => l.aloc && l.aloc.some(a => incide(l.cat, a.comp)));
-    return { meses, linhas, gns, log: logInc, pend: pendInc, pendNaoIncidentes: pend.filter(p => !incide(p.cat, p.comp)), passivos, porAno, resumo: { pssFicha: r2(acF), pssCalc: r2(acC), dif: r2(acF - acC) }, regras };
+    return { aqTreinAnos, meses, linhas, gns, log: logInc, pend: pendInc, pendNaoIncidentes: pend.filter(p => !incide(p.cat, p.comp)), passivos, porAno, resumo: { pssFicha: r2(acF), pssCalc: r2(acC), dif: r2(acF - acC) }, regras };
   }
 
   function inferirRef(tabela, k, vb) {
@@ -950,7 +966,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     const incide = (c, k) => {
       if (c === 'FC' || c === 'SUBST') return k <= regras.fcAte;
       if (c === 'ATS') return k >= regras.atsDesde;
-      if (c === 'AQ_TREIN') return !!regras.aqTrein;
+      if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? !!(regras.aqTreinAnos && regras.aqTreinAnos[k.slice(0, 4)]) : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas;
       if (c === 'VPNI_JUD_SEM_PSS') return false;
       return true;
@@ -1273,9 +1289,10 @@ const CURTO = { VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ'
 const nome = c => NOME[c] || RBC.CAT[c] || c;
 
 // ------------------------------------------------------------ regras
-function setRegras(r){ for (const k of REGRA_IDS){ const el=$('r_'+k); if(el.type==='checkbox') el.checked=!!r[k]; else el.value = r[k]==null?'':r[k]; } }
+function setRegras(r){ for (const k of REGRA_IDS){ const el=$('r_'+k); if(el.type==='checkbox') el.checked=!!r[k]; else if(k==='aqTrein') el.value = r[k]==='ficha'?'ficha':r[k]?'sim':'nao'; else el.value = r[k]==null?'':r[k]; } }
 function getRegras(){
   const r={}; for (const k of REGRA_IDS){ const el=$('r_'+k); r[k] = el.type==='checkbox' ? el.checked : (el.value||''); }
+  r.aqTrein = r.aqTrein==='sim' ? true : r.aqTrein==='nao' ? false : 'ficha';
   for (const k of ['ajuste1198Ate','gnDesde','gnSemVPIAte']) if(!r[k]) r[k]=null;
   if(!r.ajuste1198Desde) r.ajuste1198Desde=RBC.REGRAS_PADRAO.ajuste1198Desde;
   if(!r.divisorDiasDesde) r.divisorDiasDesde=RBC.REGRAS_PADRAO.divisorDiasDesde;
@@ -1510,7 +1527,7 @@ function calc(){
   if(aplicarSugestoes()) renderRelTabelas();
   S.esp=null; S.cmp=null; S.espBy={};
   const d=dadosServidor();
-  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,getRegras()); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
+  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(getRegras(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
   aplicarTabelaAntiga();
   renderTudo();
 }
@@ -1563,7 +1580,7 @@ function anosConf(R){
     if(!l.fonte){ a.semFicha++; continue; } if(!l.conferir) continue; a.nConf++; a.dif+=l.dif; a.calc+=l.pssCalc; a.ficha+=l.pssFicha; }
   const soma={}, rest={}; const add=(y,k,v)=>{ (soma[y]=soma[y]||{})[k]=((soma[y]||{})[k]||0)+v; };
   for(const r of S.recs){ if(r.folha==='G') continue; const c=catOf(r); const y=String(r.ano); if(!out[y]) continue;
-    if(c==='GAS' && !R.regras.gas) add(y,'GAS',r.v); if(c==='AQ_TREIN' && !R.regras.aqTrein) add(y,'AQ_TREIN',r.v); if(c==='CLASSIFICAR') add(y,'CLASSIFICAR',r.v); if(c==='PSS' && r.v>0.005){ add(y,'REST',r.v); (rest[y]=rest[y]||new Set()).add(mesTxt(r.comp)); } }
+    if(c==='GAS' && !R.regras.gas) add(y,'GAS',r.v); if(c==='AQ_TREIN' && (R.regras.aqTrein===false || (R.regras.aqTrein==='ficha' && !(R.aqTreinAnos||{})[y]))) add(y,'AQ_TREIN',r.v); if(c==='CLASSIFICAR') add(y,'CLASSIFICAR',r.v); if(c==='PSS' && r.v>0.005){ add(y,'REST',r.v); (rest[y]=rest[y]||new Set()).add(mesTxt(r.comp)); } }
   for(const y in out){ const a=out[y]; a.dif=RBC.r2(a.dif); a.verif=a.nConf>0; a.ok=!a.verif || Math.abs(a.dif)<=Math.max(5,0.01*a.calc);
     const sy=soma[y]||{};
     if(sy.GAS>0.005) a.causas.push(`houve contribuição sobre ${rs(sy.GAS)} de GAS, que a regra atual deixa fora da RBC (cerca de ${rs(sy.GAS*0.11)} de contribuição)`);
@@ -1943,7 +1960,7 @@ $('x_rbc').onclick=async()=>{
     const notas=[];
     if($('processo').value.trim()) notas.push('Processo: '+$('processo').value.trim());
     const rg=getRegras();
-    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento: direito presumido quando pagos, valor devido pela tabela da carreira.`);
+    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein==='ficha'?'conforme a ficha (entra no ano em que houve contribuição sobre ele'+(Object.keys(R.aqTreinAnos||{}).length?': '+(Object.entries(R.aqTreinAnos).filter(e=>e[1]).map(e=>e[0]).join(', ')||'nenhum ano'):'')+')':rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento conferidos pela ficha: direito presumido quando pagos, valor devido pela tabela da carreira.`);
     if(R.linhas.some(l=>l.daTabela)) notas.push(`Até ${mesTxt(rg.tabelaAte)}, valores pelas tabelas de remuneração da época (prática da DIPROF), com pro rata pelos dias do mês; função, substituição e lançamentos sem tabela conforme a ficha ou informados.`);
     { const comBE=R.linhas.filter(l=>{const b=baseBE(l); return b!=null&&b>0;}).length, dv=S.devol.filter(p=>p.aplicar!==false&&p.ini&&p.fim);
       notas.push(`Base p/ benefício especial (Lei 12.618/2012, art. 3º, § 2º): remuneração das competências a partir de 07/1994 com contribuição mantida; ${dv.length?'excluídos os períodos de contribuição devolvida: '+dv.map(p=>fd(p.ini)+' a '+fd(p.fim)).join('; ')+' (pro rata pelos dias do mês)':'sem períodos de contribuição devolvida informados'}. Competências com base positiva: ${comBE} (13º não incluído).`); }
