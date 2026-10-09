@@ -1258,7 +1258,7 @@ const ultimoDia = k => k+'-'+String(new Date(+k.slice(0,4),+k.slice(5,7),0).getD
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
-const S = { arquivos:[], recs:[], refs:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
+const S = { devol:[], arquivos:[], recs:[], refs:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{} };
 const REGRA_IDS = ['tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto'];
 const NOME = { VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
@@ -1483,6 +1483,7 @@ async function lerArquivos(list){
       info.dup=recs.length-novos.length;
       const anos=[...new Set(novos.map(r=>r.ano))].sort(); info.anos=anos.length?(anos.length>1?anos[0]+' a '+anos[anos.length-1]:String(anos[0])):'';
       S.recs=S.recs.concat(novos); Object.assign(S.refs,refs);
+      for(const p of devolDaFicha(novos)) if(!S.devol.some(q=>q.obs===p.obs)) S.devol.push(p);
     }catch(e){ info.erro='Não foi possível ler o arquivo ('+(e.message||e)+').'; }
     S.arquivos.push(info);
   }
@@ -1517,6 +1518,36 @@ function aplicarTabelaAntiga(){
     l.pssCalc=RBC.pssDevida(l.total,l.comp); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
 }
+// ------------------------------------------------------------ benefício especial (Lei 12.618/2012, art. 3º, § 2º)
+// Base = remuneração que serviu de base a contribuição efetivamente mantida, desde 07/1994. Períodos com contribuição
+// devolvida ao servidor contam para a RBC e a média, mas não para o benefício especial (prática da DIPROF).
+const ano4 = y => y.length===4 ? y : (+y < 50 ? '20' : '19') + y;
+function devolDaFicha(recs){
+  const out=[];
+  for(const r of recs){
+    const d=String(r.desc||'').toUpperCase();
+    if(!/DEVOLU|RESTITU/.test(d) || !/PSS|PREVID|CONTRIB|RPPS/.test(d)) continue;
+    const m=/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s*(?:-|A|ATÉ|ATE)\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(d);
+    const MS=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], p2=x=>String(x).padStart(2,'0');
+    const mm=/\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{2,4})\s*(?:-|A|ATÉ|ATE)\s*(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{2,4})/.exec(d);
+    let ini='', fim='';
+    if(m){ const yf=ano4(m[6]), yi=m[3]?ano4(m[3]):yf; ini=`${yi}-${p2(m[2])}-${p2(m[1])}`; fim=`${yf}-${p2(m[5])}-${p2(m[4])}`; }
+    else if(mm){ const ki=ano4(mm[2])+'-'+p2(MS.indexOf(mm[1])+1), kf=ano4(mm[4])+'-'+p2(MS.indexOf(mm[3])+1); ini=ki+'-01'; fim=ultimoDia(kf); }
+    // só a devolução de 01/07 a 24/10/1994 é integral pela prática da DIPROF; as demais (ex.: dez/1998–jan/2000, ações judiciais)
+    // podem ser parciais e entram desmarcadas, para a DIPROF decidir
+    const integral = ini==='1994-07-01' && fim==='1994-10-24';
+    out.push({ini, fim, obs:`${r.desc} (pago em ${mesTxt(r.comp)}, ${rs(Math.abs(r.v))})`, origem:'ficha', semPeriodo:!ini, aplicar:integral});
+  }
+  return out;
+}
+function fracDevolvida(k){
+  const n=new Date(+k.slice(0,4),+k.slice(5,7),0).getDate(); let dias=0;
+  for(let d=1; d<=n; d++){ const dt=k+'-'+String(d).padStart(2,'0'); if(S.devol.some(p=>p.aplicar!==false&&p.ini&&p.fim&&p.ini<=dt&&dt<=p.fim)) dias++; }
+  return {dias, n};
+}
+// dias do mês corrido, como na RBC da DIPROF (out/1994: 7/31)
+function baseBE(l){ if(!naMedia(l.comp)) return null; const {dias,n}=fracDevolvida(l.comp); return RBC.r2(l.total*(n-dias)/n); }
+
 // leitura por ano: a contribuição é descontada no mês do pagamento, então atrasados deslocam valores entre meses;
 // o ano é a unidade de conferência e o mês só aponta onde olhar.
 function anosConf(R){
@@ -1543,13 +1574,15 @@ function anosConf(R){
 function contagens(){
   const R=S.res; if(!R) return null;
   const inv=RBC.inventario(S.recs,S.cats);
-  const parc=[]; for(const l of R.log) if(l.tipo==='retroativo') for(const a of l.aloc) if(a.fracao<1) parc.push({cat:l.cat,pagoEm:l.pagoEm,...a});
+  // antes do corte da tabela, atrasados e pendências não afetam a RBC (os valores saem da tabela)
+  const ate=S.esp?(getRegras().tabelaAte||''):''; const vale=k=>!ate||k>ate;
+  const parc=[]; for(const l of R.log) if(l.tipo==='retroativo') for(const a of l.aloc) if(a.fracao<1&&vale(a.comp)) parc.push({cat:l.cat,pagoEm:l.pagoEm,...a});
   const anos=anosConf(R); const sit={};
   for(const l of R.linhas){ const a=anos[l.comp.slice(0,4)];
     sit[l.comp]= !l.fonte?'none' : !l.conferir?'nv' : Math.abs(l.dif)<=0.5?'ok' : (a.ok?'comp':'att'); }
   const lv=Object.values(anos).filter(a=>a.verif);
   const cmp=S.cmp||[]; const divMes=new Set(cmp.filter(m=>m.itens.length).map(m=>m.comp));
-  return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]), pendTodos:R.pend, parc, sit, anos, divMes,
+  return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]&&vale(p.comp)), pendTodos:R.pend, parc, sit, anos, divMes,
     anosVerif:lv.length, anosOk:lv.filter(a=>a.ok).length, anosAtt:lv.filter(a=>!a.ok),
     none:Object.values(sit).filter(x=>x==='none').length, nv:Object.values(sit).filter(x=>x==='nv').length, att:lv.filter(a=>!a.ok).length };
 }
@@ -1613,7 +1646,7 @@ function renderPrevia(){
 function renderArquivos(){
   $('files').innerHTML = S.arquivos.map(a=>`<li><span class="sit ${a.erro?'att':'ok'}">${esc(a.nome)}</span><span class="q">${a.erro?esc(a.erro):esc(a.anos)+(a.dup?` · ${a.dup} lançamentos repetidos ignorados`:'')}</span></li>`).join('')
     + (S.arquivos.length?`<li><button class="btn link" id="limpar">Remover todos os arquivos da ficha</button></li>`:'');
-  if($('limpar')) $('limpar').onclick=()=>{ S.arquivos=[];S.recs=[];S.refs={};S.res=null; calc(); };
+  if($('limpar')) $('limpar').onclick=()=>{ S.arquivos=[];S.recs=[];S.refs={};S.res=null; S.devol=S.devol.filter(p=>p.origem!=='ficha'); calc(); };
 }
 function faixas(lista){ const fx=[]; for(const k of [...lista].sort()){ const u=fx[fx.length-1]; if(u && RBC.addM(u[1],1)===k) u[1]=k; else fx.push([k,k]); } return fx.map(f=>f[0]===f[1]?mesTxt(f[0]):mesTxt(f[0])+' a '+mesTxt(f[1])).join(', '); }
 function renderCobertura(){
@@ -1681,13 +1714,13 @@ function ligarForm(key, o){
 }
 function renderPend(C){
   const el=$('pend'); if(!C){ el.innerHTML=''; return; }
-  const R=S.res; let h='';
+  const R=S.res; let h=''; const ate=S.esp?(getRegras().tabelaAte||''):''; const vale=k=>!ate||k>ate;
   const abrir=(key,txt)=>S.abertos[key]?'':`<button class="btn sec peq" data-abrir="${key}">${txt||'Distribuir'}</button>`;
   const desc=(key)=>S.abertos[key]?'':`<button class="btn link" data-ack="${key}">Desconsiderar</button>`;
   h+=`<div class="bloco"><h3>Valores sem mês de referência</h3>`;
   if(C.pend.length){
     h+=`<p class="muted small" style="margin:0">Pagamentos que a calculadora não conseguiu ligar a um mês. Informe a que período se referem ou desconsidere. Enquanto não forem distribuídos, não entram na RBC.</p>`;
-    R.pend.forEach((p,i)=>{ if(S.ack[p.id]) return; const key='p'+i; h+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
+    R.pend.forEach((p,i)=>{ if(S.ack[p.id]||!vale(p.comp)) return; const key='p'+i; h+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
   } else h+=`<div class="aviso ok"><span class="ic">✓</span><div>Todos os pagamentos foram ligados a um mês${R.pend.length?' ou desconsiderados':''}.</div></div>`;
   h+=`</div><div class="bloco"><h3>Datas a confirmar</h3>`;
   if(C.parc.length){
@@ -1717,10 +1750,17 @@ function renderPend(C){
   const pas=R.passivos.map((p,i)=>({p,i})).filter(x=>!S.ack[x.p.id]);
   h+=`<details class="bloco"${Object.keys(S.abertos).some(k=>k[0]==='q')?' open':''}><summary>Passivos e exercícios anteriores (${pas.length})</summary><p class="muted small">Pagamentos judiciais e de exercícios anteriores. Em geral não entram na RBC porque não tiveram contribuição. Distribua só se a DIPROF decidir incluir; desconsidere para registrar a exclusão.</p>`+
     pas.map(({p,i})=>{ const key='q'+i; return `<div class="item"><div class="item-top"><span class="t">${esc(p.desc)}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div>${S.abertos[key]?formDist(key,{cat:'VB',valor:p.valor}):''}</div>`; }).join('')+`</details>`;
+  h+=`<div class="bloco"><h3>Contribuição devolvida ao servidor</h3><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
+    (S.devol.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr><th class="l">Fora do benefício especial</th><th class="l">De</th><th class="l">Até</th><th class="l">Origem</th><th></th></tr></thead><tbody>${S.devol.map((p,i)=>`<tr><td><input type="checkbox" data-dvap="${i}"${p.aplicar!==false?' checked':''} aria-label="Excluir do benefício especial"></td><td><input type="date" data-dv="${i}" data-c="ini" value="${esc(p.ini)}" aria-label="Início"></td><td><input type="date" data-dv="${i}" data-c="fim" value="${esc(p.fim)}" aria-label="Fim"></td><td class="l wrap small">${p.semPeriodo&&!(p.ini&&p.fim)?'<span class="tag att">informe o período</span> ':''}${p.origem==='ficha'&&p.aplicar===false?'<span class="tag info">pode ser devolução parcial: marque se foi integral</span> ':''}${esc(p.obs||'informado por você')}</td><td><button class="btn link" data-dvrm="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small" style="margin:0 0 8px">Nenhuma devolução encontrada na ficha.</p>')+
+    `<button class="btn sec peq" id="dvAdd" style="margin-top:10px">Adicionar período</button></div>`;
   h+=`<div class="bloco"><h3>Lançar outro valor</h3><p class="muted small" style="margin:0 0 10px">Para um valor que não aparece na ficha, como a VPNI judicial informada pela DIPROF.</p>${S.abertos.livre?formDist('livre',{cat:'VB'}):abrir('livre','Lançar valor')}</div>`;
   el.innerHTML=h;
   el.querySelectorAll('[data-abrir]').forEach(b=>b.onclick=()=>{ const k=b.dataset.abrir; S.abertos={[k]:true}; renderTudo(); const f=document.querySelector(`[data-form="${k}"]`); if(f){ f.scrollIntoView({block:'center'}); f.querySelector('input[type=date]').focus(); } });
   el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ S.manual.splice(+b.dataset.rm,1); calc(); });
+  el.querySelectorAll('input[data-dv]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dv]; if(p){ p[x.dataset.c]=x.value; renderTudo(); } });
+  el.querySelectorAll('input[data-dvap]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dvap]; if(p){ p.aplicar=x.checked; renderTudo(); } });
+  el.querySelectorAll('[data-dvrm]').forEach(b=>b.onclick=()=>{ S.devol.splice(+b.dataset.dvrm,1); renderTudo(); });
+  if($('dvAdd')) $('dvAdd').onclick=()=>{ S.devol.push({ini:'',fim:'',obs:'',origem:'manual',aplicar:true}); renderTudo(); const l=document.querySelectorAll('input[data-dv][data-c="ini"]'); if(l.length) l[l.length-1].focus(); };
   el.querySelectorAll('[data-ack]').forEach(b=>b.onclick=()=>{ const k=b.dataset.ack, i=+k.slice(1);
     const p=k[0]==='p'?R.pend[i]:R.passivos[i]; if(!p) return;
     S.ack[p.id]={cat:p.cat||'PASSIVO',desc:p.desc||'',comp:p.comp,valor:p.valor}; renderTudo(); });
@@ -1807,7 +1847,7 @@ function renderDetalhe(C){
    <div class="cols2"><div><div class="tw" style="max-height:none"><table><thead><tr><th class="l">Parcela</th>${e?'<th>Esperado</th>':''}<th>Pago</th><th>Na RBC</th></tr></thead><tbody>${linhas||'<tr><td class="l">Sem valores</td></tr>'}</tbody>
      <tfoot><tr class="tot"><td class="l">Remuneração de contribuição</td>${e?`<td>${f2(e.total)}</td>`:''}<td></td><td>${f2(l.total)}</td></tr></tfoot></table></div>
      ${e?'<p class="muted small" style="margin:6px 0 0">"Pago" é o valor da ficha já ligado ao mês de origem, antes das regras de incidência; "Na RBC", o que entra na relação.</p>':''}</div>
-   <div><b class="small">Contribuição previdenciária</b><div class="lin"><span>Descontada na ficha</span><span>${l.fonte?rs(l.pssFicha):'—'}</span></div><div class="lin"><span>Calculada sobre a RBC</span><span>${rs(l.pssCalc)}</span></div><div class="lin tot"><span>Diferença</span><span>${l.fonte&&l.conferir?rs(l.dif):'—'}</span></div>${e?`<div class="lin"><span>Calculada sobre a esperada</span><span>${rs(e.pss)}</span></div>`:''}</div></div>`;
+   <div><b class="small">Contribuição previdenciária</b><div class="lin"><span>Descontada na ficha</span><span>${l.fonte?rs(l.pssFicha):'—'}</span></div><div class="lin"><span>Calculada sobre a RBC</span><span>${rs(l.pssCalc)}</span></div><div class="lin tot"><span>Diferença</span><span>${l.fonte&&l.conferir?rs(l.dif):'—'}</span></div>${e?`<div class="lin"><span>Calculada sobre a esperada</span><span>${rs(e.pss)}</span></div>`:''}${(()=>{ const b=baseBE(l); return b!=null&&Math.abs(b-l.total)>0.005?`<div class="lin"><span>Base do benefício especial (contribuição devolvida em ${fracDevolvida(l.comp).dias} dia(s))</span><span>${rs(b)}</span></div>`:''; })()}</div></div>`;
 }
 function renderTabela(C){
   if(!$('tabelaBox').open || !S.res) return;
@@ -1830,13 +1870,13 @@ $('verParcelas').onchange=()=>renderTabela(contagens());
 // ------------------------------------------------------------ escolhas salvas
 function baixar(blob,nomeArq){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nomeArq; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
 $('x_dec').onclick=()=>{
-  const sv={versao:2, regras:getRegras(), cats:S.cats, manual:S.manual, ignorar:S.ignorar, ack:S.ack, rel:S.rel,
+  const sv={versao:2, devol:S.devol, regras:getRegras(), cats:S.cats, manual:S.manual, ignorar:S.ignorar, ack:S.ack, rel:S.rel,
     servidor:{cargo:$('cargo').value, especialidade:$('especialidade').value, espDesde:$('espDesde').value, inicio:$('inicio').value, fim:$('fim').value}};
   baixar(new Blob([JSON.stringify(sv,null,1)],{type:'application/json'}),'escolhas_rbc.json');
   $('x_msg').textContent='Escolhas salvas (relatórios conferidos, distribuições e regras). Para refazer, envie a mesma ficha e abra este arquivo.'; };
 $('x_load').onclick=()=>$('decfile').click();
 $('decfile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const d=JSON.parse(await f.text());
-  setRegras(Object.assign({},RBC.REGRAS_PADRAO,d.regras||{})); S.cats=d.cats||{}; S.manual=d.manual||[]; S.ignorar=d.ignorar||{}; S.ack=d.ack||{};
+  setRegras(Object.assign({},RBC.REGRAS_PADRAO,d.regras||{})); S.cats=d.cats||{}; S.manual=d.manual||[]; S.ignorar=d.ignorar||{}; S.ack=d.ack||{}; if(d.devol) S.devol=d.devol;
   if(d.rel) for(const t of TIPOS_REL) S.rel[t]=d.rel[t]||[];
   const sv=d.servidor||{inicio:d.inicio,fim:d.fim}; for(const k of ['cargo','especialidade','espDesde','inicio','fim']) if(sv[k]!=null) $(k).value=sv[k];
   renderRelTabelas(); calc(); $('x_msg').textContent='Escolhas aplicadas.'; }catch(err){ $('x_msg').textContent='Este arquivo não é um arquivo de escolhas da calculadora.'; } e.target.value=''; };
@@ -1855,6 +1895,7 @@ $('x_rbc').onclick=async()=>{
     const letras=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'].concat(temOutros?['AA']:[]);
     const temPre=R.linhas.some(l=>!naMedia(l.comp)); const cMoeda=temOutros?'AB':'AA', cMedia=temOutros?'AC':'AB';
     if(temPre){ letras.push(cMoeda,cMedia); HEAD[cMoeda]='Moeda'; HEAD[cMedia]='Entra na média'; }
+    const cBE=temPre?(temOutros?'AD':'AC'):(temOutros?'AB':'AA'); letras.push(cBE); HEAD[cBE]='Base p/ benefício especial';
     const nm=$('nome').value.trim(), cargo=$('cargo').value;
     const fd=d=>d?d.split('-').reverse().join('-'):'';
     const espTxt={SEGURANCA:'Agente de segurança / polícia judicial',OFICIAL:'Oficial de justiça'}[$('especialidade').value];
@@ -1881,6 +1922,7 @@ $('x_rbc').onclick=async()=>{
       ws.getCell('X'+r).value={formula:somaCols.map(c=>c+r).join('+'), result:l.total};
       if(naMedia(l.comp)){ ws.getCell('Y'+r).value=1; ws.getCell('Z'+r).value={formula:`X${r}/Y${r}`, result:l.total}; }
       if(temPre){ ws.getCell(cMoeda+r).value=moedaDe(l.comp); ws.getCell(cMedia+r).value=naMedia(l.comp)?'sim':'não'; }
+      { const b=baseBE(l); if(b!=null){ const {dias,n}=fracDevolvida(l.comp); ws.getCell(cBE+r).value=dias?{formula:dias>=n?'0':`ROUND(X${r}/${n}*${n-dias},2)`,result:b}:{formula:`X${r}`,result:b}; if(dias) ws.getCell(cBE+r).note=`Contribuição devolvida em ${dias} de ${n} dia(s): fora da base do benefício especial`; } }
       linhaDe[l.comp]=r; r++;
       const g=gnPor[l.comp];
       if(g){ const rb=linhaDe[g.baseComp]; ws.getCell('A'+r).value='GN'; ws.getCell('B'+r).value=g.avos<12?g.avos+'/12':'';
@@ -1896,6 +1938,8 @@ $('x_rbc').onclick=async()=>{
     const rg=getRegras();
     notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento: direito presumido quando pagos, valor devido pela tabela da carreira.`);
     if(R.linhas.some(l=>l.daTabela)) notas.push(`Até ${mesTxt(rg.tabelaAte)}, valores pelas tabelas de remuneração da época (prática da DIPROF), com pro rata pelos dias do mês; função, substituição e lançamentos sem tabela conforme a ficha ou informados.`);
+    { const comBE=R.linhas.filter(l=>{const b=baseBE(l); return b!=null&&b>0;}).length, dv=S.devol.filter(p=>p.aplicar!==false&&p.ini&&p.fim);
+      notas.push(`Base p/ benefício especial (Lei 12.618/2012, art. 3º, § 2º): remuneração das competências a partir de 07/1994 com contribuição mantida; ${dv.length?'excluídos os períodos de contribuição devolvida: '+dv.map(p=>fd(p.ini)+' a '+fd(p.fim)).join('; ')+' (pro rata pelos dias do mês)':'sem períodos de contribuição devolvida informados'}. Competências com base positiva: ${comBE} (13º não incluído).`); }
     if(temPre) notas.push('Competências anteriores a 07/1994 na moeda da época, sem conversão (fator e remuneração em real em branco). A média da aposentadoria considera só as competências a partir de 07/1994 (Lei 10.887/2004, art. 1º; EC 103/2019, art. 26).');
     notas.push('Valores conforme a ficha financeira (remuneração paga). Classe/padrão, VPNI, função e substituição conforme os relatórios do RH. Divergências entre o pago e o esperado na aba "Esperada x paga".');
     for(const m of S.manual) notas.push(`Distribuição manual: ${nome(m.cat)} ${m.modo==='percentualVB'?(m.pct*100).toLocaleString('pt-BR')+'% do vencimento':'R$ '+f2(m.valor)+(m.modo==='unidade'?' em parcelas de '+f2(m.unidade):' em partes iguais')} de ${fd(m.ini)} a ${fd(m.fim)}${m.origem&&m.origem!=='manual'?' (pago em '+m.origem+')':''}.`);
@@ -1904,7 +1948,7 @@ $('x_rbc').onclick=async()=>{
     const pendN=R.pend.filter(p=>!S.ack[p.id]).length; if(pendN) notas.push(`Valores sem mês não distribuídos: ${pendN} (ver aba Ajustes).`);
     notas.push('Gerado pela Calculadora de RBC. Conferência da contribuição na aba "Conferência PSS".');
     for(const t of notas){ ws.getCell('A'+r).value=t; ws.getCell('A'+r).font={size:9,italic:true}; r++; }
-    const larg={A:9,B:10,I:7,L:16,O:9,P:9,Y:7}; letras.forEach(c=>ws.getColumn(c).width=larg[c]||10.5);
+    const larg={A:9,B:10,I:7,L:16,O:9,P:9,Y:7,[cBE]:13}; letras.forEach(c=>ws.getColumn(c).width=larg[c]||10.5);
     ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9};
 
     const C=contagens();
