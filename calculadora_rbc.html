@@ -14,7 +14,7 @@
 :root{
   --navy:#003A5C;--navy2:#00466E;--navy-soft:#E4EDF3;--yellow:#FFD040;
   --bg:#EEF2F5;--paper:#FFFFFF;--ink:#17242C;--mute:#55666F;--line:#D3DDE3;
-  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--comp:#E8C98F;--none:#C9D3D9;--inbd:#A9B9C3;
+  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--comp:#E8C98F;--none:#C9D3D9;--inbd:#A9B9C3;--larg:1360px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;
@@ -31,13 +31,13 @@ a{color:var(--navy)}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 
 .topo{background:#003A5C;border-bottom:4px solid #FFD040}
-.topo-in{max-width:1040px;margin:0 auto;padding:8px 20px;display:flex;justify-content:space-between;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:8px 20px;display:flex;justify-content:space-between;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E2}
 .topo-in b{color:#FFD040}
 
 .head{background:#003A5C;color:#fff;padding:22px 20px 0}
-.head-in{max-width:1040px;margin:0 auto}
+.head-in{max-width:var(--larg);margin:0 auto}
 .head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em}
-.head p{margin:6px 0 0;color:#C9DCE8;max-width:62ch}
+.head p{margin:6px 0 0;color:#C9DCE8}
 .trilho{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
 .trilho li{position:relative}
 .trilho button{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;width:100%;padding:12px 10px 16px 0;color:#9FBCCE;cursor:pointer;font-weight:600;font-size:15px;border-bottom:4px solid transparent}
@@ -52,11 +52,11 @@ a{color:var(--navy)}
 .trilho li.atual .sub,.trilho li.feito .sub{color:#C9DCE8}
 .trilho li.alerta .num::after{content:"";position:absolute;top:-4px;right:-5px;width:10px;height:10px;border-radius:50%;background:#FFB347;border:2px solid #003A5C}
 
-main{max-width:1040px;margin:0 auto;padding:26px 20px 120px}
+main{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:26px 20px 120px}
 .etapa{display:none}
 .etapa.on{display:block}
 .etapa > h2{font-size:24px;margin:0 0 4px;font-weight:700;outline:none}
-.etapa > .intro{margin:0 0 20px;color:var(--mute);max-width:70ch}
+.etapa > .intro{margin:0 0 20px;color:var(--mute)}
 .bloco{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px;margin:0 0 16px}
 .bloco h3{margin:0 0 6px;font-size:17px}
 .muted{color:var(--mute)}
@@ -73,6 +73,12 @@ main{max-width:1040px;margin:0 auto;padding:26px 20px 120px}
 .campos{display:grid;grid-template-columns:repeat(6,1fr);gap:14px 16px}
 .campos label,.regras label{justify-content:space-between}
 .campos .c2{grid-column:span 2}.campos .c3{grid-column:span 3}
+.campos4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 20px;align-items:start}
+.campos4 .l2{grid-column:span 2}
+.campos4 label{justify-content:flex-start}
+.campos4 .ajuda{font-weight:400;font-size:12.5px;color:var(--mute);min-height:1.2em}
+input:disabled{background:var(--bg);color:var(--mute);cursor:not-allowed}
+.regras{grid-template-columns:repeat(4,minmax(0,1fr))!important}
 label{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
 label .dica{font-weight:400;color:var(--mute);font-size:12.5px}
 input,select,button{font:inherit;color:var(--ink)}
@@ -171,7 +177,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 .chk input{width:18px;height:18px}
 
 .barra{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);z-index:50}
-.barra-in{max-width:1040px;margin:0 auto;padding:12px 20px 12px 110px;display:flex;gap:12px;align-items:center}
+.barra-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:12px 20px 12px 110px;display:flex;gap:12px;align-items:center}
 .barra .st{color:var(--mute);font-size:14px;margin-right:auto}
 .barra .btn{white-space:nowrap}
 .sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;background:#003A5C;color:#FFD040;text-decoration:none;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.1em;padding:9px 14px;border:1px solid #00466E}
@@ -179,11 +185,13 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 
 @media (max-width:820px){
   .campos{grid-template-columns:1fr 1fr}.campos .c2,.campos .c3{grid-column:span 2}
+  .campos4{grid-template-columns:1fr 1fr}.regras{grid-template-columns:1fr 1fr!important}
   .modos,.regras,.cols2,.numeros{grid-template-columns:1fr}
   .trilho .sub{display:none}
   .trilho button{font-size:13px;gap:6px}
 }
 @media (max-width:560px){
+  .campos4{grid-template-columns:1fr}.campos4 .l2{grid-column:auto}
   .head h1{font-size:24px}
   .trilho .txt{display:none}
   .trilho button{justify-content:center;padding-right:0}
@@ -214,15 +222,14 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   <p class="intro">Com os relatórios de progressão, funções, substituições, VPNI e ATS, a calculadora monta a remuneração que o servidor deveria ter recebido em cada mês. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
   <div class="bloco">
     <h3>Servidor</h3>
-    <div class="campos">
-      <label class="c3">Nome<input type="text" id="nome" autocomplete="off"></label>
-      <label class="c3">Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option></select></label>
-      <label class="c2">Especialidade<select id="especialidade"><option value="">Sem gratificação de especialidade</option><option value="SEGURANCA">Segurança / polícia judicial (GAS)</option><option value="OFICIAL">Oficial de justiça (GAE)</option></select></label>
-      <label class="c2" id="espDesdeBox" hidden><span>Na especialidade desde <span class="dica">(em branco = data de posse)</span></span><input type="date" id="espDesde"></label>
-      <span class="c2"></span>
-      <label class="c2"><span>Ingresso <span class="dica" id="inicioDica"></span></span><input type="date" id="inicio"></label>
-      <label class="c2"><span>Desligamento <span class="dica">(em branco = último mês da ficha)</span></span><input type="date" id="fim"></label>
-      <label class="c2"><span>Processo SEI <span class="dica">(opcional)</span></span><input type="text" id="processo" autocomplete="off"></label>
+    <div class="campos4">
+      <label class="l2">Nome<input type="text" id="nome" autocomplete="off"></label>
+      <label>Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option></select></label>
+      <label>Especialidade<select id="especialidade"><option value="">Sem gratificação de especialidade</option><option value="SEGURANCA">Segurança / polícia judicial (GAS)</option><option value="OFICIAL">Oficial de justiça (GAE)</option></select></label>
+      <label id="espDesdeBox">Especialidade desde<input type="date" id="espDesde" disabled><span class="ajuda" id="espAjuda">Escolha a especialidade para informar</span></label>
+      <label>Ingresso<input type="date" id="inicio"><span class="ajuda" id="inicioDica"></span></label>
+      <label>Desligamento<input type="date" id="fim"><span class="ajuda">Em branco = último mês da ficha</span></label>
+      <label>Processo SEI<input type="text" id="processo" autocomplete="off"><span class="ajuda">Opcional</span></label>
     </div>
   </div>
   <div class="bloco">
@@ -1281,7 +1288,7 @@ setRegras(RBC.REGRAS_PADRAO);
 $('r_reset').onclick=e=>{ e.preventDefault(); setRegras(RBC.REGRAS_PADRAO); calc(); };
 for (const k of REGRA_IDS) $('r_'+k).addEventListener('change', calc);
 for (const id of ['inicio','fim','cargo','espDesde']) $(id).addEventListener('change', calc);
-$('especialidade').addEventListener('change',()=>{ $('espDesdeBox').hidden=!$('especialidade').value; calc(); });
+$('especialidade').addEventListener('change',()=>{ calc(); });
 
 // período efetivo: a RBC cobre todo o período de contribuição; desligamento em branco = último mês da ficha
 function iniEf(){ let v=$('inicio').value; if(!v && S.recs.length) v=S.recs.map(r=>r.comp).sort()[0]+'-01'; return v; }
@@ -1627,8 +1634,8 @@ function renderTudo(){
   else if(S.etapa===3) st=(C.pend.length||C.parc.length)?`${C.pend.length} valor(es) sem mês, ${C.parc.length} data(s) a confirmar.`:'Nada pendente.';
   else st=(C.att?`${C.att} ano(s) com diferença na contribuição. `:'Contribuição conferida. ')+(S.cmp?`${C.divMes.size} mês(es) com pagamento diferente do esperado.`:'');
   $('barraSt').textContent=st;
-  $('espDesdeBox').hidden=!$('especialidade').value;
-  $('inicioDica').textContent=$('inicio').value&&$('inicio').value<'1994-07-01'?'(antes de 07/1994: moeda da época, fora da média)':'';
+  { const temEsp=!!$('especialidade').value; $('espDesde').disabled=!temEsp; if(!temEsp) $('espDesde').value=''; $('espAjuda').textContent=temEsp?'Em branco = data de posse':'Escolha a especialidade para informar'; }
+  $('inicioDica').textContent=$('inicio').value&&$('inicio').value<'1994-07-01'?'Antes de 07/1994: moeda da época, fora da média':'Data de posse';
   renderArquivos(); renderCobertura(); renderPrevia();
   if(S.etapa===2) renderRubricas(C);
   if(S.etapa===3) renderPend(C);
