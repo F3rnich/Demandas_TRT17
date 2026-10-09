@@ -211,14 +211,14 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 <main>
 <section class="etapa on" id="e1" aria-labelledby="e1t">
   <h2 id="e1t">Informe o servidor e envie os relatórios do RH</h2>
-  <p class="intro">Com os relatórios de progressão, funções, substituições, VPNI, ATS e AQ, a calculadora monta a remuneração que o servidor deveria ter recebido em cada mês. A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
+  <p class="intro">Com os relatórios de progressão, funções, substituições, VPNI e ATS, a calculadora monta a remuneração que o servidor deveria ter recebido em cada mês. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
   <div class="bloco">
     <h3>Servidor</h3>
     <div class="campos">
       <label class="c3">Nome<input type="text" id="nome" autocomplete="off"></label>
       <label class="c3">Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option></select></label>
       <label class="c2">Especialidade<select id="especialidade"><option value="">Sem gratificação de especialidade</option><option value="SEGURANCA">Segurança / polícia judicial (GAS)</option><option value="OFICIAL">Oficial de justiça (GAE)</option></select></label>
-      <label class="c2" id="espDesdeBox" hidden>Na especialidade desde<input type="date" id="espDesde"></label>
+      <label class="c2" id="espDesdeBox" hidden><span>Na especialidade desde <span class="dica">(em branco = data de posse)</span></span><input type="date" id="espDesde"></label>
       <span class="c2"></span>
       <label class="c2"><span>Ingresso <span class="dica" id="inicioDica"></span></span><input type="date" id="inicio"></label>
       <label class="c2"><span>Desligamento <span class="dica">(em branco = último mês da ficha)</span></span><input type="date" id="fim"></label>
@@ -230,7 +230,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     <p class="muted small" style="margin:0 0 12px">Envie os PDFs exportados do sistema. A calculadora reconhece cada relatório pelo conteúdo. Se a progressão vier como imagem da tela, ela é lida por reconhecimento de texto e você confere o resultado.</p>
     <div class="drop" id="dropRel" role="button" tabindex="0" aria-label="Escolher relatórios do RH">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI, ATS, AQ</span></div>
+      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI e ATS</span></div>
       <input type="file" id="fileRel" multiple accept=".pdf" hidden>
     </div>
     <ul class="arqs" id="filesRel"></ul>
@@ -1249,7 +1249,7 @@ const dataBr = d => d ? d.split('-').reverse().join('/') : '';
 const ultimoDia = k => k+'-'+String(new Date(+k.slice(0,4),+k.slice(5,7),0).getDate()).padStart(2,'0');
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','AQ','V1323'];
+const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
 const S = { arquivos:[], recs:[], refs:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{} };
 const REGRA_IDS = ['fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto'];
@@ -1400,14 +1400,15 @@ async function lerRelatorios(list){
         rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel();})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
       } else {
         tipo=RR.tipoRelatorio(pages);
-        if(!tipo) throw new Error('Relatório não reconhecido. Os aceitos são: progressão, funções, substituições, VPNI, ATS e AQ.');
-        const fn={FUNCOES:RR.parseFuncoes,SUBSTITUICOES:RR.parseFuncoes,VPNI:RR.parseVPNI,ATS:RR.parseATS,AQ:RR.parseAQ,PROGRESSAO:RR.parseProgressao}[tipo];
+        if(!tipo) throw new Error('Relatório não reconhecido. Os aceitos são: progressão, funções, substituições, VPNI e ATS.');
+        if(tipo==='AQ') throw new Error('Não há relatório de AQ: o AQ e o AQ-Treinamento são conferidos pela ficha.');
+        const fn={FUNCOES:RR.parseFuncoes,SUBSTITUICOES:RR.parseFuncoes,VPNI:RR.parseVPNI,ATS:RR.parseATS,PROGRESSAO:RR.parseProgressao}[tipo];
         rows=fn(pages).map(r=>{ const o=Object.assign({},r); delete o.perda; delete o.concedido; if(!o.fim) o.fim=''; if(tipo==='PROGRESSAO') o.origem='relatorio'; if(tipo==='SUBSTITUICOES') delete o.nome; return o; });
       }
       S.relArqs=S.relArqs.filter(a=>a===info||a.tipo!==tipo);
       info.tipo=tipo; info.n=rows.length; S.rel[tipo]=rows;
       if(!rows.length) info.erro='Nenhuma linha encontrada. Preencha a tabela abaixo.';
-      if(tipo==='AQ'||tipo==='SUBSTITUICOES') info.msgFim='formato ainda não testado: confira as linhas';
+      if(tipo==='SUBSTITUICOES') info.msgFim='formato ainda não testado: confira as linhas';
     }catch(e){ console.error(e); info.erro=e.message||String(e); }
     info.st='ok'; renderArqRel();
   }
@@ -1445,7 +1446,7 @@ function dadosServidor(){
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
-    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:per(S.rel.ATS).filter(r=>r.pct!=null), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
+    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:per(S.rel.ATS).filter(r=>r.pct!=null), aq:[], v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
 }
 // AQ e AQ-Treinamento: havendo pagamento no mês, presume-se o direito; o valor devido é calculado pela tabela da carreira
 function aqDaFicha(){
