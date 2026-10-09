@@ -1245,7 +1245,11 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     const L = linhasItens(pages);
     // cabeçalho: a linha que tem "Classe" e "Padrão" (e até duas linhas sem data logo acima ou abaixo, para rótulos em 2 linhas)
     const txt = l => l.map(t => t.s).join(' ').toUpperCase();
-    const iCab = L.findIndex(l => /CLASSE/.test(txt(l)) && /PADR/.test(txt(l)));
+    // ignora linhas de identificação do tipo "Classe: C  Padrão: 13" (referência atual) e fica com o cabeçalho seguido de dados
+    const ehCab = l => { const t = txt(l); return /CLASSE/.test(t) && /PADR/.test(t) && !/CLASSE\s*:|PADR[AÃ]O\s*:/.test(t) && !temData(l); };
+    let iCab = -1;
+    for (let i = 0; i < L.length; i++) if (ehCab(L[i]) && L.slice(i + 1, i + 4).some(l => temData(l) && DT1.test(tokens(l)[0].s))) { iCab = i; break; }
+    if (iCab < 0) iCab = L.findIndex(ehCab);
     if (iCab < 0) return parseProgressaoRegex(pages);
     const cab = [...L[iCab]];
     for (const d of [-1, -2, 1]) { const l = L[iCab + d]; if (!l || temData(l) || !l.some(t => /[A-Za-zÀ-ú]/.test(t.s))) { if (d < 0) continue; else break; } cab.push(...l); }
@@ -1404,7 +1408,19 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     return [...out.values()].sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : (a.revogada ? -1 : 1));
   }
 
-  const api = { tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
+  // dados do servidor no cabeçalho do relatório de progressão (Sistema de Gestão de RH)
+  function dadosServidor(pages) {
+    const t = linhas(pages).slice(0, 25).join('\n'), o = {};
+    let m;
+    if ((m = /Nome\s*:\s*([A-ZÀ-Ú][A-ZÀ-Ú .'-]+?)(?:\s{2,}|\s+Data|$)/m.exec(t))) o.nome = m[1].trim();
+    if ((m = /Data de Exerc[ií]cio\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(t))) o.exercicio = isoBR(m[1]);
+    if ((m = /Data (?:da )?Posse\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(t))) o.posse = isoBR(m[1]);
+    if ((m = /Cargo\s*:\s*(T[ÉE]CNICO|ANALISTA|AUXILIAR)\s+JUDICI[ÁA]RIO/i.exec(t))) o.cargo = m[1].toUpperCase().replace('TECNICO', 'TÉCNICO') + ' JUDICIÁRIO';
+    if ((m = /Espec[ií]?l?idade\s*:\s*([^\n]+)/i.exec(t))) { const e = m[1].toUpperCase(); o.especialidade = /SEGURAN|POL[IÍ]CIA/.test(e) ? 'SEGURANCA' : /MANDADO|OFICIAL/.test(e) ? 'OFICIAL' : ''; }
+    return o;
+  }
+
+  const api = { dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBCRelatorios = api;
 })(typeof self !== 'undefined' ? self : this);
 
@@ -1593,6 +1609,14 @@ async function lerRelatorios(list){
         tipo=RR.tipoRelatorio(pages);
         if(!tipo) throw new Error('Relatório não reconhecido. Os aceitos são: progressão, funções, substituições, VPNI e ATS.');
         if(tipo==='AQ') throw new Error('Não há relatório de AQ: o AQ e o AQ-Treinamento são conferidos pela ficha.');
+        if(tipo==='PROGRESSAO'){ // preenche os dados do servidor que estiverem em branco
+          const d=RR.dadosServidor(pages), pre=[];
+          if(d.nome&&!$('nome').value){ $('nome').value=d.nome; pre.push('nome'); }
+          if(d.cargo&&!$('cargo').value){ $('cargo').value=d.cargo; pre.push('cargo'); }
+          if(d.especialidade!==undefined&&!$('especialidade').value&&d.especialidade){ $('especialidade').value=d.especialidade; pre.push('especialidade'); }
+          if(d.exercicio&&!$('inicio').value){ $('inicio').value=d.exercicio; pre.push('ingresso (data de exercício)'); }
+          if(pre.length) info.msgFim='preenchido a partir do relatório: '+pre.join(', ')+' — confira';
+        }
         const fn={FUNCOES:RR.parseFuncoes,SUBSTITUICOES:RR.parseFuncoes,VPNI:RR.parseVPNI,ATS:RR.parseATS,PROGRESSAO:RR.parseProgressao}[tipo];
         rows=fn(pages).map(r=>{ const o=Object.assign({},r); delete o.perda; delete o.concedido; if(!o.fim) o.fim=''; if(tipo==='PROGRESSAO') o.origem='relatorio'; if(tipo==='SUBSTITUICOES') delete o.nome; return o; });
       }
