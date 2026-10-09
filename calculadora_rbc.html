@@ -305,10 +305,10 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label><span>Acrescentar 11,98% às parcelas até <span class="dica">(em branco = não acrescentar)</span></span><input type="month" id="r_ajuste1198Ate"></label>
       <label>13º entra na RBC a partir do ano<input type="number" id="r_gnDesde" min="1994" max="2100"></label>
       <label>13º sem VPI até o ano<input type="number" id="r_gnSemVPIAte" min="1994" max="2100"></label>
-      <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(antes: mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
+      <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(Res. CSJT 211/2017, DEJT 30/11/2017; antes, mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px;align-items:center">
-      <label class="chk"><input type="checkbox" id="r_gas"> GAS conta na RBC</label>
+      <label class="chk"><input type="checkbox" id="r_gas"> GAS conta na RBC <span class="dica">(não é base de contribuição)</span></label>
       <label class="chk"><input type="checkbox" id="r_aqTrein"> AQ-Treinamento conta na RBC</label>
       <label class="chk"><input type="checkbox" id="r_descontarFaltas"> Descontar faltas</label>
       <label class="chk"><input type="checkbox" id="r_teto"> Contribuição limitada ao teto do INSS</label>
@@ -339,7 +339,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   const addM = (k, n) => { let y = +k.slice(0, 4), m = +k.slice(5, 7) + n; while (m > 12) { m -= 12; y++; } while (m < 1) { m += 12; y--; } return ym(y, m); };
   const diasMes = k => new Date(+k.slice(0, 4), +k.slice(5, 7), 0).getDate();
   // divisor do pro rata: mês comercial de 30 dias até a competência anterior a DIV.desde; depois, dias do mês
-  const DIV = { desde: '2018-01' };
+  const DIV = { desde: '2017-12' };
   const divisor = k => (k >= DIV.desde ? diasMes(k) : 30);
 
   // ------------------------------------------------------------------ LEITURA DE FICHAS
@@ -528,8 +528,8 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
    */
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
-  const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: true, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2018-01' };
+  const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: true, conferirDesde: '2002-01', teto: false,
+    ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12' };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -797,7 +797,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
   // peso de cada dia: a partir de 2018 = 1/dias do mês; antes, mês comercial de 30 dias, como na folha:
   // o dia 31 não conta e, em fevereiro, o último dia completa os 30 (quem muda em 21/07 fica 10/30 na situação nova).
   function pesos(k, desde) {
-    desde = desde || '2018-01';
+    desde = desde || '2017-12';
     const n = diasMes(k), w = [];
     for (let d = 1; d <= n; d++) w.push(k >= desde ? 1 / n : d < n ? (d <= 30 ? 1 / 30 : 0) : n === 31 ? 0 : (30 - (n - 1)) / 30);
     return w;
@@ -820,12 +820,13 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     const linhas = [], avisos = new Map();
     const aviso = (k, t) => { const a = avisos.get(t) || { texto: t, meses: [] }; if (!a.meses.includes(k)) a.meses.push(k); avisos.set(t, a); };
     const prog = (dados.progressoes || []).filter(p => !p.revogada);
+    const aqF = aqDaFicha(ix, dados.aqFicha, regras);
 
     for (let k = ini; k <= fim; k = RBC.addM(k, 1)) {
       const w = pesos(k, regras.divisorDiasDesde), n = diasMes(k);
-      const v = {}, info = { ref: new Set(), refc: new Set(), funcao: new Set(), subst: new Set(), vpni: new Set(), ats: null };
+      const v = {}, info = { aq: [], ref: new Set(), refc: new Set(), funcao: new Set(), subst: new Set(), vpni: new Set(), ats: null };
       const add = (c, x) => { v[c] = (v[c] || 0) + x; };
-      const fontes = new Set();
+      const fontes = new Set(), aqRel = {};
       for (let d = 1; d <= n; d++) {
         if (!w[d - 1]) continue;
         const dt = iso(k, d);
@@ -854,6 +855,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
         }
         // AQ
         for (const q of naFaixa(dados.aq, dt)) {
+          aqRel[q.tipo === 'TREINAMENTO' ? 'AQ_TREIN' : 'AQ'] = true;
           let pc = q.pct != null ? q.pct / 100 : null;
           if (pc == null) {
             const nome = { DOUTORADO: 'AQ_PCT_DOUTORADO', MESTRADO: 'AQ_PCT_MESTRADO', ESPECIALIZACAO: 'AQ_PCT_ESPECIALIZACAO', TREINAMENTO: 'AQ_PCT_TREINAMENTO_POR_120H', GRADUACAO_TECNICO: 'AQ_PCT_GRADUACAO_TECNICO' }[q.tipo];
@@ -917,8 +919,15 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
         }
         for (const m of naFaixa(dados.manual, dt)) add(m.cat, m.valor * wd);
       }
+      // AQ pela ficha: se houve AQ pago no mês, o direito é presumido e o valor devido sai da tabela da carreira
+      if (aqF[k]) for (const cat of ['AQ', 'AQ_TREIN']) {
+        const a = aqF[k][cat]; if (!a || aqRel[cat]) continue;
+        const val = a.nivel(v.VB || 0);
+        if (val != null) { v[cat] = (v[cat] || 0) + val; info.aq.push(a.txt); }
+        if (a.aviso) aviso(k, a.aviso);
+      }
       for (const c in v) v[c] = r2(v[c]);
-      linhas.push({ comp: k, v, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
+      linhas.push({ comp: k, v, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), aq: info.aq.join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
     }
     // incidência e contribuição
     const incide = (c, k) => {
@@ -950,6 +959,56 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       gns.push({ ano: y, depois: ls[ls.length - 1].comp, baseComp: lb.comp, avos, base: b, obs, valor: r2(b * avos / 12) });
     }
     return { linhas, gns, avisos: [...avisos.values()], regras };
+  }
+
+  // AQ / AQ-Treinamento a partir da ficha (decisão DIPROF, 09/10/2026): quem recebeu AQ no mês tinha direito a ele;
+  // o nível (percentual até 2025, valores de referência desde 2026) é deduzido do valor pago e o valor devido vem da tabela.
+  // Mês de mudança de nível: pro rata, com o dia de início deduzido do valor pago.
+  function aqDaFicha(ix, fic, regras) {
+    const out = {}; if (!fic) return out;
+    const meses = Object.keys(fic).sort();
+    for (const cat of ['AQ', 'AQ_TREIN']) {
+      const info = {};
+      for (const k of meses) {
+        const f = fic[k], pago = f[cat]; if (!(pago > 0.005)) continue;
+        const d = k + '-15', vr = k >= '2026-01';
+        let cands = [];
+        if (!vr) {
+          if (!(f.VB > 0)) continue;
+          const pcs = cat === 'AQ_TREIN' ? [1, 2, 3].map(n => [n * (par(ix, 'AQ_PCT_TREINAMENTO_POR_120H', d) || 0.01), n + '% (treinamento)'])
+            : [['AQ_PCT_ESPECIALIZACAO', 'especialização'], ['AQ_PCT_MESTRADO', 'mestrado'], ['AQ_PCT_DOUTORADO', 'doutorado'], ['AQ_PCT_GRADUACAO_TECNICO', 'graduação']].map(([nm, t]) => { const x = par(ix, nm, d); return x ? [x, t + ' ' + (x * 100).toLocaleString('pt-BR') + '%'] : null; }).filter(Boolean);
+          cands = pcs.map(([x, t]) => ({ x, t, val: vb => vb * x }));
+          info[k] = { x: pago / f.VB, cands, tol: 0.0012 };
+        } else {
+          const lst = cat === 'AQ_TREIN' ? [1, 2, 3, 4, 5].map(n => [['AQ_CAPACITACAO_POR_120H', n]])
+            : [[['AQ_DOUTORADO', 1]], [['AQ_MESTRADO', 1]]].concat([1, 2, 3, 4, 5].map(n => [['AQ_POS_GRADUACAO_POR_CURSO', n]]));
+          const nomes = { AQ_CAPACITACAO_POR_120H: 'capacitação 120 h', AQ_DOUTORADO: 'doutorado', AQ_MESTRADO: 'mestrado', AQ_POS_GRADUACAO_POR_CURSO: 'pós-graduação' };
+          cands = lst.map(l => { const x = l.reduce((s, [nm, n]) => s + (par(ix, nm, d) || 0) * n, 0); return { x, t: l.map(([nm, n]) => (n > 1 ? n + ' × ' : '') + nomes[nm]).join(' + '), val: () => x }; }).filter(c => c.x > 0);
+          info[k] = { x: pago, cands, tol: 1 };
+        }
+      }
+      // nível limpo de cada mês
+      const ks = Object.keys(info).sort();
+      for (const k of ks) { const I = info[k]; let best = null; for (const c of I.cands) if (!best || Math.abs(c.x - I.x) < Math.abs(best.x - I.x)) best = c; I.best = best; I.limpo = best && Math.abs(best.x - I.x) <= I.tol; }
+      const regime = k => k >= '2026-01';
+      for (let i = 0; i < ks.length; i++) {
+        const k = ks[i], I = info[k];
+        if (I.limpo) { (out[k] = out[k] || {})[cat] = { nivel: vb => I.best.val(vb), txt: I.best.t }; continue; }
+        // mudança de nível no mês: anterior e seguinte no mesmo regime (0 se a sequência começa ou termina aqui)
+        const kp = RBC.addM(k, -1), kn = RBC.addM(k, 1);
+        const prev = info[kp] && info[kp].limpo && regime(kp) === regime(k) ? info[kp].best : null;
+        const next = info[kn] && info[kn].limpo && regime(kn) === regime(k) ? info[kn].best : null;
+        const xp = prev ? prev.x : 0, xn = next ? next.x : (prev ? prev.x : I.best.x);
+        const div = k >= (regras.divisorDiasDesde || '2017-12') ? diasMes(k) : 30;
+        if ((I.x - xp) * (xn - I.x) > 0 && Math.abs(xn - xp) > 1e-9) {
+          const dias = Math.max(1, Math.min(div - 1, Math.round((I.x - xp) / (xn - xp) * div)));
+          const fr = dias / div, ini = div - dias + 1;
+          (out[k] = out[k] || {})[cat] = { nivel: vb => (prev ? prev.val(vb) : 0) * (1 - fr) + (next ? next.val(vb) : 0) * fr,
+            txt: (next ? next.t : '') + ' desde o dia ' + ini, aviso: `${cat === 'AQ' ? 'AQ' : 'AQ-Treinamento'} alterado no mês: início deduzido no dia ${ini} — confirmar` };
+        } else (out[k] = out[k] || {})[cat] = { nivel: vb => I.best.val(vb), txt: I.best.t, aviso: `${cat === 'AQ' ? 'AQ' : 'AQ-Treinamento'} pago fora dos valores da tabela — conferir` };
+      }
+    }
+    return out;
   }
 
   function valorFuncao(ix, cod, d) {
@@ -1243,7 +1302,7 @@ const REL = {
     dica:'Uma linha por parcela incorporada, a partir da data em que passou a ser paga.'},
   ATS:{titulo:'Adicional por tempo de serviço', cols:[['ini','date','A partir de'],['pct','num','Percentual acumulado (%)']]},
   AQ:{titulo:'Adicional de qualificação', cols:[cIni,cFim,['tipo','sel','Título',OPC.tipoAQ],['pct','num','% (se diferente da lei)']], novo:{tipo:'ESPECIALIZACAO'},
-    dica:'Sem percentual, usa o da lei na data (Lei 11.416: especialização 7,5%, mestrado 10%, doutorado 12,5%, treinamento 1% por 120 h; a partir de 2026, valores de referência).'},
+    dica:'Opcional. Sem relatório, vale a ficha: se houve AQ pago no mês, o direito é presumido e o valor devido é calculado pela tabela (até 2025, % do vencimento da Lei 11.416; desde 2026, valores de referência). O nível é deduzido do valor pago. Linhas preenchidas aqui têm prioridade sobre a ficha.'},
   V1323:{titulo:'13,23% (decisão judicial)', cols:[cIni,cFim], dica:'Períodos em que o 13,23% foi devido. Não vem de relatório: informe se houver.'}
 };
 const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], manual:['info','informado por você'] };
@@ -1369,7 +1428,13 @@ function dadosServidor(){
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
-    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:per(S.rel.ATS).filter(r=>r.pct!=null), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323) };
+    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:per(S.rel.ATS).filter(r=>r.pct!=null), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
+}
+// AQ e AQ-Treinamento: havendo pagamento no mês, presume-se o direito; o valor devido é calculado pela tabela da carreira
+function aqDaFicha(){
+  if(!S.res) return null; const o={};
+  for(const l of S.res.linhas){ const b=l.bruto||{}; if(b.AQ>0.005||b.AQ_TREIN>0.005) o[l.comp]={VB:b.VB||0,AQ:b.AQ||0,AQ_TREIN:b.AQ_TREIN||0}; }
+  return o;
 }
 
 // ------------------------------------------------------------ etapa 2: ficha
@@ -1645,7 +1710,7 @@ function renderComparacao(C){
     <p class="muted small" style="margin:0 0 12px">A esperada vem dos relatórios do RH e das tabelas de remuneração; a paga, da ficha (antes das regras de incidência). A RBC usa os valores pagos; as diferenças abaixo mostram onde conferir: erro de pagamento, relatório incompleto ou parcela fora da base.</p>
     <div class="numeros"><div><span>Meses comparados</span><b>${comFicha.length}</b></div><div><span>Pagos como esperado</span><b style="color:var(--ok)">${iguais}</b></div><div><span>Com diferença</span><b style="color:${comFicha.length-iguais?'var(--att)':'var(--ok)'}">${comFicha.length-iguais}</b></div></div>
     ${lista.length?`<div class="tw"><table><thead><tr><th class="l">Parcela</th><th class="l">O que aconteceu</th><th class="l">Períodos</th><th>Meses</th><th>Pago − esperado</th></tr></thead><tbody>${lista.map(g=>`<tr class="clic" data-mes="${g.meses[0]}" tabindex="0"><td class="l">${esc(GRUPO_NOME[g.cat]||nome(g.cat))}</td><td class="l"><span class="sit ${SIT_CMP[g.sit][0]}">${SIT_CMP[g.sit][1]}</span></td><td class="l wrap">${faixas(g.meses)}</td><td>${g.meses.length}</td><td>${f2(RBC.r2(g.soma))}</td></tr>`).join('')}</tbody></table></div><p class="muted small" style="margin:8px 0 0">Clique em uma linha para ver o primeiro mês no detalhe abaixo.</p>`:'<div class="aviso ok"><span class="ic">✓</span><div>Todos os meses foram pagos como esperado.</div></div>'}
-    ${av.length?`<div class="aviso att"><span class="ic">!</span><div>A remuneração esperada ficou incompleta: ${av.map(a=>esc(a.texto)+' ('+faixas(a.meses)+')').join('; ')}.</div></div>`:''}
+    ${av.length?`<div class="aviso att"><span class="ic">!</span><div>Avisos da remuneração esperada: ${av.map(a=>esc(a.texto)+' ('+faixas(a.meses)+')').join('; ')}.</div></div>`:''}
   </div>`;
   el.querySelectorAll('tr[data-mes]').forEach(tr=>{ const go=()=>{ S.sel=tr.dataset.mes; renderConferencia(C); $('detalhe').scrollIntoView({block:'start'}); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
 }
@@ -1695,7 +1760,7 @@ function renderDetalhe(C){
   const linhas=cats.map(c=>{ const ve=e?(e.v[c]||0):null, vp=(l.bruto||{})[c]||0, dif=e&&Math.abs(vp-ve)>0.05; return `<tr${dif?' class="dif"':''}><td class="l">${esc(nome(c))}</td>${e?`<td>${f2(ve||null)}</td>`:''}<td>${f2(vp||null)}</td><td>${f2(l.v[c]||null)}</td></tr>`; }).join('');
   const parc=l.parcialInferido&&l.parcialInferido.length?`<div class="aviso info"><span class="ic">i</span><div>Data a confirmar: ${l.parcialInferido.map(p=>esc(nome(p.cat))+(p.diaInicio?' a partir do dia '+p.diaInicio:'')).join('; ')}.</div></div>`:'';
   const txt={ok:'A contribuição descontada confere com a esperada.',comp:'Há diferença na contribuição deste mês, mas o ano confere. Em geral é atrasado: a contribuição é descontada no mês em que ele é pago.',att:'O ano não confere. Veja a provável causa no quadro "Anos com diferença" e confira a composição abaixo.',nv:'Antes de '+mesTxt(R.regras.conferirDesde)+' a calculadora não modela as alíquotas e devoluções da época; a contribuição do mês não é verificada.',none:'Não há ficha para este mês. Envie a ficha correspondente na etapa 2.'}[s];
-  const info=e?[e.ref&&'enquadramento '+e.ref, e.funcao&&'função '+e.funcao, e.subst&&'substituição '+e.subst, e.vpni&&'VPNI '+e.vpni, e.atsPct&&'ATS '+(e.atsPct*100).toLocaleString('pt-BR')+'%'].filter(Boolean).join(' · '):'';
+  const info=e?[e.ref&&'enquadramento '+e.ref, e.funcao&&'função '+e.funcao, e.subst&&'substituição '+e.subst, e.vpni&&'VPNI '+e.vpni, e.aq&&'AQ '+e.aq, e.atsPct&&'ATS '+(e.atsPct*100).toLocaleString('pt-BR')+'%'].filter(Boolean).join(' · '):'';
   el.innerHTML=`<h3 style="margin:0 0 4px">${mesTxt(l.comp)}</h3>${info?`<p class="small" style="margin:0 0 4px">Pelos relatórios: ${esc(info)}</p>`:''}<p class="muted small" style="margin:0">${txt}</p>${parc}
    <div class="cols2"><div><div class="tw" style="max-height:none"><table><thead><tr><th class="l">Parcela</th>${e?'<th>Esperado</th>':''}<th>Pago</th><th>Na RBC</th></tr></thead><tbody>${linhas||'<tr><td class="l">Sem valores</td></tr>'}</tbody>
      <tfoot><tr class="tot"><td class="l">Remuneração de contribuição</td>${e?`<td>${f2(e.total)}</td>`:''}<td></td><td>${f2(l.total)}</td></tr></tfoot></table></div>
@@ -1783,7 +1848,7 @@ $('x_rbc').onclick=async()=>{
     const notas=[];
     if($('processo').value.trim()) notas.push('Processo: '+$('processo').value.trim());
     const rg=getRegras();
-    notas.push(`Regras: FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; 11,98% ${rg.ajuste1198Ate?'aplicado até '+rg.ajuste1198Ate:'não aplicado'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (antes, mês de 30 dias).`);
+    notas.push(`Regras: FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; 11,98% ${rg.ajuste1198Ate?'aplicado até '+rg.ajuste1198Ate:'não aplicado'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento: direito presumido quando pagos, valor devido pela tabela da carreira.`);
     notas.push('Valores conforme a ficha financeira (remuneração paga). Classe/padrão, VPNI, função e substituição conforme os relatórios do RH. Divergências entre o pago e o esperado na aba "Esperada x paga".');
     for(const m of S.manual) notas.push(`Distribuição manual: ${nome(m.cat)} ${m.modo==='percentualVB'?(m.pct*100).toLocaleString('pt-BR')+'% do vencimento':'R$ '+f2(m.valor)+(m.modo==='unidade'?' em parcelas de '+f2(m.unidade):' em partes iguais')} de ${fd(m.ini)} a ${fd(m.fim)}${m.origem&&m.origem!=='manual'?' (pago em '+m.origem+')':''}.`);
     for(const a of Object.values(S.ack)) notas.push(`Desconsiderado: ${a.desc||nome(a.cat)}, R$ ${f2(a.valor)} pago em ${mesTxt(a.comp)}.`);
