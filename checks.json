@@ -12,7 +12,8 @@
       "dashboard_transformacoes_organograma.html",
       "dashboard_governanca_tcu.html",
       "dashboard_risco_sucessorio.html",
-      "dashboard_alocacao_ingresso_2026.html"
+      "dashboard_alocacao_ingresso_2026.html",
+      "calculadora_rbc.html"
     ],
     "must_not_contain": [
       "dashboard_acoes_reestruturacao_2026.html"
@@ -404,6 +405,26 @@
       "ghp_",
       "gho_",
       "ghs_"
+    ]
+  },
+  "calculadora_rbc.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "REGRAS_PADRAO",
+      "parseFolhaWebPages",
+      "Calculadora de RBC"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO"
     ]
   }
 }
