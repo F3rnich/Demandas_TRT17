@@ -318,6 +318,8 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(Res. CSJT 211/2017, DEJT 30/11/2017; antes, mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px;align-items:center">
+      <label class="chk"><input type="checkbox" id="r_vpniTabela"> VPNI pela tabela (fora de dez/1999–dez/2005)</label>
+      <label class="chk"><input type="checkbox" id="r_fcTabela"> Função e redutor pela tabela até a data acima</label>
       <label class="chk"><input type="checkbox" id="r_gas"> GAS conta na RBC <span class="dica">(não é base de contribuição)</span></label>
       <label class="chk">AQ-Treinamento na RBC <select id="r_aqTrein" style="width:auto;height:36px"><option value="ficha">conforme a ficha</option><option value="sim">sempre</option><option value="nao">nunca</option></select></label>
       <label class="chk"><input type="checkbox" id="r_descontarFaltas"> Descontar faltas</label>
@@ -492,6 +494,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     if (/(28,86|8622|8627|DIF\. ?LEI)/.test(d)) return 'DIF2886';
     if (/GRAT.*EXTRAORD/.test(d)) return 'GEXTRA';
     if (/(PADR[AÃ]O JUDICI|\bAPJ\b)/.test(d)) return 'APJ';
+    if (/REDUTOR.*(FUN|F\.?C\.?\b|COMISS)/.test(d)) return 'FC';   // redutor sobre a função acompanha a função
     if (/(REDUTOR)/.test(d)) return 'REDUTOR';
     if (/^GRAT\.? ?JUDICI[AÁ]RIA/.test(d)) return 'GAJ';   // gratificação judiciária (80%), 1993
     if (/(GRAT\.? ?ATIV\.? ?JUDIC|GRATIFICA[CÇ][AÃ]O ATIV\.? JUDICI|ATIVIDADE JUDICI|^GAJ\b|\bGAJ\b)/.test(d)) return 'GAJ';
@@ -541,10 +544,10 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
    *         manual:[{id, cat, ini, fim}]  // alocação manual de passivos / pagamentos sem competência
    *         ignorarAloc:{id:true} }
    */
-  const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI'];
+  const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI', 'REDUTOR'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
   const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06' };
+    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -646,6 +649,8 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
           let j = i; if (!soSupl || Math.abs(nivel - g(k, c)) < 0.005) j = i - 1;
           for (; j >= 0 && j >= i - 36 && Math.abs(rest) > 0.005; j--) {
             const kk = meses[j]; const gap = nivel - g(kk, c);
+            // folha suplementar paga meses depois: pula até 3 meses já no nível novo antes de começar a distribuir
+            if (Math.abs(gap) < 0.005 && !aloc.length && j > i - 3) continue;
             if (Math.abs(gap) < 0.005 || Math.sign(gap) !== Math.sign(rest)) break;
             if (Math.abs(rest) >= Math.abs(gap) - 0.02) { val[kk][c] = g(kk, c) + gap; aloc.push({ comp: kk, valor: r2(gap), fracao: 1 }); rest -= gap; }
             else if (Math.abs(rest) < 0.05 && aloc.length) { const u = aloc[aloc.length - 1]; val[u.comp][c] = g(u.comp, c) + rest; u.valor = r2(u.valor + rest); rest = 0; }
@@ -917,7 +922,11 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
         const vp = naFaixa(dados.vpni, dt);
         if (vp.length) {
           const porCod = {};
-          for (const p of vp) { const c = porCod[p.cod] || (porCod[p.cod] = { adm: 0, jud: 0, tipo: p.tipo }); if (/JUD/i.test(p.natureza)) c.jud++; else c.adm++; }
+          // enquanto o servidor ainda não exercia a função indicada no relatório de VPNI, a parcela é valorada pela função
+          // que exercia na data (prática da DIPROF: "1/5 FC-3 até 23/02/97, após FC-4")
+          const fNaData = naFaixa(dados.funcoes, dt).map(f => f.cod);
+          const codEf = cod => (dados.funcoes || []).some(f => f.cod === cod) && !(dados.funcoes || []).some(f => f.cod === cod && f.ini <= dt) && fNaData.length ? fNaData[0] : cod;
+          for (const p of vp) { const cd = codEf(p.cod); const c = porCod[cd] || (porCod[cd] = { adm: 0, jud: 0, tipo: p.tipo }); if (/JUD/i.test(p.natureza)) c.jud++; else c.adm++; }
           for (const cod in porCod) {
             const c = porCod[cod], den = /QUINT/i.test(c.tipo) ? 5 : 10;
             const vt = valorVPNI(ix, cod, c.adm + c.jud, den, dt), va = valorVPNI(ix, cod, c.adm, den, dt);
@@ -1116,8 +1125,11 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     const cs = candidatos(base, cargo, d); if (!cs.length) return null;
     if (vbFicha) {
       const fs = d < '1994-07' ? [1, 1.1198, 1000, 2750, 2750000] : [1, 1.1198];   // ficha antiga pode vir convertida
-      const hit = cs.filter(c => fs.some(f => Math.abs(c.vb - vbFicha * f) <= Math.max(0.05, c.vb * 0.0002, f * 0.006)));
-      if (hit.length === 1) return Object.assign({ origem: 'ficha' }, hit[0]);
+      // tenta cada fator em ordem (valor da ficha como está, depois os ajustes) e aceita o primeiro com um único candidato
+      for (const f of fs) {
+        const hit = cs.filter(c => Math.abs(c.vb - vbFicha * f) <= Math.max(0.05, c.vb * 0.0002, f * 0.006));
+        if (hit.length === 1) return Object.assign({ origem: 'ficha' }, hit[0]);
+      }
     }
     const norm = s => String(s || '').toUpperCase().replace(/[(\[{]=?/g, 'C').replace(/\bE\b/g, 'C').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
     const h = norm(dica); let best = null, bs = -1;
@@ -1172,7 +1184,8 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     for (const l of linhas(pages)) {
       const mc = /\b((?:FC|CJ|DAS)-\d+)\b/.exec(l); const ds = datas(l);
       if (!mc || !ds.length) continue;
-      const meio = l.slice(mc.index + mc[1].length, l.search(/\d{2}\/\d{2}\/\d{4}/)).trim();
+      // nome: texto após o código até o primeiro número (nº de vaga, datas); o relatório repete "nome" e "nome atual"
+      const meio = l.slice(mc.index + mc[1].length).split(/\s\d/)[0].trim();
       const pal = meio.split(' '), h = Math.floor(pal.length / 2);
       const nome = pal.length % 2 === 0 && pal.slice(0, h).join(' ') === pal.slice(h).join(' ') ? pal.slice(0, h).join(' ') : meio;
       out.push({ cod: mc[1], nome, ini: ds[0], fim: ds[1] || null });
@@ -1446,7 +1459,7 @@ if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.clo
 const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
 const S = { devol:[], arquivos:[], recs:[], refs:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{} };
-const REGRA_IDS = ['tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto'];
+const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto'];
 const NOME = { VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
 const CURTO = { VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ', APJ:'APJ', REDUTOR:'Redutor', ATS:'ATS', VPI:'VPI', VPI_DED:'Ded. VPI', VPNI:'VPNI', VPNI_JUD:'VPNI jud.', FC:'Função', SUBST:'Subst.', V1323_VB:'13,23% VB', V1323_GAJ:'13,23% GAJ', V1323_ATS:'13,23% ATS', V1323_VPNI:'13,23% VPNI', V1323_FC:'13,23% FC', AQ:'AQ', AQ_TREIN:'AQ-Trein.', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%' };
 const nome = c => NOME[c] || RBC.CAT[c] || c;
@@ -1518,8 +1531,8 @@ const REL = {
     dica:'Opcional. Sem relatório, vale a ficha: se houve AQ pago no mês, o direito é presumido e o valor devido é calculado pela tabela (até 2025, % do vencimento da Lei 11.416; desde 2026, valores de referência). O nível é deduzido do valor pago. Linhas preenchidas aqui têm prioridade sobre a ficha.'},
   V1323:{titulo:'13,23% (decisão judicial)', cols:[cIni,cFim], dica:'Períodos em que o 13,23% foi devido. Não vem de relatório: informe se houver.'}
 };
-const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], manual:['info','informado por você'] };
-function tagOrigem(r){ const o=ORIGEM[r.origem]; return o?`<span class="tag ${o[0]}"${r.dica?` title="Texto lido: ${esc(r.dica)}"`:''}>${o[1]}</span>`:''; }
+const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], relatorioOk:['ok','do relatório; confere com o vencimento pago'], corrigido:['att','ajustado pelo vencimento pago — confira'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], manual:['info','informado por você'] };
+function tagOrigem(r){ const o=ORIGEM[r.origem]; return o?`<span class="tag ${o[0]}"${r.dica?` title="Texto lido: ${esc(r.dica)}"`:''}>${o[1]}${r.origem==='corrigido'&&r.relOrig?' (relatório: '+esc(r.relOrig)+')':''}</span>`:''; }
 
 function celula(t,i,c,r){
   const [k,tp,lab,opc]=c, v=r[k], a=`data-t="${t}" data-i="${i}" data-c="${k}" aria-label="${esc(lab)}, linha ${i+1}"`;
@@ -1642,7 +1655,21 @@ function vbFichaPara(ini,fim){
 }
 function aplicarSugestoes(){
   const cargo=$('cargo').value; if(!cargo) return false; let mud=false;
+  const nrm=x=>String(x||'').toUpperCase().replace(/\s|-/g,'').replace(/^N[ISA](?=[A-D])/,'');
+  const npd=x=>{ x=String(x||'').trim().toUpperCase(); return /^\d+$/.test(x)?String(+x):x; };
   for(const r of S.rel.PROGRESSAO){
+    // linha de relatório em texto: confere com o vencimento pago; se a ficha indicar outra referência, ajusta e avisa
+    if(!r.ocr&&(r.origem==='relatorio'||r.origem==='relatorioOk'||r.origem==='corrigido')&&r.ini&&!r.revogada){
+      const ref=vbFichaPara(r.ini,r.fim); if(!ref) continue;
+      const d=ref.k+'-01'>r.ini?ref.k+'-01':r.ini;
+      const sg=E.sugerirRef(BASE,cargo,d,'',ref.vb);
+      const orig=r.relOrig?r.relOrig.split(' '):[r.classe,r.padrao];
+      if(!sg||sg.origem!=='ficha') continue;
+      const igual=nrm(sg.classe)===nrm(orig[0])&&npd(sg.padrao)===npd(orig[1]);
+      const n=igual?{classe:orig[0],padrao:orig[1],origem:'relatorioOk',relOrig:undefined}:{classe:sg.classe,padrao:sg.padrao,origem:'corrigido',relOrig:orig.join(' ')};
+      if(n.classe!==r.classe||n.padrao!==r.padrao||n.origem!==r.origem){ Object.assign(r,n); if(!n.relOrig) delete r.relOrig; mud=true; }
+      continue;
+    }
     if(!r.ocr||r.origem==='manual'||!r.ini) continue;
     const ref=vbFichaPara(r.ini,r.fim);
     const d=ref?(ref.k+'-01'>r.ini?ref.k+'-01':r.ini):r.ini;
@@ -1722,6 +1749,26 @@ function aplicarTabelaAntiga(){
     l.vFicha=l.v; l.v=v; l.total=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); l.daTabela=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
+  // Modelo da DIPROF (RBCs conferidas): mesmo com a ficha como base, algumas parcelas saem da tabela
+  //  - VPNI (quintos/décimos): pela tabela, conforme o relatório de VPNI; no período da VPNI judicial sem contribuição
+  //    (dez/1999 a dez/2005, ação da ANAJUSTRA) segue a ficha
+  //  - função e redutor até a data em que a função integrava a base (nov/1998): pela tabela
+  //  - mês sem vencimento na ficha (opção pela FC integral, por exemplo): parcelas do cargo efetivo pela tabela
+  const rg=getRegras();
+  for(const l of S.res.linhas){
+    if(l.daTabela||!l.fonte) continue; const e=S.espBy[l.comp]; if(!e) continue;
+    const v=Object.assign({},l.v), aj=[];
+    const set=(cats)=>{ for(const c of cats){ if(e.inc[c]!=null) v[c]=e.inc[c]; else delete v[c]; } };
+    if(rg.vpniTabela!==false && S.rel.VPNI.length && !(l.comp>='1999-12'&&l.comp<='2005-12') && (e.v.VPNI||e.v.VPNI_JUD)){ set(['VPNI','VPNI_JUD']); aj.push('VPNI pela tabela'); }
+    if(rg.fcTabela!==false && l.comp<=rg.fcAte && (e.v.FC!=null||e.v.SUBST!=null)){ set(['FC','SUBST','REDUTOR']); aj.push('função e redutor pela tabela'); }
+    if(!(l.bruto&&l.bruto.VB>0) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push('sem vencimento na ficha: cargo efetivo pela tabela'); }
+    if(!aj.length) continue;
+    const tot=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); if(Math.abs(tot-l.total)<0.005){ continue; }
+    l.vFicha=l.v; l.v=v; l.total=tot; l.ajustes=aj; l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
+  }
+  // 13º recalculado sobre a remuneração final do mês-base
+  for(const g of S.res.gns){ const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb) continue;
+    let b=lb.total; if(g.obs==='sem VPI') b=RBC.r2(b-(lb.v.VPI||0)-(lb.v.VPI_DED||0)); g.base=b; g.valor=RBC.r2(b*g.avos/12); }
   // mês de ingresso ou de desligamento sem ficha (ex.: posse em 30/06, primeira ficha em julho): o proporcional costuma vir
   // na folha seguinte; se nada foi ligado ao mês, a RBC usa a tabela pelos dias de exercício
   const ls=S.res.linhas, bordas=[ls[0],ls[ls.length-1]];
@@ -2056,11 +2103,12 @@ function renderDetalhe(C){
   const cats=[...new Set([...Object.keys(e?e.v:{}),...Object.keys(l.bruto||{}),...Object.keys(l.v)])].filter(c=>(e&&Math.abs(e.v[c]||0)>=0.005)||Math.abs((l.bruto||{})[c]||0)>=0.005||Math.abs(l.v[c]||0)>=0.005);
   const ordem=RBC.REMUN.concat(['VPNI_JUD_SEM_PSS']); cats.sort((a,b)=>(ordem.indexOf(a)+1||99)-(ordem.indexOf(b)+1||99));
   const linhas=cats.map(c=>{ const ve=e?(e.v[c]||0):null, vp=(l.bruto||{})[c]||0, dif=e&&Math.abs(vp-ve)>0.05; return `<tr${dif?' class="dif"':''}><td class="l">${esc(nome(c))}</td>${e?`<td>${f2(ve||null)}</td>`:''}<td>${f2(vp||null)}</td><td>${f2(l.v[c]||null)}</td></tr>`; }).join('');
+  const ajTxt=l.ajustes?`<div class="aviso info"><span class="ic">i</span><div>Pela tabela neste mês: ${esc(l.ajustes.join('; '))}. A coluna "Pago" mostra a ficha.</div></div>`:'';
   const tabTxt=l.daTabela?`<div class="aviso info"><span class="ic">i</span><div>Competência anterior a 07/1994: a RBC usa a tabela de remuneração (coluna "Esperado"); a ficha fica só como conferência.</div></div>`:'';
   const parc=l.parcialInferido&&l.parcialInferido.length?`<div class="aviso info"><span class="ic">i</span><div>Data a confirmar: ${l.parcialInferido.map(p=>esc(nome(p.cat))+(p.diaInicio?' a partir do dia '+p.diaInicio:'')).join('; ')}.</div></div>`:'';
   const txt={ok:'A contribuição descontada confere com a esperada.',comp:'Há diferença na contribuição deste mês, mas o ano confere. Em geral é atrasado: a contribuição é descontada no mês em que ele é pago.',att:'O ano não confere. Veja a provável causa no quadro "Anos com diferença" e confira a composição abaixo.',nv:'Antes de '+mesTxt(R.regras.conferirDesde)+' a calculadora não modela as alíquotas e devoluções da época; a contribuição do mês não é verificada.',none:'Não há ficha para este mês. Envie a ficha correspondente na etapa 2.'}[s];
   const info=e?[e.ref&&'enquadramento '+e.ref, e.funcao&&'função '+e.funcao, e.subst&&'substituição '+e.subst, e.vpni&&'VPNI '+e.vpni, e.aq&&'AQ '+e.aq, e.atsPct&&'ATS '+(e.atsPct*100).toLocaleString('pt-BR')+'%'].filter(Boolean).join(' · '):'';
-  el.innerHTML=`<h3 style="margin:0 0 4px">${mesTxt(l.comp)}${moedaDe(l.comp)!=='R$'?` <span class="tag info">valores em ${moedaDe(l.comp)} · fora da média</span>`:''}</h3>${info?`<p class="small" style="margin:0 0 4px">Pelos relatórios: ${esc(info)}</p>`:''}<p class="muted small" style="margin:0">${txt}</p>${tabTxt}${parc}
+  el.innerHTML=`<h3 style="margin:0 0 4px">${mesTxt(l.comp)}${moedaDe(l.comp)!=='R$'?` <span class="tag info">valores em ${moedaDe(l.comp)} · fora da média</span>`:''}</h3>${info?`<p class="small" style="margin:0 0 4px">Pelos relatórios: ${esc(info)}</p>`:''}<p class="muted small" style="margin:0">${txt}</p>${tabTxt}${ajTxt}${parc}
    <div class="cols2"><div><div class="tw" style="max-height:none"><table><thead><tr><th class="l">Parcela</th>${e?'<th>Esperado</th>':''}<th>Pago</th><th>Na RBC</th></tr></thead><tbody>${linhas||'<tr><td class="l">Sem valores</td></tr>'}</tbody>
      <tfoot><tr class="tot"><td class="l">Remuneração de contribuição</td>${e?`<td>${f2(e.total)}</td>`:''}<td></td><td>${f2(l.total)}</td></tr></tfoot></table></div>
      ${e?'<p class="muted small" style="margin:6px 0 0">"Pago" é o valor da ficha já ligado ao mês de origem, antes das regras de incidência; "Na RBC", o que entra na relação.</p>':''}</div>
@@ -2134,6 +2182,7 @@ $('x_rbc').onclick=async()=>{
       const notas=[];
       if(l.parcialInferido && l.parcialInferido.length) notas.push('Data a confirmar: '+l.parcialInferido.map(p=>nome(p.cat)+(p.diaInicio?' a partir do dia '+p.diaInicio:'')).join('; '));
       if(l.daTabela) notas.push('Valores da tabela de remuneração (competência anterior a 07/1994)');
+      if(l.ajustes) notas.push('Pela tabela: '+l.ajustes.join('; '));
       if(!l.fonte) notas.push('Sem ficha financeira para esta competência');
       if(notas.length) ws.getCell('B'+r).note=notas.join('. ');
       ws.getCell('X'+r).value={formula:somaCols.map(c=>c+r).join('+'), result:l.total};
@@ -2157,6 +2206,7 @@ $('x_rbc').onclick=async()=>{
     if(R.linhas.some(l=>l.daTabela)) notas.push(`Até ${mesTxt(rg.tabelaAte)}, valores pelas tabelas de remuneração da época (prática da DIPROF), com pro rata pelos dias do mês; função, substituição e lançamentos sem tabela conforme a ficha ou informados.`);
     { const comBE=R.linhas.filter(l=>{const b=baseBE(l); return b!=null&&b>0;}).length, dv=S.devol.filter(p=>p.aplicar!==false&&p.ini&&p.fim);
       notas.push(`Base p/ benefício especial (Lei 12.618/2012, art. 3º, § 2º): remuneração das competências a partir de 07/1994 com contribuição mantida; ${dv.length?'excluídos os períodos de contribuição devolvida: '+dv.map(p=>fd(p.ini)+' a '+fd(p.fim)).join('; ')+' (pro rata pelos dias do mês)':'sem períodos de contribuição devolvida informados'}. Competências com base positiva: ${comBE} (13º não incluído).`); }
+    if(R.linhas.some(l=>l.ajustes)) notas.push(`Pela tabela (modelo da DIPROF), nas competências indicadas: ${rg.vpniTabela!==false?'VPNI conforme o relatório de VPNI, exceto dez/1999 a dez/2005 (VPNI judicial sem contribuição: valor da ficha); ':''}${rg.fcTabela!==false?'função e redutor até '+mesTxt(rg.fcAte)+'; ':''}parcelas do cargo efetivo nos meses sem vencimento na ficha.`);
     if(temPre) notas.push('Competências anteriores a 07/1994 na moeda da época, sem conversão (fator e remuneração em real em branco). A média da aposentadoria considera só as competências a partir de 07/1994 (Lei 10.887/2004, art. 1º; EC 103/2019, art. 26).');
     notas.push('Valores conforme a ficha financeira (remuneração paga). Classe/padrão, VPNI, função e substituição conforme os relatórios do RH. Divergências entre o pago e o esperado na aba "Esperada x paga".');
     for(const m of S.manual) notas.push(`Distribuição manual: ${nome(m.cat)} ${m.modo==='percentualVB'?(m.pct*100).toLocaleString('pt-BR')+'% do vencimento':'R$ '+f2(m.valor)+(m.modo==='unidade'?' em parcelas de '+f2(m.unidade):' em partes iguais')} de ${fd(m.ini)} a ${fd(m.fim)}${m.origem&&m.origem!=='manual'?' (pago em '+m.origem+')':''}.`);
