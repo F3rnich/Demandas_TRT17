@@ -14,13 +14,17 @@
 :root{
   --navy:#003A5C;--navy2:#00466E;--navy-soft:#E4EDF3;--yellow:#FFD040;
   --bg:#EEF2F5;--paper:#FFFFFF;--ink:#17242C;--mute:#55666F;--line:#D3DDE3;
-  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--comp:#E8C98F;--none:#C9D3D9;
+  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--comp:#E8C98F;--none:#C9D3D9;--inbd:#A9B9C3;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;
-  --ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850}}
-:root[data-theme="dark"]{--navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;--ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850}
+  --ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850;--inbd:#56697A}}
+:root[data-theme="dark"]{--navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;--ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850;--inbd:#56697A}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums}
 a{color:var(--navy)}
@@ -67,20 +71,21 @@ main{max-width:1040px;margin:0 auto;padding:26px 20px 120px}
 .arqs li:first-child{border-top:0}
 .arqs .q{margin-left:auto;color:var(--mute)}
 .campos{display:grid;grid-template-columns:repeat(6,1fr);gap:14px 16px}
+.campos label,.regras label{justify-content:space-between}
 .campos .c2{grid-column:span 2}.campos .c3{grid-column:span 3}
 label{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
 label .dica{font-weight:400;color:var(--mute);font-size:12.5px}
 input,select,button{font:inherit;color:var(--ink)}
-input[type=text],input[type=date],input[type=month],input[type=number],select{background:var(--paper);border:1px solid #A9B9C3;border-radius:6px;padding:9px 10px;min-width:0;width:100%;font-weight:400}
+input[type=text],input[type=date],input[type=month],input[type=number],select{background:var(--paper);border:1px solid var(--inbd);border-radius:6px;padding:0 10px;height:42px;min-width:0;width:100%;font-weight:400}
 .btn{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:7px;padding:11px 18px;font-weight:700;cursor:pointer}
-:root[data-theme="dark"] .btn{color:#0E1A21}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#0E1A21}}
+:root[data-theme="dark"] .btn:not(.sec):not(.link){color:#0E1A21}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.sec):not(.link){color:#0E1A21}}
 .btn:hover{background:var(--navy2)}
 .btn.sec{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
 .btn.sec:hover{background:var(--navy-soft)}
 .btn.link{background:none;border:0;color:var(--navy);padding:4px 0;text-decoration:underline;font-weight:600}
 .btn.peq{padding:6px 12px;font-size:14px}
-.btn[disabled]{opacity:.45;cursor:default}
+.btn[disabled],.btn[disabled]:hover{background:var(--line);color:var(--mute);border-color:var(--line);cursor:not-allowed}
 
 .aviso{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:8px;margin:12px 0 0;font-size:14.5px}
 .aviso .ic{flex:none;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff}
@@ -209,7 +214,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label class="c3">Cargo<input type="text" id="cargo" autocomplete="off"></label>
       <label class="c2">Início do período<input type="date" id="inicio"></label>
       <label class="c2">Fim do período<input type="date" id="fim"></label>
-      <label class="c2">Processo SEI <span class="dica">opcional</span><input type="text" id="processo" autocomplete="off"></label>
+      <label class="c2"><span>Processo SEI <span class="dica">(opcional)</span></span><input type="text" id="processo" autocomplete="off"></label>
     </div>
   </div>
 </section>
@@ -264,7 +269,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label>Função e substituição contam até<input type="month" id="r_fcAte"></label>
       <label>Adicional por tempo de serviço conta a partir de<input type="month" id="r_atsDesde"></label>
       <label>Conferir a contribuição a partir de<input type="month" id="r_conferirDesde"></label>
-      <label>Acrescentar 11,98% às parcelas até<span class="dica">em branco = não acrescentar</span><input type="month" id="r_ajuste1198Ate"></label>
+      <label><span>Acrescentar 11,98% às parcelas até <span class="dica">(em branco = não acrescentar)</span></span><input type="month" id="r_ajuste1198Ate"></label>
       <label>13º entra na RBC a partir do ano<input type="number" id="r_gnDesde" min="1994" max="2100"></label>
       <label>13º sem VPI até o ano<input type="number" id="r_gnSemVPIAte" min="1994" max="2100"></label>
     </div>
@@ -374,7 +379,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
         else if (label && cur && cur.got && !nv) { cur.desc += ' ' + label; continue; }
         else if (label) { cur = null; continue; }
         if (nv && cur && !cur.got) {
-          for (const k in vals) if (k !== 'TOTAL') {
+          for (const k in vals) if (k !== 'TOTAL' && vals[k] !== 0) {  // meses futuros vêm zerados no PDF
             const mes = MES.indexOf(k) + 1;
             recs.push({ ano, mes, comp: ym(ano, mes), fonte: 'pdf', folha: 'N', tipoFolha: 0, cod: cur.cod, desc: cur.desc, seq: 0, v: vals[k], _h: cur });
           }
