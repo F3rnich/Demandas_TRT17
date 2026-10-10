@@ -13,11 +13,11 @@ const ultimoDia = k => k+'-'+String(new Date(+k.slice(0,4),+k.slice(5,7),0).getD
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
-const S = { devol:[], arquivos:[], recs:[], refs:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
+const S = { devol:[], arquivos:[], recs:[], refs:{}, basePSO:{}, fichaInfo:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{} };
-const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto'];
-const NOME = { VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
-const CURTO = { VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ', APJ:'APJ', REDUTOR:'Redutor', ATS:'ATS', VPI:'VPI', VPI_DED:'Ded. VPI', VPNI:'VPNI', VPNI_JUD:'VPNI jud.', FC:'Função', SUBST:'Subst.', V1323_VB:'13,23% VB', V1323_GAJ:'13,23% GAJ', V1323_ATS:'13,23% ATS', V1323_VPNI:'13,23% VPNI', V1323_FC:'13,23% FC', AQ:'AQ', AQ_TREIN:'AQ-Trein.', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%' };
+const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto','tetoDesde','tetoAuto','semFichaTabela','gasAte','vpiTabela','gnFicha'];
+const NOME = { SUBSIDIO:'Subsídio (magistrado)', FC_PREV:'Função com opção de contribuição', VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
+const CURTO = { SUBSIDIO:'Subsídio', FC_PREV:'Função c/ PSS', VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ', APJ:'APJ', REDUTOR:'Redutor', ATS:'ATS', VPI:'VPI', VPI_DED:'Ded. VPI', VPNI:'VPNI', VPNI_JUD:'VPNI jud.', FC:'Função', SUBST:'Subst.', V1323_VB:'13,23% VB', V1323_GAJ:'13,23% GAJ', V1323_ATS:'13,23% ATS', V1323_VPNI:'13,23% VPNI', V1323_FC:'13,23% FC', AQ:'AQ', AQ_TREIN:'AQ-Trein.', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%' };
 const nome = c => NOME[c] || RBC.CAT[c] || c;
 
 // ------------------------------------------------------------ regras
@@ -26,13 +26,15 @@ function getRegras(){
   const r={}; for (const k of REGRA_IDS){ const el=$('r_'+k); r[k] = el.type==='checkbox' ? el.checked : (el.value||''); }
   r.aqTrein = r.aqTrein==='sim' ? true : r.aqTrein==='nao' ? false : 'ficha';
   for (const k of ['ajuste1198Ate','gnDesde','gnSemVPIAte']) if(!r[k]) r[k]=null;
+  if(!r.gasAte) r.gasAte='';
   if(!r.ajuste1198Desde) r.ajuste1198Desde=RBC.REGRAS_PADRAO.ajuste1198Desde;
   if(!r.divisorDiasDesde) r.divisorDiasDesde=RBC.REGRAS_PADRAO.divisorDiasDesde;
   if(!r.divisor30Desde) r.divisor30Desde=RBC.REGRAS_PADRAO.divisor30Desde;
   if(!r.tabelaAte) r.tabelaAte=null;
+  r.tetoDesde = r.tetoDesde || (r.tetoAuto && S.tetoAuto && S.tetoAuto.desde ? S.tetoAuto.desde : '');
   return r;
 }
-function regrasAlteradas(){ const a=getRegras(), p=RBC.REGRAS_PADRAO; return REGRA_IDS.filter(k=>String(a[k]==null?'':a[k])!==String(p[k]==null?'':p[k])); }
+function regrasAlteradas(){ const a=Object.assign(getRegras(),{tetoDesde:$('r_tetoDesde').value||''}), p=RBC.REGRAS_PADRAO; return REGRA_IDS.filter(k=>String(a[k]==null?'':a[k])!==String(p[k]==null?'':p[k])); }
 setRegras(RBC.REGRAS_PADRAO);
 $('r_reset').onclick=e=>{ e.preventDefault(); setRegras(RBC.REGRAS_PADRAO); calc(); };
 for (const k of REGRA_IDS) $('r_'+k).addEventListener('change', calc);
@@ -147,11 +149,35 @@ async function ocrProgressao(doc,msg){
         const vp=pg.getViewport({scale:dpi/72}); const cv=document.createElement('canvas'); cv.width=Math.ceil(vp.width); cv.height=Math.ceil(vp.height);
         const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-        const {data}=await w.recognize(cv); listas.push(RR.parseProgressaoTexto(data.text));
+        const {data}=await w.recognize(cv); listas.push(RR.parseProgressaoTexto(data.text)); if(j===1) (ocrProgressao.textos=ocrProgressao.textos||[]).push(data.text);
       }
     }
   } finally { await w.terminate(); }
   return RR.juntarProgressoes(listas);
+}
+// CTC / declaração de tempo de contribuição: preenche os dados do servidor e as tabelas (progressão, funções, anuênios,
+// quintos) que ainda não vieram de relatório do RH. Relatório do RH, quando enviado, prevalece.
+function aplicarCTC(r,info,ocr){
+  const m=r.meta||{}, pre=[];
+  if(m.cargo&&m.cargo!=='JUIZ'&&!$('cargo').value){ $('cargo').value=m.cargo; pre.push('cargo'); }
+  if(m.especialidade&&!$('especialidade').value){ $('especialidade').value=m.especialidade; $('espDesde').disabled=false; pre.push('especialidade'); }
+  if(m.inicio&&!$('inicio').value){ $('inicio').value=m.inicio; pre.push('início do período'); }
+  if(m.fim&&!$('fim').value){ $('fim').value=m.fim; pre.push('fim do período'); }
+  S.ctc=m;
+  const usados=[];
+  const por={PROGRESSAO:r.PROGRESSAO, FUNCOES:r.FUNCOES, ATS:r.ATS, VPNI:[].concat(...(r.VPNI||[]).map(v=>Array.from({length:v.parcelas||1},()=>({cod:v.cod,tipo:v.tipo,natureza:v.natureza,ini:v.ini,fim:v.fim||''}))))};
+  for(const [t,rows] of Object.entries(por)){
+    if(!rows||!rows.length) continue;
+    const doRH=S.relArqs.some(a=>a.tipo===t&&a!==info);
+    if(doRH) continue;
+    S.rel[t]=rows.map(o=>Object.assign({},o,{fim:o.fim||'',fonte:'CTC'},t==='PROGRESSAO'?{origem:ocr?'incerta':'relatorio'}:{})); usados.push(t);
+  }
+  info.tipo='CTC'; info.n=usados.reduce((a,t)=>a+S.rel[t].length,0);
+  const nomes={PROGRESSAO:'progressão',FUNCOES:'funções',ATS:'anuênios',VPNI:'quintos/décimos'};
+  const tt=m.teto==='sim'?'contribuição limitada ao teto do RGPS':m.teto==='migrou'?'migrou para a previdência complementar'+(m.tetoDesde?' em '+m.tetoDesde.split('-').reverse().join('/'):''):m.teto==='nao'?'sem limitação ao teto':'';
+  info.msgFim=[usados.length?'tabelas: '+usados.map(t=>nomes[t]).join(', '):'nenhuma tabela legível', pre.length?'preenchido: '+pre.join(', '):'', tt, ocr?'lida por imagem — confira':''].filter(Boolean).join(' · ');
+  if(r.frequencia&&r.frequencia.some(f=>f.faltas>0)) info.msgFim+=' · faltas na CTC: '+r.frequencia.filter(f=>f.faltas>0).map(f=>f.ano+' ('+f.faltas+')').join(', ');
+  info.st='ok'; renderArqRel();
 }
 async function lerRelatorios(list){
   const fila=[...list]; if(!fila.length) return;
@@ -172,11 +198,15 @@ async function lerRelatorios(list){
       const {doc,pages}=await pdfDoc(await f.arrayBuffer());
       const chars=pages.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.str.trim().length,0),0);
       if(chars<30){
-        tipo='PROGRESSAO'; info.ocr=true;
+        tipo='PROGRESSAO'; info.ocr=true; ocrProgressao.textos=[];
         rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel();})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
+        const txt=(ocrProgressao.textos||[]).join('\n');
+        // CTC digitalizada: lida pelo mesmo reconhecimento de texto; o que vier é conferido pela ficha e pelo usuário
+        if(/TEMPO\s+DE\s+(CONTRIBUI|SERVI)/i.test(txt) && !/RELA..O\s+DAS\s+BASES/i.test(txt)){ aplicarCTC(RR.parseCTC(txt),info,true); continue; }
       } else {
         tipo=RR.tipoRelatorio(pages);
-        if(!tipo) throw new Error('Relatório não reconhecido. Os aceitos são: progressão, funções, substituições, VPNI e ATS.');
+        if(tipo==='CTC'){ aplicarCTC(RR.parseCTC(pages),info,false); continue; }
+        if(!tipo) throw new Error('Documento não reconhecido. Os aceitos são: CTC ou declaração de tempo de contribuição, progressão, funções, substituições, VPNI e ATS.');
         if(tipo==='AQ') throw new Error('Não há relatório de AQ: o AQ e o AQ-Treinamento são conferidos pela ficha.');
         if(tipo==='PROGRESSAO'){ // preenche os dados do servidor que estiverem em branco
           const d=RR.dadosServidor(pages), pre=[];
@@ -239,13 +269,66 @@ function dadosServidor(){
   const cargo=$('cargo').value, ini=iniEf(), fim=fimEf();
   if(!cargo||!ini||!fim||ini>fim) return null;
   const ord=l=>l.slice().sort((a,b)=>a.ini<b.ini?-1:a.ini>b.ini?1:0);
-  const prog=ord(S.rel.PROGRESSAO.filter(p=>p.ini&&p.classe&&p.padrao));
+  let prog=ord(S.rel.PROGRESSAO.filter(p=>p.ini&&p.classe&&p.padrao));
+  // sem relatório de progressão (caso comum: a DIPROF trabalha com a ficha e a CTC), a classe/padrão vem do vencimento pago
+  if(!prog.length) prog=progDaFicha(cargo,ini,fim);
+  else if(prog[0].ini>ini){
+    // relatório/CTC começa depois do ingresso (ex.: CTC sem as referências anteriores a 1992): o início vem da ficha
+    const p0=prog[0].ini, vesp=new Date(Date.UTC(+p0.slice(0,4),+p0.slice(5,7)-1,+p0.slice(8,10)-1)).toISOString().slice(0,10);
+    const antes=progDaFicha(cargo,ini,fim).filter(p=>p.ini<p0).map(p=>Object.assign({},p,{fim:(!p.fim||p.fim>=p0)?vesp:p.fim}));
+    prog=antes.concat(prog);
+  }
   if(!prog.length) return null;
   const per=l=>ord(l.filter(r=>r.ini)).map(r=>Object.assign({},r,{fim:r.fim||null}));
+  const atsRel=per(S.rel.ATS).filter(r=>r.pct!=null);
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
-    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:per(S.rel.ATS).filter(r=>r.pct!=null), aq:[], v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
+    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:atsRel.length?atsRel:atsDaFicha(), aq:[], v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
+}
+// Progressão inferida da ficha: classe/padrão de cada mês pelo vencimento pago (mês cheio, folha normal). Meses sem ficha:
+// carreira da Lei 11.416/2006 (A1–A5, B6–B10, C11–C13) avança um padrão a cada 12 meses a partir da última mudança vista
+// e recua da mesma forma antes da primeira; nas demais tabelas mantém a referência mais próxima. Tudo marcado "inferido".
+const SEQ11416=['A-1','A-2','A-3','A-4','A-5','B-6','B-7','B-8','B-9','B-10','C-11','C-12','C-13'];
+function progDaFicha(cargo,ini,fim){
+  if(!S.res) return [];
+  const pts=[];
+  for(const l of S.res.linhas){
+    if(!l.fonte||!l.bruto||!(l.bruto.VB>0)||l.comp===ini.slice(0,7)||l.comp===fim.slice(0,7)) continue;
+    const sg=E.sugerirRef(BASE,cargo,l.comp+'-15','',l.bruto.VB); if(!sg||sg.origem!=='ficha') continue;
+    pts.push({k:l.comp,classe:sg.classe,padrao:String(sg.padrao)});
+  }
+  if(!pts.length) return [];
+  const ref=p=>p.classe+'-'+(/^\d+$/.test(p.padrao)?+p.padrao:p.padrao);
+  const out=[]; let cur=null;
+  for(const p of pts){ if(cur&&ref(cur)===ref(p)){ cur.ult=p.k; continue; } cur={ini:p.k+'-01',ult:p.k,classe:p.classe,padrao:p.padrao,origem:'ficha'}; out.push(cur); }
+  const passo=(r,n)=>{ const i=SEQ11416.indexOf(ref(r)); if(i<0) return null; const j=Math.min(SEQ11416.length-1,Math.max(0,i+n)); const [c,pd]=SEQ11416[j].split('-'); return {classe:c,padrao:pd}; };
+  const res=[];
+  // antes da primeira referência vista
+  const f0=out[0]; if(ini.slice(0,7)<f0.ini.slice(0,7)){
+    let k=f0.ini.slice(0,7), n=0; const ant=[];
+    while(k>ini.slice(0,7)){ const k2=RBC.addM(k,-12); n--; const st=k>='2007-01'?passo(f0,n):null; const iniP=k2<ini.slice(0,7)?ini:k2+'-01';
+      ant.unshift(Object.assign({ini:iniP,fim:ultimoDia(RBC.addM(k,-1)),origem:'inferida'},st||{classe:f0.classe,padrao:f0.padrao})); k=k2; }
+    res.push(...ant);
+  }
+  out.forEach((o,i)=>{ const nx=out[i+1]; res.push({ini:o.ini,fim:nx?ultimoDia(RBC.addM(nx.ini.slice(0,7),-1)):null,classe:o.classe,padrao:o.padrao,origem:'ficha'}); });
+  // depois da última referência vista: progressão anual presumida (só na carreira da Lei 11.416)
+  const ul=out[out.length-1], last=res[res.length-1];
+  if(ul.ult<fim.slice(0,7)&&SEQ11416.includes(ref(ul))){
+    last.fim=ultimoDia(ul.ult); let k=RBC.addM(ul.ult,1), base=ul.ini.slice(0,7), n=0;
+    while(k<=fim.slice(0,7)){ let prox=RBC.addM(base,12*(n+1)); while(prox<=ul.ult){ n++; prox=RBC.addM(base,12*(n+1)); }
+      const st=passo(ul,n); const ate=prox>fim.slice(0,7)?null:ultimoDia(RBC.addM(prox,-1));
+      res.push(Object.assign({ini:k+'-01',fim:ate,origem:'inferida'},st)); if(!ate) break; k=prox; n++; }
+  }
+  return res;
+}
+// ATS sem relatório: percentual pago na ficha (ATS ÷ vencimento), por período
+function atsDaFicha(){
+  if(!S.res) return []; const out=[]; let cur=null;
+  for(const l of S.res.linhas){ if(!l.fonte||!l.bruto||!(l.bruto.VB>0)) continue; const p=l.bruto.ATS?Math.round(l.bruto.ATS/l.bruto.VB*100):0;
+    if(cur&&cur.pct===p){ cur.fim=ultimoDia(l.comp); continue; } cur={ini:l.comp+'-01',fim:ultimoDia(l.comp),pct:p}; out.push(cur); }
+  if(out.length) out[out.length-1].fim=null;
+  return out.filter(o=>o.pct>0);
 }
 // AQ e AQ-Treinamento: havendo pagamento no mês, presume-se o direito; o valor devido é calculado pela tabela da carreira
 function aqDaFicha(){
@@ -254,6 +337,15 @@ function aqDaFicha(){
   return o;
 }
 
+// dados do cabeçalho da ficha do FolhaWeb (cargo, data de exercício): só preenchem campos vazios
+function infoFicha(inf){
+  if(!inf) return; Object.assign(S.fichaInfo, inf);
+  const c=String(inf.cargo||'').toUpperCase();
+  const cg=/ANALISTA/.test(c)?'ANALISTA JUDICIÁRIO':/T[ÉE]CNICO/.test(c)?'TÉCNICO JUDICIÁRIO':/AUXILIAR/.test(c)?'AUXILIAR JUDICIÁRIO':'';
+  if(cg&&!$('cargo').value){ $('cargo').value=cg; }
+  const m=String(inf.exercicio||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m&&!$('inicio').value){ $('inicio').value=m[3]+'-'+m[2]+'-'+m[1]; }
+}
 // ------------------------------------------------------------ etapa 2: ficha
 async function lerArquivos(list){
   const fila=[...list]; if(!fila.length) return;
@@ -262,8 +354,14 @@ async function lerArquivos(list){
     const info={nome:f.name, anos:'', erro:'', dup:0};
     try{
       const buf=await f.arrayBuffer(); let recs=[], refs={};
-      if (/\.pdf$/i.test(f.name)){ const r=RBC.parseFolhaWebPages((await pdfDoc(buf)).pages); recs=r.recs; refs=r.refs; }
-      else if (/\.xlsx?$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'}); recs=RBC.parseLongRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])); }
+      if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=r.refs||{}; if(r.info) infoFicha(r.info); }
+      else if (/\.xlsx?$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'});
+        // sistema antigo (planilha longa) ou FolhaWeb exportado em planilha (Big Grid). Usa a primeira aba reconhecida: as
+        // seguintes costumam ser cópias de trabalho (conferências, ajustes) e duplicariam lançamentos
+        for(const n of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[n]); let r=null;
+          if(RBC.isBigGrid(rows)){ const b=RBC.parseBigGrid(rows); r=b.recs; if(r.length){ Object.assign(S.basePSO,b.basePSO); infoFicha(b.info); } }
+          else if(rows.length&&('Código Rubrica' in rows[0])) r=RBC.parseLongRows(rows);
+          if(r&&r.length){ recs=r; break; } } }
       else info.erro='Formato não aceito. Envie .xls, .xlsx ou .pdf.';
       if(!info.erro && !recs.length) info.erro='Nenhum lançamento encontrado. Confira se é a ficha financeira exportada do sistema.';
       const ja=new Set(S.recs.map(r=>r.comp+'|'+r.fonte));
@@ -284,8 +382,15 @@ function ignMap(){ const o={}; for(const k in S.ignorar) o[k]=true; return o; }
 function calc(){
   const ini=iniEf(), fim=fimEf();
   S.res=null;
-  if(S.recs.length && ini && fim && ini<=fim){
-    try{ S.res = RBC.calcular(S.recs,{inicio:ini, fim, cats:S.cats, refs:S.refs, tabela:TABELA, regras:getRegras(), manual:S.manual, ignorarAloc:ignMap()}); }
+  S.tetoAuto=RBC.detectarTeto(S.recs, ini);
+  if(S.ctc&&S.ctc.teto==='sim') S.tetoAuto={desde:(S.ctc.inicio||ini||'').slice(0,7), motivo:'CTC: contribuição limitada ao teto do RGPS'};
+  else if(S.ctc&&S.ctc.teto==='migrou'&&S.ctc.tetoDesde) S.tetoAuto={desde:S.ctc.tetoDesde.slice(0,7), motivo:'CTC: migração para a previdência complementar'};
+  else if(S.ctc&&S.ctc.teto==='nao') S.tetoAuto=S.tetoAuto&&S.tetoAuto.desde?Object.assign({},S.tetoAuto,{motivo:S.tetoAuto.motivo+' — atenção: a CTC diz que não houve adesão'}):{desde:'',motivo:'CTC: sem limitação ao teto do RGPS'};
+  { const t=S.tetoAuto, el=$('tetoDica'); if(el) el.textContent = t&&t.desde ? `Detectado: desde ${t.desde.slice(5,7)}/${t.desde.slice(0,4)} (${t.motivo})` : t ? t.motivo : 'Sem contribuição ao Funpresp na ficha'; }
+  // sem ficha, mas com progressão (CTC ou relatório): a RBC sai inteira da tabela (meses marcados "sem ficha")
+  if((S.recs.length || S.rel.PROGRESSAO.length) && ini && fim && ini<=fim){
+    try{ const rg=getRegras(); if($('cargo').value==='MAGISTRADO') rg.gnFicha=true;
+      S.res = RBC.calcular(S.recs,{inicio:ini, fim, cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); }
     catch(e){ console.error(e); S.res=null; }
   }
   if(aplicarSugestoes()) renderRelTabelas();
@@ -293,6 +398,10 @@ function calc(){
   const d=dadosServidor();
   if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(getRegras(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
   aplicarTabelaAntiga();
+  aplicarSemFicha();
+  aplicarTeto();
+  // 13º anterior a gnDesde: fora da RBC; vai para a certidão complementar de gratificação natalina
+  if(S.res){ S.gnCert=S.res.gns.filter(g=>g.fora); S.res.gns=S.res.gns.filter(g=>!g.fora); } else S.gnCert=[];
   renderTudo();
 }
 // Antes de 07/1994 (regra tabelaAte), a RBC usa a remuneração da tabela (prática da DIPROF): com os reajustes mensais e os
@@ -315,15 +424,19 @@ function aplicarTabelaAntiga(){
     if(l.daTabela||!l.fonte) continue; const e=S.espBy[l.comp]; if(!e) continue;
     const v=Object.assign({},l.v), aj=[];
     const set=(cats)=>{ for(const c of cats){ if(e.inc[c]!=null) v[c]=e.inc[c]; else delete v[c]; } };
-    if(rg.vpniTabela!==false && S.rel.VPNI.length && !(l.comp>='1999-12'&&l.comp<='2005-12') && (e.v.VPNI||e.v.VPNI_JUD)){ set(['VPNI','VPNI_JUD']); aj.push('VPNI pela tabela'); }
-    if(rg.fcTabela!==false && l.comp<=rg.fcAte && (e.v.FC!=null||e.v.SUBST!=null)){ set(['FC','SUBST','REDUTOR']); aj.push('função e redutor pela tabela'); }
+    // (VPNI e função pela tabela só com relatório do RH: as tabelas lidas da CTC servem à conferência, não substituem a ficha)
+    if(rg.vpniTabela!==false && S.rel.VPNI.some(r=>r.fonte!=='CTC') && !(l.comp>='1999-12'&&l.comp<='2005-12') && (e.v.VPNI||e.v.VPNI_JUD)){ set(['VPNI','VPNI_JUD']); aj.push('VPNI pela tabela'); }
+    if(rg.fcTabela!==false && l.comp<=rg.fcAte && (e.v.FC!=null||e.v.SUBST!=null) && [...S.rel.FUNCOES,...S.rel.SUBSTITUICOES].some(r=>r.fonte!=='CTC')){ set(['FC','SUBST','REDUTOR']); aj.push('função e redutor pela tabela'); }
     if(!(l.bruto&&l.bruto.VB>0) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push('sem vencimento na ficha: cargo efetivo pela tabela'); }
+    // VPI (Lei 10.698/2003) devida de abr/2016 a dez/2018 e não paga na folha a partir de ago/2016: as RBCs da DIPROF
+    // emitidas desde 2025 incluem o valor da tabela (6 casos; as de 2024 não incluíam)
+    if(rg.vpiTabela!==false && l.comp>='2016-04' && l.comp<='2018-12' && !(l.v.VPI>0) && e.inc.VPI>0){ v.VPI=e.inc.VPI; aj.push('VPI pela tabela'); }
     if(!aj.length) continue;
     const tot=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); if(Math.abs(tot-l.total)<0.005){ continue; }
     l.vFicha=l.v; l.v=v; l.total=tot; l.ajustes=aj; l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
   // 13º recalculado sobre a remuneração final do mês-base
-  for(const g of S.res.gns){ const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb) continue;
+  for(const g of S.res.gns){ if(g.daFicha) continue; const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb) continue;
     let b=lb.total; if(g.obs==='sem VPI') b=RBC.r2(b-(lb.v.VPI||0)-(lb.v.VPI_DED||0)); g.base=b; g.valor=RBC.r2(b*g.avos/12); }
   // mês de ingresso ou de desligamento sem ficha (ex.: posse em 30/06, primeira ficha em julho): o proporcional costuma vir
   // na folha seguinte; se nada foi ligado ao mês, a RBC usa a tabela pelos dias de exercício
@@ -333,6 +446,72 @@ function aplicarTabelaAntiga(){
     l.v=Object.assign({},e.inc); l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.borda=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp);
   }
+}
+// Meses do período sem ficha enviada: a RBC usa a remuneração esperada pela tabela (marcada na planilha). Regra editável.
+function vizinhoComFicha(k){
+  const ls=S.res.linhas.filter(l=>l.fonte&&l.bruto&&l.bruto.VB>0); let best=null, bd=1e9;
+  const n=x=>+x.slice(0,4)*12+ +x.slice(5,7);
+  for(const l of ls){ const d=Math.abs(n(l.comp)-n(k)); if(d<bd){ bd=d; best=l; } }
+  return best;
+}
+function aplicarSemFicha(){
+  if(!S.res||!S.esp||!getRegras().semFichaTabela) return;
+  for(const l of S.res.linhas){
+    if(l.fonte||l.daTabela||Math.abs(l.total)>0.005) continue; const e=S.espBy[l.comp]; if(!e) continue;
+    l.v=Object.assign({},e.inc);
+    // parcelas sem tabela (AQ, VPNI): repete o mês com ficha mais próximo (AQ como percentual do vencimento)
+    const viz=vizinhoComFicha(l.comp);
+    if(viz){ const b=viz.bruto||{}; if(b.AQ>0&&b.VB>0&&l.v.VB&&!l.v.AQ) l.v.AQ=RBC.r2(l.v.VB*b.AQ/b.VB);
+      for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]&&!l.v[c]) l.v[c]=viz.v[c]; }
+    l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.semFicha=true;
+    l.pssCalc=RBC.pssDevida(l.total,l.comp);
+  }
+  for(const g of S.res.gns){ if(g.daFicha) continue; const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb||!lb.semFicha) continue;
+    let b=lb.total; if(g.obs==='sem VPI') b=RBC.r2(b-(lb.v.VPI||0)-(lb.v.VPI_DED||0)); g.base=b; g.valor=RBC.r2(b*g.avos/12); }
+}
+// Regime de previdência complementar (Funpresp): a base de contribuição ao RPPS é limitada ao teto do RGPS
+// (Lei 12.618/2012, art. 3º). A RBC registra o menor valor entre a remuneração e o teto, inclusive no 13º.
+function tetoRGPS(k){ const d=k+'-15'; const p=(BASE.par||[]).find(x=>x[0]==='TETO_RGPS'&&x[1]<=d&&x[2]>=d); return p?p[3]:null; }
+function aplicarTeto(){
+  const desde=getRegras().tetoDesde; if(!S.res||!desde) return;
+  for(const l of S.res.linhas){
+    if(l.comp<desde) continue; const t=tetoRGPS(l.comp); if(t==null) continue;
+    l.tetoRGPS=t; if(l.total>t){ l.totalSemTeto=l.total; l.total=t; }
+    l.pssCalc=RBC.pssDevida(l.total,l.comp,true); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
+  }
+  for(const g of S.res.gns){ if(g.depois<desde) continue; const t=tetoRGPS(g.depois); if(t==null) continue; g.tetoRGPS=t; if(g.valor>t){ g.valorSemTeto=g.valor; g.valor=t; } }
+}
+// ------------------------------------------------------------ certidão complementar de gratificação natalina
+// Modelo da DIPROF: "Certifico, em complementação à Relação das Remunerações de Contribuições emitida em …, que o(a)
+// servidor(a) …, CPF …, recebeu por este Tribunal, a título de Gratificação Natalina (considerando-se apenas as parcelas
+// que compunham a base do recolhimento previdenciário mensal), os seguintes valores: …. Certifico ainda que não houve
+// recolhimento de contribuição previdenciária sobre esses valores."
+const UN=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+const DZ=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+const CT=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+function ext999(n){ if(n===100) return 'cem'; const c=Math.floor(n/100), r=n%100, p=[]; if(c) p.push(CT[c]); if(r<20){ if(r) p.push(UN[r]); } else { p.push(DZ[Math.floor(r/10)]+(r%10?' e '+UN[r%10]:'')); } return p.join(' e '); }
+function extInt(n){
+  if(n===0) return 'zero';
+  const g=[]; let x=n; while(x>0){ g.push(x%1000); x=Math.floor(x/1000); }
+  const nomes=[['',''],['mil','mil'],['milhão','milhões'],['bilhão','bilhões']], partes=[];
+  for(let i=g.length-1;i>=0;i--){ const v=g[i]; if(!v) continue; let t=i===1&&v===1?'mil':ext999(v)+(i?' '+nomes[i][v>1?1:0]:''); partes.push({t,v,i}); }
+  return partes.map((p,j)=>{ if(j===0) return p.t; const ult=j===partes.length-1; return ((ult&&(p.v<100||p.v%100===0))?' e ':' ')+p.t; }).join('');
+}
+const MOEDAS={'Cr$':['cruzeiro','cruzeiros'],'CR$':['cruzeiro real','cruzeiros reais'],'R$':['real','reais'],'Cz$':['cruzado','cruzados'],'NCz$':['cruzado novo','cruzados novos']};
+function porExtenso(v,moeda){
+  const [s1,sp]=MOEDAS[moeda]||MOEDAS['R$']; const n=Math.floor(Math.round(v*100)/100+1e-9), c=Math.round((v-n)*100);
+  let t='';
+  if(n){ t=extInt(n); t+=(n%1000000===0?' de ':' ')+(n===1?s1:sp); }
+  if(c){ t+=(n?' e ':'')+extInt(c)+' '+(c===1?'centavo':'centavos')+(n?'':' de '+s1); }
+  return t||'zero '+sp;
+}
+const moedaAno = y => moedaDe(y+'-12');
+function textoCertidaoGN(){
+  const g=(S.gnCert||[]).filter(x=>x.valor>0); if(!g.length) return '';
+  const nome=$('nome').value.trim()||'[nome do servidor]';
+  const itens=g.map(x=>{ const m=moedaAno(x.ano); return `${m} ${fmt.format(x.valor)} (${porExtenso(x.valor,m)}) em ${x.ano}`; });
+  const lista=itens.length>1?itens.slice(0,-1).join('; ')+' e '+itens[itens.length-1]:itens[0];
+  return `Certifico, em complementação à Relação das Remunerações de Contribuições emitida em [data], referente à Certidão de Tempo de Contribuição nº [número], que o(a) servidor(a) ${nome}, CPF [CPF], recebeu por este Tribunal Regional do Trabalho, a título de Gratificação Natalina (considerando-se apenas as parcelas que compunham a base do recolhimento previdenciário mensal), os seguintes valores: ${lista}. Certifico ainda que não houve recolhimento de contribuição previdenciária sobre esses valores. Nada mais.`;
 }
 // ------------------------------------------------------------ benefício especial (Lei 12.618/2012, art. 3º, § 2º)
 // Base = remuneração que serviu de base a contribuição efetivamente mantida, desde 07/1994. Períodos com contribuição
@@ -419,11 +598,20 @@ $('avancar').onclick=()=>{ if(S.etapa<4) irPara(S.etapa+1); else $('x_rbc').clic
 function etapa1Status(){
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
   if(!$('cargo').value) return 'Escolha o cargo do servidor.';
-  if(!S.rel.PROGRESSAO.length) return 'Envie os relatórios do RH ou preencha a progressão.';
+  if(!S.rel.PROGRESSAO.length&&!S.esp) return 'Envie a ficha financeira (a progressão é deduzida do vencimento pago) ou os relatórios do RH.';
   if(nInc) return `${nInc} linha(s) da progressão com classe/padrão a conferir${S.res?'':' (a ficha, na etapa 2, ajuda a confirmar)'}.`;
   return S.esp?`Remuneração esperada calculada para ${S.esp.linhas.length} meses.`:'Informe o ingresso ou envie a ficha.';
 }
+function renderGNCert(){
+  const box=$('gnCertBox'); if(!box) return; const g=(S.gnCert||[]).filter(x=>x.valor>0);
+  box.hidden=!g.length; if(!g.length) return;
+  $('gnCertTab').innerHTML=`<div class="tw"><table><thead><tr><th class="l">Ano</th><th>Avos</th><th>Base (mês)</th><th>Valor</th></tr></thead><tbody>${g.map(x=>`<tr><td class="l">${x.ano}</td><td>${x.avos}/12</td><td>${mesTxt(x.baseComp)}</td><td>${moedaAno(x.ano)} ${fmt.format(x.valor)}</td></tr>`).join('')}</tbody></table></div>`;
+  const t=textoCertidaoGN(); if(!$('gnCertTxt').dataset.editado) $('gnCertTxt').value=t;
+}
+$('gnCertTxt').addEventListener('input',()=>{ $('gnCertTxt').dataset.editado='1'; });
+$('gnCertCopiar').onclick=async()=>{ try{ await navigator.clipboard.writeText($('gnCertTxt').value); $('gnCertMsg').textContent='Copiado.'; }catch(e){ $('gnCertTxt').select(); $('gnCertMsg').textContent='Selecione e copie (Ctrl+C).'; } };
 function renderTudo(){
+  renderGNCert();
   const C=contagens();
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
   document.querySelectorAll('#trilho li').forEach(li=>{
@@ -476,11 +664,23 @@ function renderCobertura(){
     ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${semMeio.length} mês(es): <b>${faixas(semMeio)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
     : (tab.length||borda.length||semBorda.length)?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
 }
-const OPC_CAT = ['VB','GAJ','ATS','VPI','VPNI','VPNI_JUD','FC','SUBST','AQ','AQ_TREIN','GAE','GAS','APJ','DIF2886','GEXTRA','REDUTOR','V1323_VB','V1323_GAJ','V1323_ATS','V1323_VPNI','V1323_FC','VPI_DED','FALTAS','V1198','PSS','GN','PASSIVO','IGNORAR','CLASSIFICAR'];
+const OPC_CAT = ['SUBSIDIO','FC_PREV','VB','GAJ','ATS','VPI','VPNI','VPNI_JUD','FC','SUBST','AQ','AQ_TREIN','GAE','GAS','APJ','DIF2886','GEXTRA','REDUTOR','V1323_VB','V1323_GAJ','V1323_ATS','V1323_VPNI','V1323_FC','VPI_DED','FALTAS','V1198','PSS','GN','PASSIVO','IGNORAR','CLASSIFICAR'];
 const catSelect = (k,sel) => `<select data-k="${esc(k)}" aria-label="Categoria">${OPC_CAT.map(c=>`<option value="${c}"${c===sel?' selected':''}>${esc(c==='CLASSIFICAR'?'— escolha —':nome(c))}</option>`).join('')}</select>`;
+// Sugestão para rubrica não reconhecida: a rubrica mais parecida entre as ~400 já classificadas nas fichas das RBCs da DIPROF
+// (similaridade de cosseno de trigramas de caracteres). No teste "deixa uma de fora", acerta 80% quando a similaridade é ≥ 0,7.
+// É só sugestão: a escolha continua com o usuário.
+const nrmRub = s => String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9%]+/g,' ').trim();
+const tri = s => { s=' '+nrmRub(s)+' '; const f=new Map(); for(let i=0;i<s.length-2;i++){ const k=s.slice(i,i+3); f.set(k,(f.get(k)||0)+1); } let n=0; for(const v of f.values()) n+=v*v; n=Math.sqrt(n)||1; for(const [k,v] of f) f.set(k,v/n); return f; };
+let RUBVEC=null;
+function sugerirCategoria(desc){
+  if(!RUBVEC) RUBVEC=(typeof RUBREF!=='undefined'?RUBREF:[]).map(([d,c])=>({d,c,v:tri(d)}));
+  const v=tri(desc); let best=null;
+  for(const r of RUBVEC){ let s=0; for(const [k,x] of v){ const y=r.v.get(k); if(y) s+=x*y; } if(!best||s>best.s) best={s,d:r.d,c:r.c}; }
+  return best&&best.s>=0.6?best:null;
+}
 function renderRubricas(C){
   const el=$('rubricas'); if(!C){ el.innerHTML=''; return; }
-  const linha=e=>`<tr><td class="l">${esc(e.cod)}</td><td class="l wrap">${esc(e.desc)}</td><td class="l">${mesTxt(e.primeiro)} a ${mesTxt(e.ultimo)}</td><td>${f2(e.total)}</td><td class="l">${catSelect(e.cod+'|'+e.desc,e.cat)}${S.cats[e.cod+'|'+e.desc]?' <span class="muted small">alterada</span>':''}</td></tr>`;
+  const linha=e=>{ const sg=e.cat==='CLASSIFICAR'?sugerirCategoria(e.desc):null; return `<tr><td class="l">${esc(e.cod)}</td><td class="l wrap">${esc(e.desc)}</td><td class="l">${mesTxt(e.primeiro)} a ${mesTxt(e.ultimo)}</td><td>${f2(e.total)}</td><td class="l">${catSelect(e.cod+'|'+e.desc,e.cat)}${S.cats[e.cod+'|'+e.desc]?' <span class="muted small">alterada</span>':''}${sg?`<div class="muted small" style="margin-top:4px">Sugestão: <b>${esc(nome(sg.c))}</b> — parecida com “${esc(sg.d)}” (${Math.round(sg.s*100)}%) <button class="btn link" data-sug="${esc(e.cod+'|'+e.desc)}" data-cat="${sg.c}">usar</button></div>`:''}</td></tr>`; };
   const cab='<thead><tr><th class="l">Código</th><th class="l">Descrição na ficha</th><th class="l">Aparece em</th><th>Soma</th><th class="l">É o quê?</th></tr></thead>';
   let h='';
   if(C.naoRec.length) h+=`<div class="bloco"><h3>${C.naoRec.length} rubrica(s) não reconhecida(s)</h3><p class="muted small" style="margin:0 0 12px">Escolha o que cada uma representa. Se não fizer parte da remuneração (desconto, auxílio, indenização), escolha "Não entra na RBC".</p><div class="tw"><table>${cab}<tbody>${C.naoRec.map(linha).join('')}</tbody></table></div></div>`;
@@ -489,6 +689,7 @@ function renderRubricas(C){
   h+=`<details class="bloco"><summary>Ver como cada rubrica foi classificada (${outras.length})</summary><p class="muted small">Corrija se alguma estiver errada. A mudança vale para a ficha inteira.</p><div class="tw"><table>${cab}<tbody>${outras.map(linha).join('')}</tbody></table></div></details>`;
   el.innerHTML=h;
   el.querySelectorAll('select[data-k]').forEach(s=>s.onchange=()=>{ const k=s.dataset.k, i=k.indexOf('|'); if(s.value===RBC.classify(k.slice(0,i),k.slice(i+1))) delete S.cats[k]; else S.cats[k]=s.value; calc(); });
+  el.querySelectorAll('button[data-sug]').forEach(b=>b.onclick=()=>{ S.cats[b.dataset.sug]=b.dataset.cat; calc(); });
 }
 
 // ------------------------------------------------------------ etapa 3
@@ -703,7 +904,7 @@ $('decfile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ 
   renderRelTabelas(); calc(); $('x_msg').textContent='Escolhas aplicadas.'; }catch(err){ $('x_msg').textContent='Este arquivo não é um arquivo de escolhas da calculadora.'; } e.target.value=''; };
 
 // ------------------------------------------------------------ exportação (modelo DIPROF)
-const COLS = { C:['VB'], D:['DIF2886'], E:['GEXTRA'], F:['GAJ'], G:['APJ'], H:['REDUTOR'], J:['ATS'], K:['VPI','VPI_DED'], M:['VPNI'], N:['VPNI_JUD'], Q:['FC','SUBST','V1323_FC'], R:['V1323_VB'], S:['V1323_GAJ'], T:['V1323_ATS'], U:['V1323_VPNI'], V:['AQ','AQ_TREIN'], W:['GAE','GAS'], AA:['FALTAS','V1198'] };
+const COLS = { C:['VB','SUBSIDIO'], D:['DIF2886'], E:['GEXTRA'], F:['GAJ'], G:['APJ'], H:['REDUTOR'], J:['ATS'], K:['VPI','VPI_DED'], M:['VPNI'], N:['VPNI_JUD'], Q:['FC','SUBST','V1323_FC','FC_PREV'], R:['V1323_VB'], S:['V1323_GAJ'], T:['V1323_ATS'], U:['V1323_VPNI'], V:['AQ','AQ_TREIN'], W:['GAE','GAS'], AA:['FALTAS','V1198'] };
 const HEAD = { A:' ', B:'CLASSE/ PADRÃO', C:'Vencimento', D:'Dif. Lei 8622/8627', E:'Grat Extraordinária 170%', F:'GAJ / Abono', G:'APJ', H:'(Redutor)', I:'ATS (%)', J:'ATS- Valor', K:'VPI', L:'VPNI', M:'VPNI-Valor', N:'VPNI Judicial', O:'Função', P:'Substituição', Q:'Valor - FC/Subst', R:'13,23% Vencimento', S:'13,23% GAJ', T:'13,23% ATS', U:'13,23% VPNI', V:'AQP', W:'GAE/GAS', X:'Remuneração', Y:'Fator de conversão', Z:'Remuneração em real', AA:'Outros (faltas / 11,98%)' };
 const SOMA = ['C','D','E','F','G','H','J','K','M','N','Q','R','S','T','U','V','W'];
 $('x_rbc').onclick=async()=>{
@@ -741,15 +942,17 @@ $('x_rbc').onclick=async()=>{
       if(l.ajustes) notas.push('Pela tabela: '+l.ajustes.join('; '));
       if(!l.fonte) notas.push('Sem ficha financeira para esta competência');
       if(notas.length) ws.getCell('B'+r).note=notas.join('. ');
-      ws.getCell('X'+r).value={formula:somaCols.map(c=>c+r).join('+'), result:l.total};
+      { const soma=somaCols.map(c=>c+r).join('+'); ws.getCell('X'+r).value={formula:l.tetoRGPS!=null?`MIN(${soma},${l.tetoRGPS})`:soma, result:l.total};
+        if(l.tetoRGPS!=null) ws.getCell('X'+r).note=`Base limitada ao teto do RGPS (${fmt.format(l.tetoRGPS)}) — regime de previdência complementar`;
+        else if(l.semFicha) ws.getCell('X'+r).note='Sem ficha para este mês: remuneração esperada pela tabela'; }
       if(naMedia(l.comp)){ ws.getCell('Y'+r).value=1; ws.getCell('Z'+r).value={formula:`X${r}/Y${r}`, result:l.total}; }
       if(temPre){ ws.getCell(cMoeda+r).value=moedaDe(l.comp); ws.getCell(cMedia+r).value=naMedia(l.comp)?'sim':'não'; }
       { const b=baseBE(l); if(b!=null){ const {dias,n}=fracDevolvida(l.comp); ws.getCell(cBE+r).value=dias?{formula:dias>=n?'0':`ROUND(X${r}/${n}*${n-dias},2)`,result:b}:{formula:`X${r}`,result:b}; if(dias) ws.getCell(cBE+r).note=`Contribuição devolvida em ${dias} de ${n} dia(s): fora da base do benefício especial`; } }
       linhaDe[l.comp]=r; r++;
       const g=gnPor[l.comp];
       if(g){ const rb=linhaDe[g.baseComp]; ws.getCell('A'+r).value='GN'; ws.getCell('B'+r).value=g.avos<12?g.avos+'/12':'';
-        const base=g.obs==='sem VPI'?`(X${rb}-K${rb})`:`X${rb}`; const f=g.avos<12?`ROUND(${base}/12*${g.avos},2)`:base;
-        ws.getCell('X'+r).value={formula:f,result:g.valor}; if(naMedia(g.depois)){ ws.getCell('Y'+r).value=1; ws.getCell('Z'+r).value={formula:`X${r}/Y${r}`,result:g.valor}; }
+        const base=g.obs==='sem VPI'?`(X${rb}-K${rb})`:`X${rb}`; let f=g.avos<12?`ROUND(${base}/12*${g.avos},2)`:base; if(g.tetoRGPS!=null) f=`MIN(${f},${g.tetoRGPS})`;
+        if(g.daFicha){ ws.getCell('X'+r).value=g.valor; ws.getCell('X'+r).note='13º pelo valor pago na ficha (gratificação natalina do ano, sem o adiantamento)'; } else ws.getCell('X'+r).value={formula:f,result:g.valor}; if(naMedia(g.depois)){ ws.getCell('Y'+r).value=1; ws.getCell('Z'+r).value={formula:`X${r}/Y${r}`,result:g.valor}; }
         ws.getRow(r).font={bold:true}; r++; }
     }
     const ultima=r-1;
@@ -808,6 +1011,12 @@ $('x_rbc').onclick=async()=>{
     for(const p of R.passivos) wa.addRow(['passivo',p.desc,p.comp,'',p.valor,null,'',S.ack[p.id]?'desconsiderado':'não incluído salvo distribuição manual']);
     wa.getRow(1).font={bold:true}; wa.getColumn(5).numFmt='#,##0.00'; wa.getColumn(6).numFmt='0.0%';
 
+    if((S.gnCert||[]).some(x=>x.valor>0)){
+      const wg=wb.addWorksheet('Certidão GN'); wg.columns=[{header:'Ano',width:8},{header:'Avos',width:8},{header:'Mês-base',width:12},{header:'Moeda',width:8},{header:'Valor',width:16},{header:'Por extenso',width:90}];
+      for(const x of S.gnCert.filter(x=>x.valor>0)){ const m=moedaAno(x.ano); wg.addRow([+x.ano,x.avos+'/12',mesTxt(x.baseComp),m,x.valor,porExtenso(x.valor,m)]); }
+      wg.getColumn(5).numFmt='#,##0.00'; wg.getRow(1).font={bold:true};
+      wg.addRow([]); const rt=wg.addRow([$('gnCertTxt').value||textoCertidaoGN()]); wg.mergeCells(rt.number,1,rt.number,6); rt.getCell(1).alignment={wrapText:true,vertical:'top'}; rt.height=150;
+    }
     const wr=wb.addWorksheet('Rubricas');
     wr.columns=[{header:'Código',width:10},{header:'Descrição',width:46},{header:'Lançamentos',width:12},{header:'Primeiro',width:10},{header:'Último',width:10},{header:'Soma',width:14},{header:'Categoria',width:28},{header:'Alterada',width:9}];
     for(const e of RBC.inventario(S.recs,S.cats)) wr.addRow([e.cod,e.desc,e.n,e.primeiro,e.ultimo,e.total,nome(e.cat),S.cats[e.cod+'|'+e.desc]?'sim':'']);

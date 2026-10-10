@@ -207,9 +207,9 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 <div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA</span><b>TRT-17</b></div></div>
 <div class="head"><div class="head-in">
   <h1>Calculadora de RBC</h1>
-  <p>Calcula a remuneração esperada a partir dos relatórios do RH, compara com o que a ficha financeira mostra que foi pago e monta a relação das remunerações de contribuição da CTC. Os arquivos são lidos neste computador e não saem dele.</p>
+  <p>Monta a relação das remunerações de contribuição da CTC a partir da ficha financeira, da própria CTC (ou declaração) e, quando houver, dos relatórios do RH; compara o que foi pago com o que era devido pela tabela. Os arquivos são lidos neste computador e não saem dele.</p>
   <ol class="trilho" id="trilho">
-    <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Servidor e relatórios<span class="sub">Dados e relatórios do RH</span></span></button></li>
+    <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Servidor e relatórios<span class="sub">Dados, CTC e relatórios</span></span></button></li>
     <li data-e="2"><button type="button"><span class="num">2</span><span class="txt">Ficha financeira<span class="sub">Ficha e rubricas</span></span></button></li>
     <li data-e="3"><button type="button"><span class="num">3</span><span class="txt">Valores a distribuir<span class="sub">Atrasados e datas a confirmar</span></span></button></li>
     <li data-e="4"><button type="button"><span class="num">4</span><span class="txt">Conferência e RBC<span class="sub">Verificar e baixar a planilha</span></span></button></li>
@@ -218,13 +218,13 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 
 <main>
 <section class="etapa on" id="e1" aria-labelledby="e1t">
-  <h2 id="e1t">Informe o servidor e envie os relatórios do RH</h2>
-  <p class="intro">Com os relatórios de progressão, funções, substituições, VPNI e ATS, a calculadora monta a remuneração que o servidor deveria ter recebido em cada mês. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
+  <h2 id="e1t">Informe o servidor e envie a CTC ou os relatórios</h2>
+  <p class="intro">A CTC ou declaração de tempo de contribuição já basta: dela saem cargo, período, progressão, funções, anuênios, quintos e a limitação ao teto do RGPS. Os relatórios do RH (progressão, funções, substituições, VPNI e ATS), se enviados, prevalecem. Sem nenhum deles, a classe e o padrão são deduzidos do vencimento pago na ficha. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
   <div class="bloco">
     <h3>Servidor</h3>
     <div class="campos4">
       <label class="l2">Nome<input type="text" id="nome" autocomplete="off"></label>
-      <label>Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option></select></label>
+      <label>Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option><option value="MAGISTRADO">MAGISTRADO (subsídio)</option></select></label>
       <label>Especialidade<select id="especialidade"><option value="">Sem gratificação de especialidade</option><option value="SEGURANCA">Segurança / polícia judicial (GAS)</option><option value="OFICIAL">Oficial de justiça (GAE)</option></select></label>
       <label id="espDesdeBox">Especialidade desde<input type="date" id="espDesde" disabled><span class="ajuda" id="espAjuda">Escolha a especialidade para informar</span></label>
       <label>Ingresso<input type="date" id="inicio"><span class="ajuda" id="inicioDica"></span></label>
@@ -233,11 +233,11 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     </div>
   </div>
   <div class="bloco">
-    <h3>Relatórios do RH</h3>
-    <p class="muted small" style="margin:0 0 12px">Envie os relatórios exportados do sistema (PDF, CSV, XLS ou XLSX). A calculadora reconhece cada um pelo conteúdo. Se a progressão vier como imagem da tela, ela é lida por reconhecimento de texto e você confere o resultado.</p>
+    <h3>CTC e relatórios do RH</h3>
+    <p class="muted small" style="margin:0 0 12px">Envie a CTC/declaração (PDF do SEI ou digitalizada) e, se houver, os relatórios exportados do sistema (PDF, CSV, XLS ou XLSX). A calculadora reconhece cada um pelo conteúdo. Documento em imagem é lido por reconhecimento de texto e você confere o resultado.</p>
     <div class="drop" id="dropRel" role="button" tabindex="0" aria-label="Escolher relatórios do RH">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI e ATS — em PDF, CSV ou planilha</span></div>
+      <div><b>Arraste a CTC e os relatórios para cá</b><span class="muted">CTC ou declaração de tempo de contribuição; progressão, funções, substituições, VPNI e ATS — em PDF, CSV ou planilha</span></div>
       <input type="file" id="fileRel" multiple accept=".pdf,.csv,.txt,.xls,.xlsx,.ods" hidden>
     </div>
     <ul class="arqs" id="filesRel"></ul>
@@ -299,6 +299,13 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     </div>
     <p class="muted small" id="x_msg" role="status" style="margin:10px 0 0"></p>
   </div>
+  <div class="bloco" id="gnCertBox" hidden>
+    <h3>Certidão complementar de gratificação natalina</h3>
+    <p class="muted small" style="margin:0 0 10px">Anos anteriores à incidência de contribuição sobre o 13º: a gratificação fica fora da RBC e vai em certidão à parte, com as mesmas parcelas da base mensal. Complete os campos entre colchetes.</p>
+    <div id="gnCertTab"></div>
+    <textarea id="gnCertTxt" rows="7" style="width:100%;margin-top:10px;font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)" aria-label="Texto da certidão complementar"></textarea>
+    <div style="margin-top:8px"><button class="btn sec" id="gnCertCopiar">Copiar texto</button> <span class="muted small" id="gnCertMsg" role="status"></span></div>
+  </div>
   <details class="bloco" id="tabelaBox"><summary>Ver a tabela completa</summary>
     <label class="chk" style="margin:12px 0"><input type="checkbox" id="verParcelas"> Mostrar as parcelas (vencimento, GAJ, ATS…)</label>
     <div id="resultado"></div>
@@ -324,6 +331,14 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label class="chk">AQ-Treinamento na RBC <select id="r_aqTrein" style="width:auto;height:36px"><option value="ficha">conforme a ficha</option><option value="sim">sempre</option><option value="nao">nunca</option></select></label>
       <label class="chk"><input type="checkbox" id="r_descontarFaltas"> Descontar faltas</label>
       <label class="chk"><input type="checkbox" id="r_teto"> Contribuição limitada ao teto do INSS</label>
+      <label class="chk"><input type="checkbox" id="r_semFichaTabela"> Meses sem ficha pela tabela</label>
+      <label class="chk"><input type="checkbox" id="r_gnFicha"> 13º pelo valor pago na ficha <span class="dica">(automático para magistrado)</span></label>
+      <label class="chk"><input type="checkbox" id="r_vpiTabela"> VPI pela tabela quando a ficha não paga <span class="dica">(abr/2016–dez/2018)</span></label>
+    </div>
+    <div class="regras" style="margin-top:14px">
+      <label><span>GAS conta na RBC até <span class="dica">(em branco = nunca; a RBC de 05/2025 usou abr/2014, véspera da restituição)</span></span><input type="month" id="r_gasAte"></label>
+      <label><span>Base limitada ao teto do RGPS (Funpresp) a partir de <span class="dica" id="tetoDica"></span></span><input type="month" id="r_tetoDesde"></label>
+      <label class="chk" style="align-self:end"><input type="checkbox" id="r_tetoAuto"> Detectar pela ficha e pelo ingresso <span class="dica">(PSS "teto RGPS", Funpresp patrocinada, ingresso desde 14/10/2013)</span></label>
       <button class="btn link" id="r_reset">Voltar ao padrão</button>
     </div>
   </details>
@@ -348,6 +363,7 @@ const TABELA = /*__TABELA__*/;
 </script>
 <script>
 const BASE = /*__BASE__*/;
+const RUBREF = /*__RUBREF__*/;
 </script>
 <script>
 /*__UI__*/

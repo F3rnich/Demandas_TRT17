@@ -183,7 +183,7 @@
       if (c === 'FC' || c === 'SUBST') return k <= regras.fcAte;
       if (c === 'ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? !!(regras.aqTreinAnos && regras.aqTreinAnos[k.slice(0, 4)]) : !!regras.aqTrein;
-      if (c === 'GAS') return !!regras.gas;
+      if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
       if (c === 'VPNI_JUD_SEM_PSS') return false;
       return true;
     };

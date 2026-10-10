@@ -13,7 +13,7 @@
       const its = pg.items.filter(i => i.str && i.str.trim()).sort((a, b) => a.y - b.y || a.x - b.x);
       const ls = [];
       for (const it of its) { const l = ls[ls.length - 1]; if (l && Math.abs(l.y - it.y) <= 2.5) l.t.push(it); else ls.push({ y: it.y, t: [it] }); }
-      for (const l of ls) out.push(l.t.sort((a, b) => a.x - b.x).map(i => i.str.trim()).join(' ').replace(/\s+/g, ' '));
+      for (const l of ls) out.push(l.t.sort((a, b) => a.x - b.x).map(i => i.str.trim()).join(' ').replace(/\s+/g, ' ').normalize('NFC'));
     }
     return out;
   }
@@ -22,6 +22,9 @@
   // identifica o tipo de relatório pelo cabeçalho
   function tipoRelatorio(pages) {
     const t = textoDe(pages).toUpperCase();
+    const tf = t.replace(/\s+/g, ' ');
+    { const mc = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)( COMPLEMENTAR)?( DE| À| A)?( CERTID[ÃA]O DE)? (TEMPO DE CONTRIBUI|TEMPO DE SERVI)/.exec(tf), mr = /RELA[ÇC][ÃA]O DAS BASES/.exec(tf);
+      if (mc && (!mr || mc.index < mr.index)) return 'CTC'; }
     if (/COMISS[ÃA]O/.test(t) && /DISPENSA/.test(t)) return /SUBSTITU/.test(t) ? 'SUBSTITUICOES' : 'FUNCOES';
     if (/SUBSTITU/.test(t)) return 'SUBSTITUICOES';
     if (/INCORPORA/.test(t)) return 'VPNI';
@@ -285,6 +288,94 @@
     return o;
   }
 
-  const api = { dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
+  // ------------------------------------------------------------------ CTC / declaração de tempo de contribuição (SEINFO)
+  // A DIPROF nem sempre recebe os relatórios do RH: a CTC traz cargo, período, progressão, funções, anuênios, quintos,
+  // afastamentos e se a contribuição foi limitada ao teto do RGPS. Formatos: CTC/DTC do SEI (texto) e CTC antiga digitalizada
+  // (texto de OCR, com ruído — usa-se o que for legível).
+  const ROM = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10 };
+  const dBR = s => { const m = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/.exec(s || ''); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null; };
+  const RXD = /(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/g;
+  function secao(ls, ini, fins) {
+    const i = ls.findIndex(l => ini.test(l)); if (i < 0) return [];
+    const out = [];
+    for (let j = i + 1; j < ls.length; j++) { if (fins.some(f => f.test(ls[j]))) break; out.push(ls[j]); }
+    return out;
+  }
+  const FIM_SEC = [/^\s*(\d+ ?- ?)?(FREQU[ÊE]NCIA|AVERBA|EXERC[ÍI]CIO DE CARGO|ANU[ÊE]NIOS|INCORPORA|OBSERVA[ÇC]|PROGRESS[ÃA]O FUNCIONAL|F[ÉE]RIAS|DESLIGAMENTO|CERTIFICO|VANTAGENS|INFORMA[ÇC][ÃA]O CESS)/i];
+  function parseCTC(pages) {
+    const ls = (typeof pages === 'string' ? pages.split('\n').map(l => l.replace(/\s+/g, ' ').trim().normalize('NFC')) : linhas(pages)).filter(l => !/^(Certid|Declara)\S* de Tempo de Contribui\S* \d+ .*SEI /i.test(l) && !/^id[ãa]o de Tempo/i.test(l));
+    const t = ls.join('\n'), flat = t.replace(/\s+/g, ' '), up = flat.toUpperCase();
+    const meta = {};
+    // cargo (e especialidade)
+    const mcg = /CARGO EFETIVO:?\s*(.{0,120})/i.exec(flat);
+    if (mcg) {
+      const c = mcg[1].toUpperCase();
+      meta.cargo = /ANALISTA/.test(c) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(c) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(c) ? 'AUXILIAR JUDICIÁRIO' : /JUIZ/.test(c) ? 'JUIZ' : '';
+      meta.especialidade = /OFICIAL DE JUSTI/.test(c) ? 'OFICIAL' : /SEGURAN|POL[ÍI]CIA|AGENTE DE/.test(c) ? 'SEGURANCA' : '';
+      meta.cargoTexto = mcg[1].replace(/\s*(REGIME JUR|ÓRG[ÃA]O DE LOTA).*$/i, '').trim();
+    }
+    const ex = /EFETIVO EXERC[ÍI]CIO:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat) || /POSSE:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat);
+    if (ex) meta.exercicio = dBR(ex[1]);
+    const per = /PER[ÍI]ODO DE CONTRIBUI\S*[^:]*:?\s*(?:DE\s+)?(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})/i.exec(flat);
+    if (per) { meta.periodoIni = dBR(per[1]); meta.periodoFim = dBR(per[2]); }
+    const vac = /(VAC[ÂA]NCIA|EXONERA\S*|DECLARADO VAGO A PARTIR DE|DESLIGAD\S* EM|APOSENTADORIA)\D{0,40}(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat);
+    if (vac) meta.vacancia = dBR(vac[2]);
+    meta.inicio = meta.periodoIni || meta.exercicio || null;
+    meta.fim = meta.periodoFim || null;
+    // previdência complementar: teto do RGPS
+    if (/LIMITAD\S* AO TETO DO (REGIME GERAL|RGPS)/.test(up)) meta.teto = 'sim';
+    else if (/\bE ADERIU AO REGIME DE PREVID[ÊE]NCIA COMPLEMENTAR|\bE OPTOU PELA ADES[ÃA]O/.test(up) && !/N[ÃA]O OPTOU PELA ADES/.test(up)) meta.teto = 'migrou';
+    else if (/N[ÃA]O ADERIU AO REGIME DE PREVID[ÊE]NCIA COMPLEMENTAR|N[ÃA]O OPTOU PELA ADES/.test(up)) meta.teto = 'nao';
+    const mig = /(?:ADERIU|MIGRA\S*|OP[ÇC][ÃA]O)[^.]{0,160}?(?:EM|A PARTIR DE|DESDE)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat);
+    if (meta.teto === 'migrou' && mig) meta.tetoDesde = dBR(mig[1]);
+    // progressão: "Classe A, Padrão 1 = de 02/06/2023 a 01/06/2024 - ...", "Classe D, Padrão III = ...", "Classe A, Ref. NA-03 = ..."
+    const PROGRESSAO = [];
+    const rx = /CLASSE\s+([A-D])\s*,?\s*(?:PADR[ÃA]O|REF\.?|REFER[ÊE]NCIA)\s*([A-Z]{2}\s*-?\s*\d+|[IVX]+|\d+)\s*=?\s*(?:DE\s+)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})(?:\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}))?/gi;
+    for (const m of flat.matchAll(rx)) {
+      let classe = m[1].toUpperCase(), padrao = m[2].toUpperCase().replace(/\s+/g, '');
+      const nv = /^(N[AIS])-?(\d+)$/.exec(padrao); if (nv) { classe = nv[1]; padrao = String(+nv[2]); }
+      else if (/^\d+$/.test(padrao)) padrao = String(+padrao);
+      PROGRESSAO.push({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' });
+    }
+    // CTC antiga: "Cargo efetivo: Técnico Judiciário, Classe C, Padrão 15" (referência na data da certidão)
+    const atual = /CARGO EFETIVO:?[^,]{0,60},\s*CLASSE\s+([A-D])\s*,\s*PADR[ÃA]O\s+(\w+)/i.exec(flat);
+    if (atual) meta.refFinal = atual[1].toUpperCase() + '-' + atual[2];
+    // funções comissionadas
+    const FUNCOES = [];
+    let ult = null;
+    for (const l of secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS/i, FIM_SEC)) {
+      const mc = /\b((?:FC|CJ|DAS)\s*-?\s*0?(\d+))\b/i.exec(l);
+      const ds = [...l.matchAll(RXD)].map(x => dBR(x[1]));
+      if (mc) ult = { cod: mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1'), nome: l.slice(0, mc.index).replace(/[-–]\s*$/, '').trim() };
+      if (!ult || !ds.length) continue;
+      // "1 a 13-6-1991" (CTC antiga): mesmo mês
+      for (let i = 0; i < ds.length; i += 2) FUNCOES.push({ cod: ult.cod, nome: ult.nome, ini: ds[i], fim: ds[i + 1] || null });
+    }
+    // anuênios: "1% a partir de 01/10/1995"
+    const ATS = [];
+    for (const l of secao(ls, /^\s*(\d+ ?- ?)?ANU[ÊE]NIOS/i, FIM_SEC)) {
+      for (const m of l.matchAll(/(\d+(?:,\d+)?)\s*%\s*(?:A PARTIR DE|DESDE|EM)?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/gi)) ATS.push({ ini: dBR(m[2]), pct: +m[1].replace(',', '.'), fim: '' });
+    }
+    ATS.sort((a, b) => a.ini < b.ini ? -1 : 1);
+    // quintos/décimos incorporados: "1/5 (um quinto) da função comissionada ... FC-3, com efeitos a partir de 17/07/1996 a 23/02/1997"
+    const VPNI = [];
+    const tq = secao(ls, /INCORPORA[ÇC][ÃA]O DE QUINTOS|INCORPORA[ÇC][ÕO]ES/i, FIM_SEC).join(' ').replace(/\s+/g, ' ');
+    for (const m of tq.matchAll(/(\d+)\s*\/\s*(5|10)\b.{0,160}?((?:FC|CJ|DAS)\s*-?\s*\d+).{0,80}?A PARTIR DE\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})(?:\s*A\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}))?/gi)) {
+      const cod = m[3].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1');
+      VPNI.push({ cod, tipo: m[2] === '5' ? 'QUINTOS' : 'DECIMOS', natureza: 'ADMINISTRATIVA', parcelas: +m[1], ini: dBR(m[4]), fim: dBR(m[5]) || '' });
+    }
+    // afastamentos e faltas (texto livre): só registro, a calculadora não desconta sem decisão
+    const afast = [];
+    for (const l of secao(ls, /^\s*(\d+ ?- ?)?OBSERVA[ÇC]/i, FIM_SEC)) { const ds = [...l.matchAll(RXD)].map(x => dBR(x[1])); if (ds.length) afast.push({ texto: l.trim(), ini: ds[0], fim: ds[1] || ds[0] }); }
+    const freq = [];
+    for (const l of secao(ls, /FREQU[ÊE]NCIA/i, [/^\s*(\d+ ?- ?)?(AVERBA|EXERC[ÍI]CIO DE CARGO|INFORMA[ÇC][ÃA]O CESS|DISCRIMINA)/i])) {
+      const m = /^\s*((?:19|20)\d{2})\s+(\d+)\s+(.*)$/.exec(l); if (!m) continue;
+      const nums = m[3].split(/\s+/).map(x => x === '-' ? 0 : +x).filter(x => !isNaN(x));
+      freq.push({ ano: m[1], bruto: +m[2], liquido: nums.length ? nums[nums.length - 1] : +m[2], faltas: nums.length > 1 ? nums[0] : 0 });
+    }
+    return { meta, PROGRESSAO, FUNCOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
+  }
+
+  const api = { parseCTC, dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBCRelatorios = api;
 })(typeof self !== 'undefined' ? self : this);

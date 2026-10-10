@@ -54,6 +54,10 @@ node ../testes/regressao.js --linha-base    # grava a linha de base atual
 - `regras` usa os ids `r_*` da página (`ui.js`, `REGRA_IDS`). `aqTrein`: `"ficha"`, `"sim"` ou `"nao"`.
 - `rbc.colTotal` é a coluna da remuneração total mensal na RBC da DIPROF. Linhas sem data (GN) ficam fora.
 - A comparação usa a coluna X (total) da aba `RBC` exportada pela página, com tolerância de R$ 0,05.
+- Gabarito alternativo: `"rbc": {"json": "gabarito.json"}` com `{"mensal": {"AAAA-MM": v}, "gn": {"AAAA": v}}`, extraído da certidão emitida (RBC em docx/PDF do SEI, tabela mês × ano). Compara também o 13º.
+- `"gnCert": {"AAAA": v}` compara a aba "Certidão GN" (13º anterior à incidência de contribuição).
+- Opções: `--par=8` (casos em paralelo), `--resumo`, `--sem-rel` (ignora CTC/relatórios, para medir o efeito deles), `--saida=arquivo.json`.
+- Antes de publicar: `python3 testes/varredura_nomes.py <nomes.txt>` (lista de nomes fora do repositório) procura nomes e CPFs na página e nos fontes.
 
 Saída: meses iguais por caso, lista de divergências (mês, calculado, DIPROF, diferença, classe/padrão) e **regressões** — meses que batiam na linha de base e deixaram de bater (marcados com `!!`).
 
@@ -76,6 +80,13 @@ gh run list -R F3rnich/Demandas_TRT17 -L 2
 
 O repositório é público: nunca versionar fichas, RBCs, relatórios, nomes ou CPFs. O `checks.json` bloqueia os nomes dos servidores de teste nos arquivos principais.
 
-## Situação em 10/10/2026
+## Situação em 10/10/2026 (calibração com 67 RBCs da DIPROF)
 
-Linha de base (caso de 1995–2012, RBC "considerando a FF"): 193/210 com as regras padrão; 172/210 com `vpniTabela` e `fcTabela` desligadas. Na rodada anterior, a RBC 3 (1994–2026) dava 326/384 com as regras padrão e 361/384 com as duas desligadas — conflito entre RBCs da DIPROF ainda sem decisão. Histórico completo por fase e pendências: documento da demanda no projeto.
+Corpus de 85 pastas de RBC (processo SEI 0000775-34.2024), 67 servidores com certidão legível, 4.119 competências no escopo (sem classistas e sem o caso "não fez"). Total mensal igual ao da certidão:
+
+| Rodada | Meses com ficha | Meses sem ficha | 13º |
+|---|---|---|---|
+| Antes (commit e83c911) | 1.841/3.444 (53,5%) | 2/429 | 133/294 |
+| Depois | 2.550/3.486 (73,1%) | 360/633 | 214/316 |
+
+Mudanças: limite ao teto do RGPS (Funpresp/CTC), progressão deduzida da ficha quando não há relatório, leitor de CTC/declaração, meses sem ficha pela tabela, VPI pela tabela (ago/2016–dez/2018), regra "GAS até", fichas do FolhaWeb em planilha ("Big Grid") e em PDF "por folha", magistrado (subsídio + substituição; 13º pelo valor pago), certidão complementar de 13º, sugestão de categoria para rubrica não reconhecida. Detalhes, conflitos e pendências: documento da demanda no projeto.

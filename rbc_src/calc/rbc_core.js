@@ -35,6 +35,32 @@
     return out;
   }
 
+  /** Ficha do FolhaWeb exportada em planilha ("Big Grid": Relacionamento, Ano Folha, Mês Folha, Tipo Cálculo, Ano, Mês, Tipo Rubrica,
+   *  Cód. Rubrica, Rubrica, Valor, Tipo Valor). Ano/Mês = competência; Ano/Mês Folha = mês do pagamento.
+   *  Retroativo já vem na competência de origem. Linhas "Somente Cálculo" (bases) não entram como rubrica; a base de PSO
+   *  calculada pela folha volta em basePSO[comp] para conferência. */
+  function isBigGrid(rows) { return !!(rows && rows.length && ('Relacionamento' in rows[0] || 'Cód. Rubrica' in rows[0]) && 'Tipo Valor' in rows[0]); }
+  function parseBigGrid(rows) {
+    const recs = [], basePSO = {}, baseGN = {}, info = {};
+    for (const r of rows) {
+      const ano = +r['Ano'], mes = +r['Mês']; if (!ano || !mes) continue;
+      const comp = ym(ano, mes), pago = ym(+r['Ano Folha'] || ano, +r['Mês Folha'] || mes);
+      const tr = String(r['Tipo Rubrica'] || '').trim(), desc = String(r['Rubrica'] || '').trim(), cod = String(r['Cód. Rubrica'] || '').trim();
+      const v = +r['Valor'] || 0, rec = /^Receita/i.test(String(r['Tipo Valor'] || ''));
+      if (!info.cargo && r['Cargo']) Object.assign(info, { cargo: String(r['Cargo']).trim(), espec: String(r['Espec.'] || '').trim(), exercicio: String(r['Data de Exercício'] || '').trim(), nome: String(r['Relacionamento'] || '').trim() });
+      if (/^Somente C/i.test(tr)) {
+        if (/^BASE C[AÁ]LCULO PSO - MENSAL$/i.test(desc)) basePSO[comp] = r2((basePSO[comp] || 0) + v);
+        if (/^BASE C[AÁ]LCULO PSO - GN$/i.test(desc)) baseGN[comp] = r2((baseGN[comp] || 0) + v);
+        continue;
+      }
+      if (/^(Patronal|Consigna|Benef[ií]cio|Juros|Corre[cç])/i.test(tr)) continue;
+      const retro = /Retroativo/i.test(String(r['Tipo Cálculo'] || ''));
+      recs.push({ ano, mes, comp, pago, fonte: 'biggrid', folha: /^F[ée]rias/i.test(tr) ? 'F' : 'N', tipoFolha: 0, retro, tipoRub: tr,
+        cod, desc, seq: 0, v: rec ? v : -v });
+    }
+    return { recs, basePSO, baseGN, info };
+  }
+
   function groupLines(items) {
     const its = items.filter(i => i.str && i.str.trim()).sort((a, b) => a.y - b.y || a.x - b.x);
     const lines = [];
@@ -101,15 +127,70 @@
     return { recs, refs };
   }
 
+  /** Ficha do FolhaWeb em PDF no leiaute "por folha" (colunas MM/AAAA-seq; seções Pagamentos Mensais, Pagamentos em
+   *  suplementares, Pagamentos - Passivos). A coluna é o mês do PAGAMENTO; comp = mês da folha. seq 0 = folha normal,
+   *  13 = gratificação natalina, demais = suplementar. Rubricas depois de "Total Receitas" são descontos. */
+  const VAL = /^(?:R\$\s*)?-?[\d.]*\d,\d{2}$/;
+  function isFolhaWebPorFolha(pages) {
+    if (pages.some(pg => groupLines(pg.items).some(ln => ln.filter(i => MES.includes(i.str.trim())).length >= 12))) return false;
+    return pages.some(pg => pg.items.some(i => /^\d{1,2}\/\d{4}-\d{1,2}$/.test(i.str.trim())));
+  }
+  function parseFolhaWebPorFolha(pages) {
+    const recs = [], info = {};
+    let cols = null, secao = 'N', desconto = false, cur = null;
+    const all = [];
+    for (const pg of pages) for (const ln of groupLines(pg.items)) all.push(ln);
+    for (let li = 0; li < all.length; li++) {
+      const ln = all[li];
+      const joined = ln.map(i => i.str.trim()).filter(Boolean).join(' ');
+      if (/^Pagamentos Mensais/.test(joined)) { secao = 'N'; cols = null; desconto = false; cur = null; continue; }
+      if (/^Pagamentos em suplementares/.test(joined)) { secao = 'S'; cols = null; desconto = false; cur = null; continue; }
+      if (/^Pagamentos - Passivos/.test(joined)) { secao = 'P'; cols = null; desconto = false; cur = null; continue; }
+      if (!info.cargo) { const ix = all.findIndex(l => l.some(i => i.str.trim() === 'Cargo')); if (ix >= 0 && all[ix + 1]) { const c = all[ix + 1].map(i => i.str.trim()).filter(Boolean); info.cargo = c[c.length - 1]; } }
+      const hs = ln.filter(i => /^\d{1,2}\/\d{4}-\d{1,2}$/.test(i.str.trim()));
+      if (hs.length) {
+        cols = hs.map(i => { const m = i.str.trim().match(/^(\d{1,2})\/(\d{4})-(\d{1,2})$/); return { x: i.x + i.w / 2, comp: ym(+m[2], +m[1]), seq: +m[3] }; });
+        const tot = ln.find(i => /^Total Rubricas/.test(i.str.trim())); if (tot) cols.push({ x: tot.x + tot.w / 2, total: true });
+        desconto = false; cur = null; continue;
+      }
+      if (!cols) continue;
+      if (/^Total Receitas/.test(joined)) { desconto = true; cur = null; continue; }
+      if (/^(Total Descontos|Valor L[ií]quido)/.test(joined)) { cur = null; continue; }
+      const xMin = Math.min(...cols.map(c => c.x)) - 70;
+      const label = ln.filter(i => i.x + i.w < xMin + 40 && !VAL.test(i.str.trim()) && i.str.trim() !== 'R$').map(i => i.str.trim()).join(' ').trim();
+      const vals = [];
+      for (const i of ln) {
+        const s = i.str.trim(); if (!VAL.test(s) || i.x < xMin) continue;
+        const cx = i.x + i.w / 2; let best = null, bd = 1e9;
+        for (const c of cols) { const d = Math.abs(c.x - cx); if (d < bd) { bd = d; best = c; } }
+        if (best && !best.total) vals.push({ col: best, v: brNum(s.replace(/^R\$\s*/, '')) });
+      }
+      const mc = label.match(/^(\d{7}) - ?(.*)$/);
+      if (mc) cur = { cod: mc[1], desc: mc[2], got: false };
+      else if (label && cur && !vals.length) { cur.desc += ' ' + label; continue; }
+      else if (label) { cur = null; continue; }
+      if (vals.length && cur && !cur.got) {
+        for (const { col, v } of vals) if (v !== 0) {
+          const folha = secao === 'P' ? 'P' : col.seq === 0 ? 'N' : col.seq === 13 ? 'G' : 'S';
+          recs.push({ ano: +col.comp.slice(0, 4), mes: +col.comp.slice(5, 7), comp: col.comp, fonte: 'pdf', folha, tipoFolha: col.seq, cod: cur.cod, desc: cur.desc, seq: 0, v: desconto ? -v : v, _h: cur });
+        }
+        cur.got = true;
+      }
+    }
+    for (const r of recs) { r.desc = r._h.desc.replace(/\s+/g, ' ').trim(); delete r._h; }
+    return { recs, refs: {}, info };
+  }
+
   // ------------------------------------------------------------------ CLASSIFICAÇÃO DE RUBRICAS
   const CAT = {
     VB: 'Vencimento', DIF2886: 'Dif. Lei 8622/8627', GEXTRA: 'Grat. Extraordinária 170%', GAJ: 'GAJ / Abono', APJ: 'APJ',
     REDUTOR: 'Redutor', ATS: 'ATS', VPI: 'VPI', VPNI: 'VPNI', VPNI_JUD: 'VPNI Judicial', FC: 'Função comissionada', SUBST: 'Substituição',
     V1323_VB: '13,23% Vencimento', V1323_GAJ: '13,23% GAJ', V1323_ATS: '13,23% ATS', V1323_VPNI: '13,23% VPNI', V1323_FC: '13,23% FC',
     VPI_DED: 'Dedução de VPI (13,23%)', AQ: 'AQ', AQ_TREIN: 'AQ Treinamento', GAE: 'GAE', GAS: 'GAS', FALTAS: 'Faltas', V1198: '11,98% (rubrica própria)',
+    SUBSIDIO: 'Subsídio (magistrado)', FC_PREV: 'Função com opção de contribuição',
     PSS: 'Contribuição RPPS', GN: 'Gratificação natalina', PASSIVO: 'Passivo / exercício anterior', IGNORAR: 'Não remuneratória / não entra', CLASSIFICAR: 'A classificar',
   };
-  const REMUN = ['VB', 'DIF2886', 'GEXTRA', 'GAJ', 'APJ', 'REDUTOR', 'ATS', 'VPI', 'VPI_DED', 'VPNI', 'VPNI_JUD', 'FC', 'SUBST', 'V1323_VB', 'V1323_GAJ', 'V1323_ATS', 'V1323_VPNI', 'V1323_FC', 'AQ', 'AQ_TREIN', 'GAE', 'GAS', 'FALTAS', 'V1198'];
+  const REMUN = ['SUBSIDIO', 'FC_PREV', 'VB', 'DIF2886', 'GEXTRA', 'GAJ', 'APJ', 'REDUTOR', 'ATS', 'VPI', 'VPI_DED', 'VPNI', 'VPNI_JUD', 'FC', 'SUBST', 'V1323_VB', 'V1323_GAJ', 'V1323_ATS', 'V1323_VPNI', 'V1323_FC', 'AQ', 'AQ_TREIN', 'GAE', 'GAS', 'FALTAS', 'V1198'];
   const NIVEL = ['VB', 'DIF2886', 'GEXTRA', 'GAJ', 'APJ', 'REDUTOR', 'ATS', 'VPI', 'VPI_DED', 'VPNI', 'VPNI_JUD', 'V1323_VB', 'V1323_GAJ', 'V1323_ATS', 'V1323_VPNI', 'V1323_FC', 'AQ', 'AQ_TREIN', 'GAE', 'GAS', 'V1198'];
 
   function classify(cod, desc) {
@@ -128,7 +209,13 @@
     if (/DIFEREN[CÇ]A DE URV/.test(d)) return 'IGNORAR';
     if (/F[EÉ]RIAS|1\/3|ADIANTAMENTO|ANTECIPA/.test(d)) return 'IGNORAR';
     if (/(AUX[IÍ]LIO|AUX\.|ASSIST|ALIMENTA|SA[UÚ]DE|PR[EÉ]-ESCOLAR|NATALIDADE|TRANSPORTE|DI[AÁ]RIA|INDENIZ|PERMAN[EÊ]NCIA|UNIMED|CONSIGNA|AJUSTE|EMPR[EÉ]STIMO|SINPOJUFES|ANAJUSTRA|ANASTRA|IMPOSTO|PENS[AÃ]O|ABONO PECUNI|SAL[AÁ]RIO-FAM|SAL[AÁ]RIO FAM|GOLDEN|PLANO DE SA)/.test(d)) return 'IGNORAR';
-    if (/(SERVI[CÇ]O EXTRAORD|HORA EXTRA|CURSO|CONCURSO|GECC)/.test(d)) return 'IGNORAR';
+    if (/(SERVI[CÇ]O EXTRAORD|HORA EXTRA|CURSO|CONCURSO|GECC|ADICIONAL NOTURNO|^GRU$|RESTITUI[CÇ][AÃ]O OUTROS|FUNPRESP|PREV\. SOCIAL - (INSS|FMP)|PREV\. SOCIAL-GRAT|AGEPOLJUS|ASSOJAF|AJUCLA|ANAMATRA|AMATRA|ASSOCIACAO MAGISTRADOS|FINANCIAMENTO|ALUGUEL|A B S P|DEP[OÓ]SITO EM JU[IÍ]ZO)/.test(d)) return 'IGNORAR';
+    // magistrados: subsídio (Lei 11.143/2005 e seguintes) é a base de contribuição
+    if (/SUBS[IÍ]DIO/.test(d) && /MAGISTR|JUIZ|LEI 11\.?143|LEI 1[2-4]\./.test(d)) return 'SUBSIDIO';
+    // diferença de subsídio por substituição de magistrado (Lei 10.474/2002): integra o subsídio (RBC de juiz, 2006–2010)
+    if (/SUBSTITUI\S* MAGISTRAD/.test(d)) return 'SUBSIDIO';
+    // função comissionada com opção pela contribuição (Lei 10.887/2004, art. 4º, § 2º): entra na base
+    if (/FUN[CÇ][AÃ]O.*C\/ ?PREVID/.test(d)) return 'FC_PREV';
     if (/11,98/.test(d)) return 'V1198';
     if (/13,23/.test(d)) {
       if (/DEDU/.test(d) && /VPI/.test(d)) return 'VPI_DED';
@@ -207,7 +294,7 @@
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI', 'REDUTOR'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
   const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true };
+    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -367,7 +454,7 @@
       if (c === 'FC' || c === 'SUBST' || c === 'V1323_FC') return k <= regras.fcAte;
       if (c === 'ATS' || c === 'V1323_ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? 'ficha' : !!regras.aqTrein;
-      if (c === 'GAS') return !!regras.gas;
+      if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
       if (c === 'FALTAS') return regras.descontarFaltas !== false;
       if (c === 'V1198') return !em1198(k);
       return REMUN.includes(c);
@@ -406,11 +493,22 @@
       const avos = ms.filter(k => { const di = k === ini ? divisor(k) - dIni + 1 : divisor(k); const df = k === fim ? Math.min(dFim, divisor(k)) : divisor(k); return Math.min(di, df) >= 15 || (k !== ini && k !== fim); }).length;
       const cheios = ms.filter(k => !(k === fim && dFim < diasMes(fim)) && !(k === ini && dIni > 1));
       const baseK = cheios.length ? cheios[cheios.length - 1] : ms[ms.length - 1];
-      if (regras.gnDesde && y < regras.gnDesde) continue;
+      // antes de gnDesde a GN não teve contribuição: fica fora da RBC, mas é calculada para a certidão complementar
+      const fora = !!(regras.gnDesde && y < regras.gnDesde);
       const lb = linhas.find(l => l.comp === baseK);
       let base = lb.total, obs = '';
       if (regras.gnSemVPIAte && y <= regras.gnSemVPIAte && (lb.v.VPI || lb.v.VPI_DED)) { base = r2(base - (lb.v.VPI || 0) - (lb.v.VPI_DED || 0)); obs = 'sem VPI'; }
-      gns.push({ ano: y, depois: ms[ms.length - 1], baseComp: baseK, avos, base, obs, valor: r2(base * avos / 12) });
+      gns.push({ ano: y, depois: ms[ms.length - 1], baseComp: baseK, avos, base, obs, valor: r2(base * avos / 12), fora });
+    }
+    // 6b) 13º pelo valor pago (prática da DIPROF nas RBCs de magistrado: rubrica "gratificação natalina" do ano, sem o adiantamento)
+    if (regras.gnFicha) {
+      const pago = {};
+      for (const r of recs) {
+        if (catOf(r) !== 'GN' || !(r.v > 0)) continue;
+        const d = String(r.desc || '').toUpperCase(); if (/ADIANT|PREVID|RPPS|IMPOSTO|FUNPRESP|DEVOL/.test(d)) continue;
+        pago[r.comp.slice(0, 4)] = r2((pago[r.comp.slice(0, 4)] || 0) + r.v);
+      }
+      for (const g of gns) if (pago[g.ano] != null) { g.valor = pago[g.ano]; g.base = pago[g.ano]; g.avos = 12; g.obs = 'valor pago na ficha'; g.daFicha = true; }
     }
     // 7) conferência pela contribuição
     let acF = 0, acC = 0;
@@ -433,6 +531,29 @@
     return { aqTreinAnos, meses, linhas, gns, log: logInc, pend: pendInc, pendNaoIncidentes: pend.filter(p => !incide(p.cat, p.comp)), passivos, porAno, resumo: { pssFicha: r2(acF), pssCalc: r2(acC), dif: r2(acF - acC) }, regras };
   }
 
+  /** Regime de previdência complementar (Lei 12.618/2012): base limitada ao teto do RGPS.
+   *  Indícios: ingresso a partir de 14/10/2013 (início do Funpresp-Jud) ou, na ficha, PSS "TETO RGPS" / Funpresp patrocinada
+   *  (servidor antigo que migrou). Devolve o primeiro mês limitado e o motivo. */
+  const FUNPRESP_JUD = '2013-10-14';
+  function detectarTeto(recs, inicio) {
+    let k = null, mot = '';
+    for (const r of recs || []) {
+      const d = String(r.desc || '').toUpperCase();
+      if (/^(98001|98096|98097)$/.test(String(r.cod)) || /TETO RGPS/.test(d) || /FUNPRESP.*PATROCINADA/.test(d)) {
+        if (!k || r.comp < k) { k = r.comp; mot = 'ficha: ' + String(r.desc).trim(); }
+      }
+    }
+    // ingresso no TRT depois de 14/10/2013 não basta: quem vem de outro cargo público federal sem quebra de vínculo mantém o
+    // regime anterior (casos da DIPROF sem limitação). Sem indício na ficha, só fica o alerta.
+    if (k && inicio && inicio.slice(0, 7) > k) k = inicio.slice(0, 7);
+    // indício já no primeiro mês de ficha enviado e ingresso desde 14/10/2013: limitado desde o ingresso
+    const primeira = (recs || []).reduce((m, r) => (!m || r.comp < m ? r.comp : m), null);
+    if (k && primeira && k === primeira && inicio && inicio >= FUNPRESP_JUD && inicio.slice(0, 7) < k) { k = inicio.slice(0, 7); mot += ' (desde o ingresso: indício já no primeiro mês de ficha)'; }
+    if (k) return { desde: k, motivo: mot };
+    if (inicio && inicio >= FUNPRESP_JUD) return { desde: '', motivo: 'ingresso a partir de 14/10/2013, sem contribuição ao Funpresp na ficha: confirme se o servidor está sujeito ao teto' };
+    return null;
+  }
+
   function inferirRef(tabela, k, vb) {
     if (!tabela || !vb) return '';
     const d = k + '-15';
@@ -442,6 +563,6 @@
     return u.length === 1 ? u[0] + ' (inferido)' : '';
   }
 
-  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, parseFolhaWebPages, classify, inventario, calcular, pssDevida, addM, divisor, r2, DIV };
+  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBC = api;
 })(typeof self !== 'undefined' ? self : this);
