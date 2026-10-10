@@ -45,3 +45,7 @@ desktop.ini
 # Ferramentas locais de publicacao — contem logica de deploy, nao entram no repo
 publicar.py
 fechar_pendencias.py
+
+# Calculadora de RBC — casos de teste têm dados pessoais (fichas, RBCs, relatórios do RH)
+rbc_src/casos/
+node_modules

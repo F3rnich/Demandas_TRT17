@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de RBC</title>
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{
+  --navy:#003A5C;--navy2:#00466E;--navy-soft:#E4EDF3;--yellow:#FFD040;
+  --bg:#EEF2F5;--paper:#FFFFFF;--ink:#17242C;--mute:#55666F;--line:#D3DDE3;
+  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--comp:#E8C98F;--none:#C9D3D9;--inbd:#A9B9C3;--larg:1360px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;
+  --ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850;--inbd:#56697A}}
+:root[data-theme="dark"]{--navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;--ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--comp:#7A6236;--none:#3A4850;--inbd:#56697A}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums}
+a{color:var(--navy)}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+.topo{background:#003A5C;border-bottom:4px solid #FFD040}
+.topo-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:8px 20px;display:flex;justify-content:space-between;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in b{color:#FFD040}
+
+.head{background:#003A5C;color:#fff;padding:22px 20px 0}
+.head-in{max-width:var(--larg);margin:0 auto}
+.head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em}
+.head p{margin:6px 0 0;color:#C9DCE8}
+.trilho{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,1fr)}
+.trilho li{position:relative}
+.trilho button{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;width:100%;padding:12px 10px 16px 0;color:#9FBCCE;cursor:pointer;font-weight:600;font-size:15px;border-bottom:4px solid transparent}
+.trilho button:focus-visible{outline:3px solid #FFD040;outline-offset:-3px}
+.trilho button[disabled]{cursor:default;opacity:.55}
+.trilho .num{position:relative;flex:none;width:28px;height:28px;border-radius:50%;border:2px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.trilho li.feito button{color:#fff}
+.trilho li.feito .num{background:#fff;color:#003A5C;border-color:#fff}
+.trilho li.atual button{color:#fff;border-bottom-color:#FFD040}
+.trilho li.atual .num{background:#FFD040;color:#003A5C;border-color:#FFD040}
+.trilho .sub{display:block;font-weight:400;font-size:12.5px;color:#9FBCCE;margin-top:1px}
+.trilho li.atual .sub,.trilho li.feito .sub{color:#C9DCE8}
+.trilho li.alerta .num::after{content:"";position:absolute;top:-4px;right:-5px;width:10px;height:10px;border-radius:50%;background:#FFB347;border:2px solid #003A5C}
+
+main{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:26px 20px 120px}
+.etapa{display:none}
+.etapa.on{display:block}
+.etapa > h2{font-size:24px;margin:0 0 4px;font-weight:700;outline:none}
+.etapa > .intro{margin:0 0 20px;color:var(--mute)}
+.bloco{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px;margin:0 0 16px}
+.bloco h3{margin:0 0 6px;font-size:17px}
+.muted{color:var(--mute)}
+.small{font-size:13.5px}
+
+.drop{display:flex;gap:18px;align-items:center;border:2px dashed var(--navy);border-radius:10px;padding:26px;background:var(--navy-soft);cursor:pointer}
+.drop.over{border-style:solid;background:var(--paper)}
+.drop svg{flex:none;color:var(--navy)}
+.drop b{display:block;font-size:18px}
+.arqs{list-style:none;padding:0;margin:14px 0 0}
+.arqs li{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;flex-wrap:wrap}
+.arqs li:first-child{border-top:0}
+.arqs .q{margin-left:auto;color:var(--mute)}
+.campos{display:grid;grid-template-columns:repeat(6,1fr);gap:14px 16px}
+.campos label,.regras label{justify-content:space-between}
+.campos .c2{grid-column:span 2}.campos .c3{grid-column:span 3}
+.campos4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 20px;align-items:start}
+.campos4 .l2{grid-column:span 2}
+.campos4 label{justify-content:flex-start}
+.campos4 .ajuda{font-weight:400;font-size:12.5px;color:var(--mute);min-height:1.2em}
+input:disabled{background:var(--bg);color:var(--mute);cursor:not-allowed}
+.regras{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+label{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+label .dica{font-weight:400;color:var(--mute);font-size:12.5px}
+input,select,button{font:inherit;color:var(--ink)}
+input[type=text],input[type=date],input[type=month],input[type=number],select{background:var(--paper);border:1px solid var(--inbd);border-radius:6px;padding:0 10px;height:42px;min-width:0;width:100%;font-weight:400}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:7px;padding:11px 18px;font-weight:700;cursor:pointer}
+:root[data-theme="dark"] .btn:not(.sec):not(.link){color:#0E1A21}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.sec):not(.link){color:#0E1A21}}
+.btn:hover{background:var(--navy2)}
+.btn.sec{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.sec:hover{background:var(--navy-soft)}
+.btn.link{background:none;border:0;color:var(--navy);padding:4px 0;text-decoration:underline;font-weight:600}
+.btn.peq{padding:6px 12px;font-size:14px}
+.btn[disabled],.btn[disabled]:hover{background:var(--line);color:var(--mute);border-color:var(--line);cursor:not-allowed}
+
+.aviso{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:8px;margin:12px 0 0;font-size:14.5px}
+.aviso .ic{flex:none;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff}
+.aviso.ok{background:var(--ok-soft)}.aviso.ok .ic{background:var(--ok)}
+.aviso.att{background:var(--att-soft)}.aviso.att .ic{background:var(--att)}
+.aviso.info{background:var(--navy-soft)}.aviso.info .ic{background:var(--navy)}
+
+.item{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:10px 0 0}
+.item-top{display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap}
+.item-top .t{font-weight:700}
+.item-top .v{margin-left:auto;font-weight:700;font-size:17px}
+.item .d{color:var(--mute);font-size:14px;margin:2px 0 0}
+.item.feito{border-color:var(--ok);background:var(--ok-soft)}
+.form-dist{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.modos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.modo{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:400;flex-direction:row}
+.modo:has(input:checked){border-color:var(--navy);background:var(--navy-soft)}
+.modo input{margin-top:4px}
+.modo b{display:block;font-size:14.5px}
+.modo span{font-size:13px;color:var(--mute)}
+
+.tw{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:560px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--navy-soft);z-index:1;font-weight:700;font-size:13px}
+td.l,th.l{text-align:left}
+td.wrap{white-space:normal;min-width:220px}
+td select{min-width:190px}
+tr.gn td{font-weight:700;background:var(--navy-soft)}
+tr.sem td{color:var(--mute)}
+.sit{display:inline-flex;gap:6px;align-items:center;font-weight:600;font-size:13px}
+.sit::before{content:"";width:10px;height:10px;border-radius:3px;background:currentColor;flex:none}
+.sit.ok{color:var(--ok)}.sit.att{color:var(--att)}.sit.comp{color:#9A7024}.sit.none{color:var(--mute)}
+
+.veredito{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:22px;border-radius:10px;margin-bottom:16px;border:1px solid var(--line);background:var(--paper)}
+.veredito.ok{border-left:6px solid var(--ok)}.veredito.att{border-left:6px solid var(--att)}
+.veredito .selo{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800}
+.veredito.ok .selo{background:var(--ok)}.veredito.att .selo{background:var(--att)}
+.veredito h3{margin:0;font-size:21px}
+.veredito p{margin:4px 0 0;color:var(--mute)}
+.numeros{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 16px}
+.numeros div{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.numeros span{display:block;font-size:13px;color:var(--mute)}
+.numeros b{font-size:20px}
+.mapa{display:grid;grid-template-columns:48px repeat(13,minmax(0,1fr)) 30px;gap:3px;font-size:12px;align-items:center}
+.mapa .cab{color:var(--mute);text-align:center;font-weight:600}
+.mapa .ano{font-weight:700;color:var(--mute)}
+.mapa .cel{height:22px;border-radius:4px;border:0;padding:0;cursor:pointer;background:var(--none)}
+.mapa .anoSt{text-align:center;font-weight:800;font-size:14px}.mapa .anoSt.ok{color:var(--ok)}.mapa .anoSt.att{color:var(--att)}
+.mapa .cel.vazio{background:transparent;cursor:default}
+.mapa .cel.ok{background:var(--ok)}
+.mapa .cel.att{background:var(--att)}
+.mapa .cel.comp{background:var(--comp)}
+.mapa .cel.nv{background:repeating-linear-gradient(135deg,var(--none) 0 4px,transparent 4px 7px)}
+.mapa .cel.gn{border-radius:11px;background:var(--navy)}
+.mapa .cel.parc{box-shadow:inset 0 0 0 3px var(--yellow)}
+.mapa .cel.sel{outline:3px solid var(--ink);outline-offset:1px}
+.legenda{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 0;font-size:13px;color:var(--mute)}
+.legenda i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+.mapa .cel.div{position:relative}
+.mapa .cel.div::after,.legenda .pt{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1.5px var(--paper)}
+.relbox{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0 0}
+.relbox[open]{background:var(--paper)}
+.relbox table.ed td{padding:4px 6px;text-align:left}
+.relbox table.ed input[type=text],.relbox table.ed input[type=date],.relbox table.ed input[type=number],.relbox table.ed select{height:36px;padding:0 8px}
+.relbox table.ed input[type=date]{min-width:150px}.relbox table.ed input[type=text]{min-width:80px}.relbox table.ed input[type=number]{min-width:90px}
+.relbox table.ed input[type=checkbox]{width:18px;height:18px}
+.relbox table.ed td select{min-width:150px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.att{background:var(--att-soft);color:var(--att)}.tag.info{background:var(--navy-soft);color:var(--navy)}
+tr.clic{cursor:pointer}tr.clic:hover td,tr.clic:focus-visible td{background:var(--navy-soft)}
+tr.dif td{background:var(--att-soft)}
+tfoot tr.tot td{font-weight:800;border-bottom:0}
+.detalhe{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
+.detalhe .lin{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px dotted var(--line);font-size:14.5px}
+.detalhe .lin.tot{font-weight:800;border-bottom:0}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:10px}
+.cols2>div,.etapa,.bloco{min-width:0}
+
+details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0}
+.regras{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px;margin-top:10px}
+.chk{flex-direction:row;align-items:center;gap:8px;font-weight:500}
+.chk input{width:18px;height:18px}
+
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);z-index:50}
+.barra-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:12px 20px 12px 110px;display:flex;gap:12px;align-items:center}
+.barra .st{color:var(--mute);font-size:14px;margin-right:auto}
+.barra .btn{white-space:nowrap}
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;background:#003A5C;color:#FFD040;text-decoration:none;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.1em;padding:9px 14px;border:1px solid #00466E}
+.sgp-hub-back:hover{background:#00466E}
+
+@media (max-width:820px){
+  .campos{grid-template-columns:1fr 1fr}.campos .c2,.campos .c3{grid-column:span 2}
+  .campos4{grid-template-columns:1fr 1fr}.regras{grid-template-columns:1fr 1fr!important}
+  .modos,.regras,.cols2,.numeros{grid-template-columns:1fr}
+  .trilho .sub{display:none}
+  .trilho button{font-size:13px;gap:6px}
+}
+@media (max-width:560px){
+  .campos4{grid-template-columns:1fr}.campos4 .l2{grid-column:auto}
+  .head h1{font-size:24px}
+  .trilho .txt{display:none}
+  .trilho button{justify-content:center;padding-right:0}
+  .barra-in{padding-left:96px}.barra .st{display:none}
+  .mapa{grid-template-columns:34px repeat(13,minmax(0,1fr)) 18px;gap:2px}
+  .mapa .cab{font-size:9px}
+  .veredito{grid-template-columns:1fr}
+  .drop{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA</span><b>TRT-17</b></div></div>
+<div class="head"><div class="head-in">
+  <h1>Calculadora de RBC</h1>
+  <p>Calcula a remuneração esperada a partir dos relatórios do RH, compara com o que a ficha financeira mostra que foi pago e monta a relação das remunerações de contribuição da CTC. Os arquivos são lidos neste computador e não saem dele.</p>
+  <ol class="trilho" id="trilho">
+    <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Servidor e relatórios<span class="sub">Dados e relatórios do RH</span></span></button></li>
+    <li data-e="2"><button type="button"><span class="num">2</span><span class="txt">Ficha financeira<span class="sub">Ficha e rubricas</span></span></button></li>
+    <li data-e="3"><button type="button"><span class="num">3</span><span class="txt">Valores a distribuir<span class="sub">Atrasados e datas a confirmar</span></span></button></li>
+    <li data-e="4"><button type="button"><span class="num">4</span><span class="txt">Conferência e RBC<span class="sub">Verificar e baixar a planilha</span></span></button></li>
+  </ol>
+</div></div>
+
+<main>
+<section class="etapa on" id="e1" aria-labelledby="e1t">
+  <h2 id="e1t">Informe o servidor e envie os relatórios do RH</h2>
+  <p class="intro">Com os relatórios de progressão, funções, substituições, VPNI e ATS, a calculadora monta a remuneração que o servidor deveria ter recebido em cada mês. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
+  <div class="bloco">
+    <h3>Servidor</h3>
+    <div class="campos4">
+      <label class="l2">Nome<input type="text" id="nome" autocomplete="off"></label>
+      <label>Cargo<select id="cargo"><option value="">— escolha —</option><option>TÉCNICO JUDICIÁRIO</option><option>ANALISTA JUDICIÁRIO</option><option>AUXILIAR JUDICIÁRIO</option></select></label>
+      <label>Especialidade<select id="especialidade"><option value="">Sem gratificação de especialidade</option><option value="SEGURANCA">Segurança / polícia judicial (GAS)</option><option value="OFICIAL">Oficial de justiça (GAE)</option></select></label>
+      <label id="espDesdeBox">Especialidade desde<input type="date" id="espDesde" disabled><span class="ajuda" id="espAjuda">Escolha a especialidade para informar</span></label>
+      <label>Ingresso<input type="date" id="inicio"><span class="ajuda" id="inicioDica"></span></label>
+      <label>Desligamento<input type="date" id="fim"><span class="ajuda">Em branco = último mês da ficha</span></label>
+      <label>Processo SEI<input type="text" id="processo" autocomplete="off"><span class="ajuda">Opcional</span></label>
+    </div>
+  </div>
+  <div class="bloco">
+    <h3>Relatórios do RH</h3>
+    <p class="muted small" style="margin:0 0 12px">Envie os relatórios exportados do sistema (PDF, CSV, XLS ou XLSX). A calculadora reconhece cada um pelo conteúdo. Se a progressão vier como imagem da tela, ela é lida por reconhecimento de texto e você confere o resultado.</p>
+    <div class="drop" id="dropRel" role="button" tabindex="0" aria-label="Escolher relatórios do RH">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>Arraste os relatórios para cá</b><span class="muted">progressão, funções, substituições, VPNI e ATS — em PDF, CSV ou planilha</span></div>
+      <input type="file" id="fileRel" multiple accept=".pdf,.csv,.txt,.xls,.xlsx,.ods" hidden>
+    </div>
+    <ul class="arqs" id="filesRel"></ul>
+    <div id="relTabelas" style="margin-top:12px"></div>
+    <div id="previa"></div>
+  </div>
+</section>
+
+<section class="etapa" id="e2" aria-labelledby="e2t">
+  <h2 id="e2t">Envie a ficha financeira</h2>
+  <p class="intro">Aceita a planilha do sistema antigo (.xls ou .xlsx, até 2019) e os PDFs do FolhaWeb (2020 em diante). A ficha mostra o que foi efetivamente pago e a contribuição descontada.</p>
+  <div class="bloco">
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Escolher arquivos da ficha financeira">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>Arraste a ficha para cá</b><span class="muted">ou clique para escolher no computador</span></div>
+      <input type="file" id="file" multiple accept=".xls,.xlsx,.pdf" hidden>
+    </div>
+    <ul class="arqs" id="files"></ul>
+    <div id="cobertura"></div>
+  </div>
+  <h3 style="font-size:18px;margin:24px 0 4px">Rubricas da ficha</h3>
+  <p class="intro" style="margin-bottom:12px">A calculadora reconhece a maior parte das rubricas pelo nome. As que ela não reconhece ficam fora da conta até você dizer o que são.</p>
+  <div id="rubricas"></div>
+</section>
+
+<section class="etapa" id="e3" aria-labelledby="e3t">
+  <h2 id="e3t">Distribua os valores pagos fora do mês</h2>
+  <p class="intro">Atrasados e acertos pagos de uma vez precisam ser lançados nos meses a que se referem. A calculadora já distribuiu os que conseguiu identificar; aqui ficam os que dependem de você.</p>
+  <div id="pend"></div>
+</section>
+
+<section class="etapa" id="e4" aria-labelledby="e4t">
+  <h2 id="e4t">Confira e baixe a RBC</h2>
+  <p class="intro">Duas conferências: a remuneração paga (ficha) contra a esperada (relatórios do RH e tabelas), parcela por parcela; e a contribuição descontada contra a calculada sobre a RBC, ano a ano. A RBC sai dos valores pagos, com as divergências listadas.</p>
+  <div id="veredito"></div>
+  <div id="comparacao"></div>
+  <div class="bloco">
+    <h3>Mês a mês</h3>
+    <p class="muted small" style="margin:0 0 12px">Cada linha é um ano e cada quadrado, um mês; o 13º vem no fim. A conferência vale para o ano inteiro, porque atrasados são descontados no mês em que são pagos. Clique em um mês para ver a composição.</p>
+    <div class="mapa" id="mapa"></div>
+    <div class="legenda">
+      <span><i style="background:var(--ok)"></i>Confere</span>
+      <span><i style="background:var(--comp)"></i>Diferença no mês, ano confere</span>
+      <span><i style="background:var(--att)"></i>Diferença em ano que não confere</span>
+      <span><i style="background:repeating-linear-gradient(135deg,var(--none) 0 4px,transparent 4px 7px)"></i>Não verificado</span>
+      <span><i style="background:var(--none)"></i>Sem ficha</span>
+      <span><i style="box-shadow:inset 0 0 0 3px var(--yellow)"></i>Data a confirmar</span>
+      <span id="legDiv"><i style="background:var(--none);position:relative"><b class="pt"></b></i>Pagamento diferente do esperado</span>
+    </div>
+    <div id="detalhe" class="detalhe" hidden></div>
+  </div>
+  <div class="bloco">
+    <h3>Baixar</h3>
+    <p class="muted small" style="margin:0 0 12px">A planilha segue o modelo da DIPROF e traz, em abas separadas, a conferência da contribuição, os ajustes feitos e as rubricas usadas.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn" id="x_rbc" disabled>Baixar RBC em Excel</button>
+      <button class="btn sec" id="x_dec">Salvar escolhas para refazer depois</button>
+      <button class="btn link" id="x_load">Abrir escolhas salvas</button><input type="file" id="decfile" accept=".json" hidden>
+    </div>
+    <p class="muted small" id="x_msg" role="status" style="margin:10px 0 0"></p>
+  </div>
+  <details class="bloco" id="tabelaBox"><summary>Ver a tabela completa</summary>
+    <label class="chk" style="margin:12px 0"><input type="checkbox" id="verParcelas"> Mostrar as parcelas (vencimento, GAJ, ATS…)</label>
+    <div id="resultado"></div>
+  </details>
+  <details class="bloco" id="regrasBox"><summary>Regras de cálculo <span class="muted small" id="regrasResumo" style="font-weight:400"></span></summary>
+    <p class="muted small">Os valores iniciais reproduzem a prática da DIPROF. Altere só com decisão da unidade; a planilha registra as regras usadas.</p>
+    <div class="regras">
+      <label>Função e substituição contam até<input type="month" id="r_fcAte"></label>
+      <label>Adicional por tempo de serviço conta a partir de<input type="month" id="r_atsDesde"></label>
+      <label>Conferir a contribuição a partir de<input type="month" id="r_conferirDesde"></label>
+      <label>Acrescentar 11,98% às parcelas a partir de<input type="month" id="r_ajuste1198Desde"></label>
+      <label><span>Acrescentar 11,98% às parcelas até <span class="dica">(em branco = não acrescentar)</span></span><input type="month" id="r_ajuste1198Ate"></label>
+      <label>13º entra na RBC a partir do ano<input type="number" id="r_gnDesde" min="1994" max="2100"></label>
+      <label>13º sem VPI até o ano<input type="number" id="r_gnSemVPIAte" min="1994" max="2100"></label>
+      <label><span>RBC pela tabela, e não pela ficha, até <span class="dica">(prática da DIPROF para o período em cruzeiros; em branco = sempre pela ficha)</span></span><input type="month" id="r_tabelaAte"></label>
+      <label><span>Mês de 30 dias a partir de <span class="dica">(antes, dias do mês)</span></span><input type="month" id="r_divisor30Desde"></label>
+      <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(Res. CSJT 211/2017, DEJT 30/11/2017; antes, mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px;align-items:center">
+      <label class="chk"><input type="checkbox" id="r_vpniTabela"> VPNI pela tabela (fora de dez/1999–dez/2005)</label>
+      <label class="chk"><input type="checkbox" id="r_fcTabela"> Função e redutor pela tabela até a data acima</label>
+      <label class="chk"><input type="checkbox" id="r_gas"> GAS conta na RBC <span class="dica">(não é base de contribuição)</span></label>
+      <label class="chk">AQ-Treinamento na RBC <select id="r_aqTrein" style="width:auto;height:36px"><option value="ficha">conforme a ficha</option><option value="sim">sempre</option><option value="nao">nunca</option></select></label>
+      <label class="chk"><input type="checkbox" id="r_descontarFaltas"> Descontar faltas</label>
+      <label class="chk"><input type="checkbox" id="r_teto"> Contribuição limitada ao teto do INSS</label>
+      <button class="btn link" id="r_reset">Voltar ao padrão</button>
+    </div>
+  </details>
+</section>
+</main>
+
+<div class="barra"><div class="barra-in">
+  <span class="st" id="barraSt" role="status"></span>
+  <button class="btn sec" id="voltar">Voltar</button>
+  <button class="btn" id="avancar">Continuar</button>
+</div></div>
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
+
+<script>
+/*__CORE__*/
+</script>
+<script>
+const TABELA = /*__TABELA__*/;
+</script>
+<script>
+/*__ESP__*/
+</script>
+<script>
+const BASE = /*__BASE__*/;
+</script>
+<script>
+/*__UI__*/
+</script>
+</body>
+</html>

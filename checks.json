@@ -428,5 +428,117 @@
       "HINDEMBURG",
       "MARCELO DE CASTRO"
     ]
+  },
+  "rbc_src/calc/rbc_core.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/calc/esperada.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/calc/relatorios.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/calc/ui.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/calc/template.html": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/testes/regressao.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/README.md": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
+  },
+  "rbc_src/base/guia_ia_rbc.md": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CAMILO",
+      "REGINALDO",
+      "LEONARDO",
+      "HINDEMBURG",
+      "MARCELO DE CASTRO"
+    ]
   }
 }
