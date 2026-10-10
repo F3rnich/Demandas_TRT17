@@ -23,16 +23,17 @@ const CALC = path.resolve(__dirname, '..', 'calc');
 const req = require('module').createRequire(path.join(CALC, 'package.json'));
 const { chromium } = req('playwright'); const XLSX = req('xlsx');
 const NM = path.join(CALC, 'node_modules');
-const PAGINA = path.resolve(CALC, '..', '..', 'calculadora_rbc.html');
+const PAGINA = (process.argv.find(a => a.startsWith('--pagina=')) || '').slice(9) || path.resolve(CALC, '..', '..', 'calculadora_rbc.html');
 
 const args = process.argv.slice(2);
 const DIR = path.resolve(args.find(a => !a.startsWith('--')) || path.resolve(__dirname, '..', 'casos'));
 const SO = (args.find(a => a.startsWith('--so=')) || '').slice(5).split(',').filter(Boolean);
 const LB = args.includes('--linha-base');
-const SEM_REL = args.includes('--sem-rel');   // ignora os relatórios/CTC do caso (mede o efeito deles)
+const SEM_REL = args.includes('--sem-rel');
+const TUDO = args.includes('--tudo');   // usa a entrada única (pasta inteira) em vez dos campos e envios separados   // ignora os relatórios/CTC do caso (mede o efeito deles)
 const SAIDA = (args.find(a => a.startsWith('--saida=')) || '--saida=_resultado.json').slice(8);
 
-const MAP = { 'xlsx.full.min.js': 'xlsx/dist/xlsx.full.min.js', 'pdf.min.js': 'pdfjs-dist/build/pdf.min.js', 'pdf.worker.min.js': 'pdfjs-dist/build/pdf.worker.min.js', 'exceljs.min.js': 'exceljs/dist/exceljs.min.js' };
+const MAP = { 'jszip.min.js': 'jszip/dist/jszip.min.js', 'xlsx.full.min.js': 'xlsx/dist/xlsx.full.min.js', 'pdf.min.js': 'pdfjs-dist/build/pdf.min.js', 'pdf.worker.min.js': 'pdfjs-dist/build/pdf.worker.min.js', 'exceljs.min.js': 'exceljs/dist/exceljs.min.js' };
 const mesDe = v => {
   if (v == null || v === '') return null;
   if (typeof v === 'number') { const d = XLSX.SSF.parse_date_code(v); return d ? d.y + '-' + String(d.m).padStart(2, '0') : null; }
@@ -69,6 +70,22 @@ async function rodar(b, id, c) {
   await ctx.route(/fonts\.(googleapis|gstatic)/, r => r.fulfill({ body: '', contentType: 'text/css' }));
   await p.goto('file://' + PAGINA);
   const s = c.servidor || {};
+  let auto = null;
+  if (TUDO) {
+    // entrada única: todos os arquivos de uma vez, sem preencher nada; o que a página não deduzir vem do caso
+    const todos = (c.fichas || []).concat(SEM_REL ? [] : (c.relatorios || [])).concat(c.extras || []).map(f);
+    await p.setInputFiles('#fileTudo', todos);
+    await p.waitForFunction(() => /ignorado/.test(document.getElementById('tudoSt').textContent), null, { timeout: 300000 });
+    auto = await p.evaluate(() => ({ cargo: document.getElementById('cargo').value, inicio: document.getElementById('inicio').value, fim: document.getElementById('fim').value, esp: document.getElementById('especialidade').value }));
+    auto.ok = { cargo: auto.cargo === (s.cargo || ''), inicio: auto.inicio === s.inicio, fim: !auto.fim || auto.fim === s.fim, esp: auto.esp === (s.especialidade || '') };
+    // período do gabarito sempre (a CTC pode cobrir outro período que o da RBC comparada)
+    await p.evaluate(sv => { const $ = id => document.getElementById(id);
+      if (sv.cargo && !$('cargo').value) $('cargo').value = sv.cargo;
+      if (sv.especialidade && !$('especialidade').value) { $('especialidade').value = sv.especialidade; $('espDesde').disabled = false; if (sv.espDesde) $('espDesde').value = sv.espDesde; }
+      if (sv.inicio) $('inicio').value = sv.inicio; if (sv.fim) $('fim').value = sv.fim; }, s);
+    await p.evaluate(() => window.__RBC_CALC());
+    await p.waitForFunction(() => window.__RBC_STATE.res, null, { timeout: 120000 });
+  } else {
   if (s.cargo) await p.selectOption('#cargo', s.cargo);
   if (s.especialidade) await p.selectOption('#especialidade', s.especialidade);
   for (const [sel, v] of [['#espDesde', s.espDesde], ['#inicio', s.inicio], ['#fim', s.fim], ['#nome', s.nome]])
@@ -87,6 +104,7 @@ async function rodar(b, id, c) {
   // com CTC a página já calcula pela tabela antes da ficha: espera a leitura de todas as fichas
   await p.waitForFunction(n => window.__RBC_STATE.arquivos.length >= n && window.__RBC_STATE.res, nf, { timeout: 120000 });
   await p.waitForTimeout(200);
+  }
   if (c.regras) {
     await p.evaluate(rg => {
       for (const [k, v] of Object.entries(rg)) {
@@ -100,8 +118,8 @@ async function rodar(b, id, c) {
     rel: window.__RBC_STATE.relArqs.map(a => a.nome + ': ' + (a.erro ? 'ERRO ' + a.erro : (a.tipo || '?') + ' ' + a.n + ' linha(s)')),
     prog: ((window.__RBC_STATE.rel || {}).PROGRESSAO || []).map(r => [r.ini, r.classe + '-' + r.padrao, r.origem].join(' ')),
   }));
-  await p.click('#avancar'); await p.click('#avancar'); await p.waitForTimeout(300);
-  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#avancar')]);
+  await p.evaluate(() => window.__RBC_IR(4)); await p.waitForTimeout(300);
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#x_rbc')]);
   const saida = f(SEM_REL ? '_saida_semrel.xlsx' : '_saida_calculadora.xlsx'); await dl.saveAs(saida);
   await ctx.close();
 
@@ -142,7 +160,7 @@ async function rodar(b, id, c) {
     gnCert = { total: 0, iguais: 0, div: [] };
     for (const [y, v] of Object.entries(c.gnCert)) { gnCert.total++; const cv = calcC[y]; if (cv != null && Math.abs(cv - v) <= 0.05) gnCert.iguais++; else gnCert.div.push({ ano: y, calc: cv == null ? null : cv, dip: v }); }
   }
-  return { id, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
+  return { id, auto, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
 }
 
 (async () => {

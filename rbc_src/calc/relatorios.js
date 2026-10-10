@@ -322,6 +322,46 @@
     if (vac) meta.vacancia = dBR(vac[2]);
     meta.inicio = meta.periodoIni || meta.exercicio || null;
     meta.fim = meta.periodoFim || null;
+    // dados para o cabeçalho da RBC (ficam só no navegador)
+    const tiraSexo = n => n && n.replace(/\s+(MASCULINO|FEMININO|[MF])$/, '').trim();
+    let mm = /SERVIDOR(?:\(A\))?:?\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|CI\b|$)/.exec(flat) || /NOME(?: DO SERVIDOR)?:\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|$)/.exec(flat);
+    if (mm) meta.nome = tiraSexo(mm[1].trim());
+    mm = /MATR[ÍI]CULA:?\s*(\d[\d. ]{2,14}\d)/.exec(flat); if (mm) meta.matricula = mm[1].replace(/\s+/g, '');
+    mm = /\b(\d{3}\.\d{3}\.\d{3}-\d{2})\b/.exec(flat); if (mm) meta.cpf = mm[1];
+    mm = /PIS\s*\/?\s*PASEP:?.{0,120}?\b(\d{1,3}\.\d{3}\.\d{3}\.\d{2,3}-?\d|\d{11})\b/i.exec(flat); if (mm) meta.pis = mm[1];
+    mm = /NASCIMENTO:?.{0,160}?(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})/i.exec(flat); if (mm) meta.nascimento = (dBR(mm[1]) || '').split('-').reverse().join('/');
+    mm = /NOME DA M[ÃA]E:?\s*([A-ZÀ-Úa-zà-ú][A-Za-zÀ-ú .']{4,80}?)\s+(?:DATA|NASC|CPF|PIS|$)/.exec(flat);
+    if (mm) meta.mae = mm[1].trim();
+    else {
+      // "FILIAÇÃO: PAI e MÃE" (uma ou mais linhas, às vezes intercaladas com a data de nascimento): a mãe vem por último
+      const i = ls.findIndex(l => /FILIA[ÇC][ÃA]O/i.test(l));
+      if (i >= 0) {
+        const partes = [];
+        for (let j = i; j < Math.min(ls.length, i + 6); j++) {
+          if (j > i && /ENDERE|CARGO|^RG\b|^CI\b|ADMISS|SEXO|LOTA|^\d+ ?-/i.test(ls[j])) break;
+          const t = ls[j].replace(/FILIA[ÇC][ÃA]O:?|DATA DE NASCIMENTO:?|NASCIMENTO:?|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/gi, ' ').replace(/\s+/g, ' ').trim();
+          if (t && /^[A-Za-zÀ-ú .']+$/.test(t)) partes.push(t);
+        }
+        const tudo = partes.join(' ').trim();
+        const nomes = tudo.split(/\s+e\s+/i).map(x => x.trim()).filter(x => x.length > 3);
+        meta.filiacao = nomes.length > 1 ? nomes : partes;
+        if (meta.filiacao.length) meta.mae = meta.filiacao[meta.filiacao.length - 1];
+      }
+    }
+    if (!meta.nome) {
+      const i = ls.findIndex(l => /^\s*(SERVIDOR(?:\(A\))?|NOME):?\s*$/i.test(l) || /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO/i.test(l));
+      if (i >= 0 && ls[i + 1]) { const m2 = /^([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)(?:\s+[MF]\s|\s+\d|\s*$)/.exec(ls[i + 1].trim()); if (m2) meta.nome = tiraSexo(m2[1].trim()); }
+    }
+    if (meta.nome) meta.nome = tiraSexo(meta.nome);
+    mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?N[º°o]\.?\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
+    const tipoDoc = /DECLARA[ÇC][ÃA]O(?: COMPLEMENTAR)? (?:DE|À) /i.test(flat.slice(0, 1500)) && !/CERTID[ÃA]O DE TEMPO/i.test(flat.slice(0, 600)) ? 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' : 'CERTIDÃO DE TEMPO DE CONTRIBUIÇÃO';
+    if (mm) meta.ctcNumero = mm[2].replace(/\s+/g, '');
+    const assin = [...flat.matchAll(/assinado eletronicamente por [^,]{3,80},[^,]{0,80}?,? em (\d{2}\/\d{2}\/\d{4})/gi)].map(x => x[1]);
+    const vit = [...flat.matchAll(/Vit[óo]ria(?:-ES)?,?\s*(?:em\s*)?(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/gi)].map(x => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0') + '/' + x[3]);
+    meta.ctcData = assin[0] || vit[vit.length - 1] || '';
+    meta.tipoDoc = tipoDoc;
+    meta.referencia = tipoDoc === 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' ? `${tipoDoc}${meta.ctcData ? ' DATADA DE ' + meta.ctcData : ''}` : `${tipoDoc}${meta.ctcNumero ? ' Nº ' + meta.ctcNumero : ''}${meta.ctcData ? ', de ' + meta.ctcData : ''}`;
+    mm = /SEI\s+(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/.exec(flat); if (mm) meta.processo = mm[1];
     // previdência complementar: teto do RGPS
     if (/LIMITAD\S* AO TETO DO (REGIME GERAL|RGPS)/.test(up)) meta.teto = 'sim';
     else if (/\bE ADERIU AO REGIME DE PREVID[ÊE]NCIA COMPLEMENTAR|\bE OPTOU PELA ADES[ÃA]O/.test(up) && !/N[ÃA]O OPTOU PELA ADES/.test(up)) meta.teto = 'migrou';

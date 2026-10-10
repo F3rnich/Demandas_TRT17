@@ -14,7 +14,8 @@ if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.clo
 
 const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
 const S = { devol:[], arquivos:[], recs:[], refs:{}, basePSO:{}, fichaInfo:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
-  rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{} };
+  rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{}, anteriores:[], digitalizados:[] };
+const CC = (typeof RBCCert!=='undefined') ? RBCCert : null;
 const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto','tetoDesde','tetoAuto','semFichaTabela','gasAte','vpiTabela','gnFicha'];
 const NOME = { SUBSIDIO:'Subsídio (magistrado)', FC_PREV:'Função com opção de contribuição', VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
 const CURTO = { SUBSIDIO:'Subsídio', FC_PREV:'Função c/ PSS', VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ', APJ:'APJ', REDUTOR:'Redutor', ATS:'ATS', VPI:'VPI', VPI_DED:'Ded. VPI', VPNI:'VPNI', VPNI_JUD:'VPNI jud.', FC:'Função', SUBST:'Subst.', V1323_VB:'13,23% VB', V1323_GAJ:'13,23% GAJ', V1323_ATS:'13,23% ATS', V1323_VPNI:'13,23% VPNI', V1323_FC:'13,23% FC', AQ:'AQ', AQ_TREIN:'AQ-Trein.', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%' };
@@ -159,7 +160,7 @@ async function ocrProgressao(doc,msg){
 // quintos) que ainda não vieram de relatório do RH. Relatório do RH, quando enviado, prevalece.
 function aplicarCTC(r,info,ocr){
   const m=r.meta||{}, pre=[];
-  if(m.cargo&&m.cargo!=='JUIZ'&&!$('cargo').value){ $('cargo').value=m.cargo; pre.push('cargo'); }
+  if(m.cargo&&!$('cargo').value){ $('cargo').value=m.cargo==='JUIZ'?'MAGISTRADO':m.cargo; pre.push('cargo'); S.cargoAuto='CTC'; }
   if(m.especialidade&&!$('especialidade').value){ $('especialidade').value=m.especialidade; $('espDesde').disabled=false; pre.push('especialidade'); }
   if(m.inicio&&!$('inicio').value){ $('inicio').value=m.inicio; pre.push('início do período'); }
   if(m.fim&&!$('fim').value){ $('fim').value=m.fim; pre.push('fim do período'); }
@@ -342,19 +343,48 @@ function infoFicha(inf){
   if(!inf) return; Object.assign(S.fichaInfo, inf);
   const c=String(inf.cargo||'').toUpperCase();
   const cg=/ANALISTA/.test(c)?'ANALISTA JUDICIÁRIO':/T[ÉE]CNICO/.test(c)?'TÉCNICO JUDICIÁRIO':/AUXILIAR/.test(c)?'AUXILIAR JUDICIÁRIO':'';
-  if(cg&&!$('cargo').value){ $('cargo').value=cg; }
+  if(cg&&!$('cargo').value){ $('cargo').value=cg; S.cargoAuto='ficha'; }
   const m=String(inf.exercicio||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if(m&&!$('inicio').value){ $('inicio').value=m[3]+'-'+m[2]+'-'+m[1]; }
 }
+// cargo pelo vencimento pago: cada mês com ficha vota no cargo cuja tabela tem aquele vencimento na data
+const CARGOS=['AUXILIAR JUDICIÁRIO','TÉCNICO JUDICIÁRIO','ANALISTA JUDICIÁRIO'];
+function cargoPelaFicha(){
+  // usa todas as fichas, não só o período informado (a CTC pode cobrir só um dos vínculos)
+  if(!S.recs.length) return null; const vb={}, sb={};
+  for(const r of S.recs){ if(r.folha!=='N') continue; const c=S.cats[r.cod+'|'+r.desc]||RBC.classify(r.cod,r.desc);
+    if(c==='VB') vb[r.comp]=(vb[r.comp]||0)+r.v; else if(c==='SUBSIDIO') sb[r.comp]=(sb[r.comp]||0)+r.v; }
+  const v={}; let n=0; const sub=Object.values(sb).filter(x=>x>0).length;
+  for(const [k,x] of Object.entries(vb)){ if(!(x>0)) continue; n++;
+    // mesmos fatores da sugestão de referência: 11,98% e conversões de moeda nas fichas antigas
+    const fs=k<'1994-07'?[1,1.1198,1000,2750,2750000]:[1,1.1198];
+    for(const cg of CARGOS){ const cs=E.candidatos(BASE,cg,k+'-15'); if(fs.some(f=>cs.some(c=>Math.abs(c.vb-x*f)<=Math.max(0.05,c.vb*0.0002,f*0.006)))) v[cg]=(v[cg]||0)+1; } }
+  if(sub>=3&&sub>=(n+sub)*0.5) return {cargo:'MAGISTRADO',votos:sub,n:n+sub};
+  const o=Object.entries(v).sort((a,b)=>b[1]-a[1]); if(!o.length) return null;
+  const [cg,q]=o[0], seg=o[1]?o[1][1]:0;
+  return q>=3&&q>=seg*2?{cargo:cg,votos:q,n,outros:o.slice(1)}:null;
+}
+// especialidade pelo que a ficha pagou: GAE → oficial de justiça; GAS → segurança. "Desde" só quando a ficha
+// mostra meses anteriores sem a gratificação (do contrário vale a posse)
+function espPelaFicha(){
+  if(!S.res) return null; const L=S.res.linhas.filter(l=>l.fonte&&l.bruto&&l.bruto.VB>0);
+  for(const [cat,esp] of [['GAE','OFICIAL'],['GAS','SEGURANCA']]){
+    const com=L.filter(l=>l.bruto[cat]>0); if(com.length<2) continue;
+    const p=com[0].comp, antes=L.filter(l=>l.comp<p).length;
+    return {esp, desde:antes>=2?p+'-01':'', meses:com.length};
+  }
+  return null;
+}
 // ------------------------------------------------------------ etapa 2: ficha
 async function lerArquivos(list){
-  const fila=[...list]; if(!fila.length) return;
+  // planilhas antes dos PDFs (trazem a folha de cada lançamento); cópias de trabalho por último
+  const fila=[...list].sort((a,b)=>(/\.pdf$/i.test(a.name)?1:0)-(/\.pdf$/i.test(b.name)?1:0)||(COPIA.test(a.name)?1:0)-(COPIA.test(b.name)?1:0)); if(!fila.length) return;
   $('barraSt').textContent='Lendo '+fila.length+' arquivo(s)…';
   for (const f of fila){
     const info={nome:f.name, anos:'', erro:'', dup:0};
     try{
       const buf=await f.arrayBuffer(); let recs=[], refs={};
-      if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=r.refs||{}; if(r.info) infoFicha(r.info); }
+      if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFichaAntigaPDF(pg)?RBC.parseFichaAntigaPDF(pg):RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=RBC.isFichaAntigaPDF(pg)?{}:(r.refs||{}); if(r.info) infoFicha(r.info); }
       else if (/\.xlsx?$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'});
         // sistema antigo (planilha longa) ou FolhaWeb exportado em planilha (Big Grid). Usa a primeira aba reconhecida: as
         // seguintes costumam ser cópias de trabalho (conferências, ajustes) e duplicariam lançamentos
@@ -364,8 +394,9 @@ async function lerArquivos(list){
           if(r&&r.length){ recs=r; break; } } }
       else info.erro='Formato não aceito. Envie .xls, .xlsx ou .pdf.';
       if(!info.erro && !recs.length) info.erro='Nenhum lançamento encontrado. Confira se é a ficha financeira exportada do sistema.';
-      const ja=new Set(S.recs.map(r=>r.comp+'|'+r.fonte));
-      const novos=recs.filter(r=>!ja.has(r.comp+'|'+r.fonte));
+      // mês já lido de outro arquivo (cópia, outro formato da mesma ficha): fica o primeiro
+      const ja=new Set(S.recs.map(r=>r.comp));
+      const novos=recs.filter(r=>!ja.has(r.comp));
       info.dup=recs.length-novos.length;
       const anos=[...new Set(novos.map(r=>r.ano))].sort(); info.anos=anos.length?(anos.length>1?anos[0]+' a '+anos[anos.length-1]:String(anos[0])):'';
       S.recs=S.recs.concat(novos); Object.assign(S.refs,refs);
@@ -508,10 +539,12 @@ function porExtenso(v,moeda){
 const moedaAno = y => moedaDe(y+'-12');
 function textoCertidaoGN(){
   const g=(S.gnCert||[]).filter(x=>x.valor>0); if(!g.length) return '';
-  const nome=$('nome').value.trim()||'[nome do servidor]';
+  const cv=id=>{ const el=$(id); return el?el.value.trim():''; };
+  const nome=cv('c_nome')||$('nome').value.trim()||'[nome do servidor]';
+  const num=(S.ctc&&S.ctc.ctcNumero)||'[número]', cpf=cv('c_cpf')||(S.ctc&&S.ctc.cpf)||'[CPF]', data=cv('c_data')||'[data]';
   const itens=g.map(x=>{ const m=moedaAno(x.ano); return `${m} ${fmt.format(x.valor)} (${porExtenso(x.valor,m)}) em ${x.ano}`; });
   const lista=itens.length>1?itens.slice(0,-1).join('; ')+' e '+itens[itens.length-1]:itens[0];
-  return `Certifico, em complementação à Relação das Remunerações de Contribuições emitida em [data], referente à Certidão de Tempo de Contribuição nº [número], que o(a) servidor(a) ${nome}, CPF [CPF], recebeu por este Tribunal Regional do Trabalho, a título de Gratificação Natalina (considerando-se apenas as parcelas que compunham a base do recolhimento previdenciário mensal), os seguintes valores: ${lista}. Certifico ainda que não houve recolhimento de contribuição previdenciária sobre esses valores. Nada mais.`;
+  return `Certifico, em complementação à Relação das Remunerações de Contribuições emitida em ${data}, referente à Certidão de Tempo de Contribuição nº ${num}, que o(a) servidor(a) ${nome}, CPF ${cpf}, recebeu por este Tribunal Regional do Trabalho, a título de Gratificação Natalina (considerando-se apenas as parcelas que compunham a base do recolhimento previdenciário mensal), os seguintes valores: ${lista}. Certifico ainda que não houve recolhimento de contribuição previdenciária sobre esses valores. Nada mais.`;
 }
 // ------------------------------------------------------------ benefício especial (Lei 12.618/2012, art. 3º, § 2º)
 // Base = remuneração que serviu de base a contribuição efetivamente mantida, desde 07/1994. Períodos com contribuição
@@ -611,7 +644,7 @@ function renderGNCert(){
 $('gnCertTxt').addEventListener('input',()=>{ $('gnCertTxt').dataset.editado='1'; });
 $('gnCertCopiar').onclick=async()=>{ try{ await navigator.clipboard.writeText($('gnCertTxt').value); $('gnCertMsg').textContent='Copiado.'; }catch(e){ $('gnCertTxt').select(); $('gnCertMsg').textContent='Selecione e copie (Ctrl+C).'; } };
 function renderTudo(){
-  renderGNCert();
+  preencherCert(); renderGNCert(); renderComparacao();
   const C=contagens();
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
   document.querySelectorAll('#trilho li').forEach(li=>{
@@ -1030,5 +1063,166 @@ $('x_rbc').onclick=async()=>{
 };
 
 renderRelTabelas(); renderArqRel(); renderTudo();
+// ------------------------------------------------------------ entrada única: pasta, .zip ou arquivos soltos
+// Separa cada arquivo pelo conteúdo (não pelo nome): ficha financeira, CTC/declaração e relatórios do RH, RBC já emitida
+// (para comparar). Documento digitalizado sem texto fica listado para leitura por imagem, se o usuário quiser.
+const COPIA = /c[oó]pia|lav[ií]nia|\bmara\b|luan|renatha|DIPROF-|SEPROF-|\(\d\)|rascunho|conferi/i;
+async function expandirZip(f){
+  if(!window.JSZip) throw new Error('leitor de .zip indisponível (sem internet?)');
+  const z=await JSZip.loadAsync(await f.arrayBuffer()), out=[];
+  for(const [nome,e] of Object.entries(z.files)){ if(e.dir||/__MACOSX|(^|\/)\./.test(nome)) continue; const b=await e.async('blob'); const ff=new File([b],nome.split('/').pop()); ff.caminho=nome; if(/\.zip$/i.test(nome)) out.push(...await expandirZip(ff)); else out.push(ff); }
+  return out;
+}
+async function arquivosDoDrop(dt){
+  const itens=[...(dt.items||[])].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+  if(!itens.length) return [...dt.files];
+  const out=[];
+  const lerEntrada=async(en,cam)=>{
+    if(en.isFile){ const f=await new Promise((ok,err)=>en.file(ok,err)); f.caminho=cam+f.name; out.push(f); }
+    else if(en.isDirectory){ const r=en.createReader(); let lote; do{ lote=await new Promise((ok,err)=>r.readEntries(ok,err)); for(const x of lote) await lerEntrada(x,cam+en.name+'/'); }while(lote.length); }
+  };
+  for(const en of itens) await lerEntrada(en,'');
+  return out;
+}
+async function classificar(f){
+  const n=f.name;
+  if(/^~\$|desktop\.ini|thumbs\.db/i.test(n)) return {tipo:'ignorado',motivo:'arquivo de sistema'};
+  if(/\.(eml|msg|txt)$/i.test(n)&&!/\.txt$/i.test(n)) return {tipo:'ignorado',motivo:'e-mail'};
+  if(/\.(doc|odt)$/i.test(n)) return {tipo:'ignorado',motivo:'Word antigo: salve como .docx ou PDF para comparar'};
+  if(/\.docx$/i.test(n)){
+    if(!window.JSZip) return {tipo:'ignorado',motivo:'leitor indisponível'};
+    try{ const buf=await f.arrayBuffer(); const z=await JSZip.loadAsync(buf); const x=await z.file('word/document.xml').async('string'); const t=x.replace(/<[^>]+>/g,' ');
+      if(CC&&CC.pareceRBC(t)){ const r=await CC.lerRBCDocx(JSZip,buf); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
+      return {tipo:'ignorado',motivo:/NATALINA/i.test(t)?'certidão de 13º (texto)':'documento sem tabela de RBC'};
+    }catch(e){ return {tipo:'ignorado',motivo:'não foi possível ler'}; }
+  }
+  if(/\.pdf$/i.test(n)){
+    let pg; try{ pg=(await pdfDoc(await f.arrayBuffer())).pages; }catch(e){ return {tipo:'ignorado',motivo:'PDF ilegível'}; }
+    const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=txt.replace(/\s/g,'').length;
+    if(chars<30) return {tipo:'img',motivo:'digitalizado (imagem)'};
+    if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
+    if(RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
+    if(/^\s*(De|From):|Assunto:|Subject:|Enviado em/im.test(txt.slice(0,1500))) return {tipo:'ignorado',motivo:'e-mail'};
+    const tp=RR.tipoRelatorio(pg); if(tp&&tp!=='AQ') return {tipo:'rel',sub:tp};
+    return {tipo:'ignorado',motivo:'PDF não reconhecido'};
+  }
+  if(/\.(xlsx?|ods|csv)$/i.test(n)){
+    try{
+      if(/\.csv$/i.test(n)) return {tipo:'rel'};
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0]))) return {tipo:'ficha'}; }
+      const abas=wb.SheetNames.map(sn=>({nome:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null})}));
+      const r=CC&&CC.lerRBCPlanilha(abas); if(r) return {tipo:'rbc',dados:r};
+      const m2=[].concat(...wb.SheetNames.map(sn=>XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,dateNF:'dd/mm/yyyy',defval:''})));
+      if(RR.tabelaRelatorio(m2,n).tipo) return {tipo:'rel'};
+      return {tipo:'ignorado',motivo:'planilha não reconhecida'};
+    }catch(e){ return {tipo:'ignorado',motivo:'planilha ilegível'}; }
+  }
+  return {tipo:'ignorado',motivo:'formato não usado'};
+}
+async function lerTudo(lista){
+  try{ await lerTudo0(lista); }
+  catch(e){ console.error(e); $('tudoSt').innerHTML='Erro ao ler os arquivos: '+esc(e.message||String(e))+' — use os envios separados abaixo. (0 ignorado(s))'; }
+}
+async function lerTudo0(lista){
+  let fs=[...lista]; if(!fs.length) return;
+  const cargoAntes=$('cargo').value, espAntes=$('especialidade').value;
+  const ul=$('filesTudo'); $('tudoSt').textContent='Separando '+fs.length+' arquivo(s)…';
+  const zips=fs.filter(f=>/\.zip$/i.test(f.name)); fs=fs.filter(f=>!/\.zip$/i.test(f.name));
+  for(const z of zips){ try{ fs.push(...await expandirZip(z)); }catch(e){ $('tudoSt').textContent=e.message; } }
+  const grupos={ficha:[],rel:[],rbc:[],img:[],ignorado:[]};
+  for(let i=0;i<fs.length;i++){ $('tudoSt').textContent=`Lendo ${i+1} de ${fs.length}: ${fs[i].name}`; const c=await classificar(fs[i]); c.f=fs[i]; grupos[c.tipo].push(c); }
+  // cópias de trabalho por último: a leitura da ficha descarta meses já lidos
+  grupos.ficha.sort((a,b)=>(COPIA.test(a.f.name)?1:0)-(COPIA.test(b.f.name)?1:0)||a.f.name.localeCompare(b.f.name));
+  grupos.rel.sort((a,b)=>(a.sub==='CTC'?0:1)-(b.sub==='CTC'?0:1)||a.f.name.localeCompare(b.f.name));
+  const ROT={ficha:'Ficha financeira',rel:'CTC / relatório',rbc:'RBC já emitida (comparação)',img:'Digitalizado',ignorado:'Ignorado'};
+  ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
+  // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
+  const soImg=!grupos.rel.length&&!grupos.ficha.length&&grupos.img.length;
+  if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…'; await lerRelatorios(grupos.img.map(c=>c.f)); grupos.img=[]; }
+  if(grupos.rel.length) await lerRelatorios(grupos.rel.map(c=>c.f));
+  if(grupos.ficha.length) await lerArquivos(grupos.ficha.map(c=>c.f));
+  for(const c of grupos.rbc) S.anteriores.push({nome:c.f.name,r:c.dados});
+  // RBC certificada antes da planilha de trabalho; mais meses primeiro
+  S.anteriores.sort((a,b)=>(a.r.fonte==='planilha'?1:0)-(b.r.fonte==='planilha'?1:0)||Object.keys(b.r.mensal).length-Object.keys(a.r.mensal).length);
+  S.digitalizados.push(...grupos.img.map(c=>c.f));
+  if(!$('nome').value){ const nm=(S.ctc&&S.ctc.nome)||(S.fichaInfo&&S.fichaInfo.nome)||(S.anteriores[0]&&S.anteriores[0].r.cab&&S.anteriores[0].r.cab.nome)||''; if(nm) $('nome').value=nm; }
+  if(!$('processo').value&&S.ctc&&S.ctc.processo) $('processo').value=S.ctc.processo;
+  calc();
+  // cargo: o vencimento pago decide quando o usuário não informou; diverge da CTC → avisa
+  let notaCargo='';
+  if(!cargoAntes){ const v=cargoPelaFicha();
+    if(v&&v.cargo!==$('cargo').value){ const ant=$('cargo').value, fonte=S.cargoAuto; $('cargo').value=v.cargo; S.cargoAuto='vencimento';
+      notaCargo=ant?` Cargo ajustado para <b>${esc(v.cargo.toLowerCase())}</b> pelo vencimento pago (${v.votos} de ${v.n} meses); ${fonte==='CTC'?'a CTC':'a ficha'} indicava ${esc(ant.toLowerCase())} — confira.`:` Cargo deduzido do vencimento pago: <b>${esc(v.cargo.toLowerCase())}</b> — confira.`;
+      calc(); } }
+  if(!espAntes&&!$('especialidade').value){ const e=espPelaFicha();
+    if(e){ $('especialidade').value=e.esp; $('espDesde').disabled=false; if(e.desde) $('espDesde').value=e.desde;
+      notaCargo+=` Especialidade deduzida da ficha: <b>${e.esp==='OFICIAL'?'oficial de justiça (GAE)':'segurança (GAS)'}</b>${e.desde?' desde '+brData(e.desde):''} — confira.`; calc(); } }
+  if($('fim').value&&S.recs.length){ const ult=S.recs.map(r=>r.comp).sort().pop();
+    if(ult>RBC.addM($('fim').value.slice(0,7),2)) notaCargo+=` A ficha vai até ${ult.slice(5)}/${ult.slice(0,4)}, depois do desligamento informado (${brData($('fim').value)}${S.ctc&&S.ctc.fim===$('fim').value?', tirado da CTC':''}): se a certidão cobre também o vínculo seguinte, apague ou ajuste o desligamento.`; }
+  const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
+  $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s), ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
+    (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler por imagem</button>`:'')+
+    notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
+  if($('lerImg')) $('lerImg').onclick=async()=>{ const l=S.digitalizados.splice(0); await lerRelatorios(l); };
+  if(S.res&&!falta.length) irPara(4);
+}
+{ const d=$('dropTudo'), f=$('fileTudo');
+  d.onclick=()=>f.click();
+  d.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); f.click(); } };
+  d.ondragover=e=>{e.preventDefault();d.classList.add('over');};
+  d.ondragleave=()=>d.classList.remove('over');
+  d.ondrop=async e=>{ e.preventDefault(); d.classList.remove('over'); lerTudo(await arquivosDoDrop(e.dataTransfer)); };
+  f.onchange=e=>{ lerTudo(e.target.files); e.target.value=''; };
+  $('escolherPasta').onclick=()=>$('pastaTudo').click();
+  $('pastaTudo').onchange=e=>{ const l=[...e.target.files]; l.forEach(x=>x.caminho=x.webkitRelativePath); lerTudo(l); e.target.value=''; };
+}
+
+// ------------------------------------------------------------ comparação com a RBC anterior
+function renderComparacao(){
+  const box=$('cmpBox'); if(!box) return;
+  if(!S.res||!S.anteriores.length||!CC){ box.hidden=true; return; }
+  box.hidden=false;
+  const i=Math.min(S.cmpSel||0,S.anteriores.length-1), a=S.anteriores[i];
+  const c=CC.comparar(S.res.linhas,S.res.gns,a.r);
+  const sel=S.anteriores.length>1?`<label class="small">Comparar com <select id="cmpSel">${S.anteriores.map((x,j)=>`<option value="${j}"${j===i?' selected':''}>${esc(x.nome)}</option>`).join('')}</select></label>`:`<p class="muted small" style="margin:0">Arquivo: ${esc(a.nome)}${a.r.fonte==='planilha'?' (planilha de trabalho)':''}</p>`;
+  const ok=!c.dif.length&&!c.gnDif.length;
+  $('cmpRes').innerHTML=sel+`<div class="aviso ${ok?'ok':'info'}" style="margin:10px 0"><span class="ic">${ok?'✓':'i'}</span><div>${c.iguais} de ${c.total} meses iguais${c.dif.length?`; ${c.dif.length} diferente(s)`:''}${c.gnDif.length?`; 13º diferente em ${c.gnDif.length} ano(s)`:''}.</div></div>`+
+    (c.dif.length?`<div class="tw"><table><thead><tr><th class="l">Mês</th><th>RBC anterior</th><th>Calculadora</th><th>Diferença</th></tr></thead><tbody>${c.dif.slice(0,120).map(d=>`<tr><td class="l">${mesTxt(d.k)}</td><td>${f2(d.ant)}</td><td>${f2(d.calc)}</td><td>${f2(d.d)}</td></tr>`).join('')}</tbody></table></div>`:'')+
+    (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>`${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)})`).join('; ')}</p>`:'');
+  if($('cmpSel')) $('cmpSel').onchange=e=>{ S.cmpSel=+e.target.value; renderComparacao(); };
+}
+
+// ------------------------------------------------------------ certidão para assinatura (.docx)
+function brData(iso){ return iso&&/^\d{4}-\d{2}-\d{2}$/.test(iso)?iso.split('-').reverse().join('/'):(iso||''); }
+function preencherCert(){
+  const ct=S.ctc||{}, fi=S.fichaInfo||{}, an=(S.anteriores[0]&&S.anteriores[0].r.cab)||{};
+  const pre={c_nome:$('nome').value||ct.nome||fi.nome||an.nome, c_matricula:ct.matricula||fi.matricula, c_nascimento:ct.nascimento, c_mae:ct.mae, c_pis:ct.pis, c_cpf:ct.cpf,
+    c_inicio:brData(iniEf()), c_fim:brData($('fim').value||''), c_referencia:ct.referencia&&/N[º°]|DATADA|, de/.test(ct.referencia)?ct.referencia:'', c_data:CC?CC.dataExtenso(new Date()):''};
+  for(const [id,v] of Object.entries(pre)){ const el=$(id); if(el&&!el.dataset.editado&&v) el.value=v; }
+  const op=$('c_maeOp'); if(op&&ct.filiacao) op.innerHTML=ct.filiacao.map(n=>`<option value="${esc(n)}">`).join('');
+  if($('c_maeDica')) $('c_maeDica').textContent=ct.filiacao&&ct.filiacao.length>1?'A CTC traz pai e mãe na filiação: confira qual é a mãe':'';
+  $('x_certGN').hidden=!(S.gnCert||[]).some(x=>x.valor>0);
+}
+document.querySelectorAll('#certCampos input').forEach(el=>el.addEventListener('input',()=>{ el.dataset.editado='1'; if(['c_nome','c_cpf','c_data'].includes(el.id)) renderGNCert(); }));
+// assinantes lembrados neste navegador (conveniência; não é dado do servidor)
+for(const id of ['c_chefe','c_secretario']){ try{ const v=localStorage.getItem('rbc_'+id); if(v) $(id).value=v; }catch(e){}
+  $(id).addEventListener('change',()=>{ try{ localStorage.setItem('rbc_'+id,$(id).value); }catch(e){} }); }
+async function baixarCert(){
+  try{
+    if(!S.res||!CC||!window.JSZip) throw new Error('calcule a RBC antes (e confira a conexão: o gerador usa a biblioteca JSZip)');
+    const v=id=>$(id).value.trim();
+    const blob=await CC.gerarCertidaoDocx(JSZip,{nome:v('c_nome'),matricula:v('c_matricula'),nascimento:v('c_nascimento'),mae:v('c_mae'),pis:v('c_pis'),cpf:v('c_cpf'),inicio:v('c_inicio'),fim:v('c_fim'),
+      referencia:v('c_referencia'),dataEmissao:v('c_data'),chefe:v('c_chefe'),secretario:v('c_secretario'),linhas:S.res.linhas.map(l=>({comp:l.comp,total:l.total})),gns:S.res.gns.map(g=>({ano:g.ano,valor:g.valor}))});
+    baixar(blob,'RBC_'+(v('c_nome')||'servidor').split(/\s+/)[0]+'_'+iniEf().slice(0,4)+'-'+fimEf().slice(0,4)+'.docx');
+    $('certMsg').textContent='Certidão gerada. Confira os campos entre colchetes e os valores antes de assinar.';
+  }catch(e){ console.error(e); $('certMsg').textContent='Não foi possível gerar: '+e.message; }
+}
+async function baixarCertGN(){
+  try{ const blob=await CC.gerarCertidaoGNDocx(JSZip,{texto:$('gnCertTxt').value||textoCertidaoGN(),dataEmissao:$('c_data').value,assinante:$('c_chefe').value,cargoAssinante:'Chefe da Divisão de Processamento de Folha de Pagamento'});
+    baixar(blob,'Certidao_GN_'+($('c_nome').value||'servidor').split(/\s+/)[0]+'.docx'); }catch(e){ $('certMsg').textContent='Não foi possível gerar: '+e.message; }
+}
+$('x_cert').onclick=baixarCert; $('x_certGN').onclick=baixarCertGN;
+
 window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; // usados nos testes automatizados
 })();

@@ -11,6 +11,7 @@ Sem dados pessoais. Fichas, relatórios do RH e RBCs da DIPROF ficam em `casos/`
 | `calc/rbc_core.js` | Motor da ficha: classificação de rubricas, realocação de retroativos, 11,98%, GN, conferência de PSS |
 | `calc/esperada.js` | Tabela esperada (base + relatórios), pesos por dia, AQ pela ficha, correção de classe/padrão |
 | `calc/relatorios.js` | Leitores dos relatórios do RH (PDF de texto, CSV/XLSX; OCR da progressão em imagem fica em `ui.js`) |
+| `calc/certidao.js` | Leitura de RBC já emitida (docx, PDF do SEI, planilha de trabalho) para comparação; geração da certidão de RBC e da certidão de 13º em .docx no modelo da DIPROF |
 | `calc/ui.js` | Interface em 4 etapas, regras de cálculo (`REGRA_IDS`), modelo DIPROF (`aplicarTabelaAntiga`), exportação XLSX |
 | `calc/template.html` | Leiaute; recebe os scripts e as bases embutidos |
 | `calc/base_calc.json`, `calc/tabela.json` | Base de remuneração compacta e tabela de VB/GAJ (geradas de `base/final.json.gz`) |
@@ -56,7 +57,7 @@ node ../testes/regressao.js --linha-base    # grava a linha de base atual
 - A comparação usa a coluna X (total) da aba `RBC` exportada pela página, com tolerância de R$ 0,05.
 - Gabarito alternativo: `"rbc": {"json": "gabarito.json"}` com `{"mensal": {"AAAA-MM": v}, "gn": {"AAAA": v}}`, extraído da certidão emitida (RBC em docx/PDF do SEI, tabela mês × ano). Compara também o 13º.
 - `"gnCert": {"AAAA": v}` compara a aba "Certidão GN" (13º anterior à incidência de contribuição).
-- Opções: `--par=8` (casos em paralelo), `--resumo`, `--sem-rel` (ignora CTC/relatórios, para medir o efeito deles), `--saida=arquivo.json`.
+- Opções: `--par=8` (casos em paralelo), `--resumo`, `--sem-rel` (ignora CTC/relatórios, para medir o efeito deles), `--saida=arquivo.json`, `--pagina=outra.html`, `--tudo` (envia tudo pela entrada única, sem preencher campos; registra em `auto` o que a página deduziu — cargo, ingresso, desligamento, especialidade — e completa só o que ficou vazio).
 - Antes de publicar: `python3 testes/varredura_nomes.py <nomes.txt>` (lista de nomes fora do repositório) procura nomes e CPFs na página e nos fontes.
 
 Saída: meses iguais por caso, lista de divergências (mês, calculado, DIPROF, diferença, classe/padrão) e **regressões** — meses que batiam na linha de base e deixaram de bater (marcados com `!!`).
@@ -90,3 +91,19 @@ Corpus de 85 pastas de RBC (processo SEI 0000775-34.2024), 67 servidores com cer
 | Depois | 2.550/3.486 (73,1%) | 360/633 | 214/316 |
 
 Mudanças: limite ao teto do RGPS (Funpresp/CTC), progressão deduzida da ficha quando não há relatório, leitor de CTC/declaração, meses sem ficha pela tabela, VPI pela tabela (ago/2016–dez/2018), regra "GAS até", fichas do FolhaWeb em planilha ("Big Grid") e em PDF "por folha", magistrado (subsídio + substituição; 13º pelo valor pago), certidão complementar de 13º, sugestão de categoria para rubrica não reconhecida. Detalhes, conflitos e pendências: documento da demanda no projeto.
+
+## Fase 14 (10/10/2026): corpus ampliado (117 servidores) e entrada automática
+
+- Entrada única: pasta, .zip ou arquivos soltos. A página separa ficha, CTC/relatório, RBC anterior, digitalizado e e-mail pelo conteúdo, lê tudo, deduz cargo (vencimento pago × tabela, todas as fichas), especialidade (GAE/GAS pagos), ingresso e desligamento (CTC/ficha) e vai direto à conferência quando nada falta. Só digitalizados → lê por imagem sem pedir.
+- Ficha antiga do sistema anterior em PDF ("FICHA FINANCEIRA" com meses por extenso).
+- Comparação mês a mês e do 13º com a RBC anterior (certidão ou planilha de trabalho).
+- Certidão de RBC e certidão de 13º em .docx, com os dados do cabeçalho da CTC (nome, matrícula, CPF, PIS, nascimento, mãe, referência).
+- Regressão (117 servidores; certidão como gabarito, planilha da DIPROF como gabarito secundário):
+
+| Rodada | Certidão, meses com ficha | Planilha, meses com ficha | Planilha, sem ficha |
+|---|---|---|---|
+| ff8535c | 3.273/4.749 (68,9%) | 599/1.534 (39,0%) | 57/606 |
+| Fase 14, campos manuais | 3.272/4.749 (68,9%) | 956/1.584 (60,4%) | 164/520 |
+| Fase 14, entrada única | 3.272/4.749 (68,9%) | 956/1.584 (60,4%) | 164/520 |
+
+Entrada única em 108 casos: cargo certo em 105, especialidade em 103, ingresso no mesmo mês em 72 (25 sem CTC/data na ficha).

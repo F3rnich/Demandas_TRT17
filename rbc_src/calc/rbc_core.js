@@ -181,6 +181,54 @@
     return { recs, refs: {}, info };
   }
 
+  /** Ficha do sistema antigo impressa em PDF (relatório anual "FICHA FINANCEIRA": Ano/Cod.Servidor, colunas JANEIRO…DEZEMBRO,
+   *  receitas até "Total da Receita", depois despesas). Sem separação de folhas: o valor do mês é o total da rubrica no mês. */
+  const MESX = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+  function isFichaAntigaPDF(pages) { return pages.some(pg => groupLines(pg.items).some(ln => ln.filter(i => MESX.includes(i.str.trim().toUpperCase().replace('MARCO', 'MARÇO'))).length >= 12)); }
+  function parseFichaAntigaPDF(pages) {
+    const recs = [], info = {}, refs = {};
+    let ano = null, centers = null, desp = false, cur = null, xMin = 0;
+    for (const pg of pages) {
+      const lns = groupLines(pg.items);
+      for (let li = 0; li < lns.length; li++) {
+        const ln = lns[li], texts = ln.map(i => i.str.trim()).filter(Boolean), joined = texts.join(' ');
+        if (/^Ano\b/.test(joined) && /Cod\.?\s*Servidor/i.test(joined)) {
+          const nx = lns[li + 1] ? lns[li + 1].map(i => i.str.trim()).join(' ') : '';
+          const m = nx.match(/^(\d{4})\b/); if (m) { ano = +m[1]; desp = false; centers = null; cur = null; }
+          const mc = nx.match(/(Analista|T[ée]cnico|Auxiliar|Juiz)[^]*$/i); if (mc && !info.cargo) info.cargo = mc[0].trim();
+          continue;
+        }
+        const mcp = joined.match(/Classe\/Padr[ãa]o:\s*([A-Z]{1,2})\s*\/\s*(\w+)/i); if (mcp && ano) { refs[ano] = mcp[1] + '-' + mcp[2]; }
+        const ma = joined.match(/Dt Admiss[ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/); if (ma && !info.exercicio) info.exercicio = ma[1];
+        const mesesLn = ln.filter(i => MESX.includes(i.str.trim().toUpperCase().replace('MARCO', 'MARÇO')));
+        if (mesesLn.length >= 12) {
+          centers = {}; for (const i of mesesLn) centers[MESX.indexOf(i.str.trim().toUpperCase().replace('MARCO', 'MARÇO')) + 1] = i.x + i.w / 2;
+          const tot = ln.find(i => /^TOTAIS?$/i.test(i.str.trim())); if (tot) centers.T = tot.x + tot.w / 2;
+          xMin = Math.min(...mesesLn.map(i => i.x)) - 60; cur = null; continue;
+        }
+        if (!centers || !ano) continue;
+        if (/^Total da Receita/i.test(joined)) { desp = true; cur = null; continue; }
+        if (/^(Total da Despesa|L[íi]quido a Receber)/i.test(joined)) { cur = null; continue; }
+        const vals = [];
+        for (const i of ln) {
+          const st = i.str.trim(); if (!NUM.test(st) || i.x < xMin) continue;
+          const cx = i.x + i.w / 2; let best = null, bd = 1e9;
+          for (const k in centers) { const d = Math.abs(centers[k] - cx); if (d < bd) { bd = d; best = k; } }
+          if (best !== 'T') vals.push({ mes: +best, v: brNum(st) });
+        }
+        const xv = vals.length ? Math.min(...ln.filter(i => NUM.test(i.str.trim()) && i.x >= xMin).map(i => i.x)) : 1e9;
+        const label = ln.filter(i => i.x < Math.min(xv, 1e9) - 2 && !NUM.test(i.str.trim())).map(i => i.str.trim()).join(' ').trim();
+        const mc = label.match(/^(\d{4,5})\s+(.*)$/);
+        if (mc) cur = { cod: String(+mc[1]), desc: mc[2] };
+        else if (label && !vals.length && cur) { cur.desc += ' ' + label; continue; }
+        if (!cur || !vals.length) continue;
+        for (const { mes, v } of vals) if (v) recs.push({ ano, mes, comp: ym(ano, mes), fonte: 'pdfAntigo', folha: 'N', tipoFolha: 0, cod: cur.cod, desc: cur.desc, seq: 0, v: desp ? -v : v });
+        cur = null;
+      }
+    }
+    return { recs, refs, info };
+  }
+
   // ------------------------------------------------------------------ CLASSIFICAÇÃO DE RUBRICAS
   const CAT = {
     VB: 'Vencimento', DIF2886: 'Dif. Lei 8622/8627', GEXTRA: 'Grat. Extraordinária 170%', GAJ: 'GAJ / Abono', APJ: 'APJ',
@@ -563,6 +611,6 @@
     return u.length === 1 ? u[0] + ' (inferido)' : '';
   }
 
-  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
+  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, parseFichaAntigaPDF, isFichaAntigaPDF, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBC = api;
 })(typeof self !== 'undefined' ? self : this);

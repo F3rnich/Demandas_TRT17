@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --navy:#003A5C;--navy2:#00466E;--navy-soft:#E4EDF3;--yellow:#FFD040;
@@ -62,6 +63,7 @@ main{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:26px 20px 120px}
 .muted{color:var(--mute)}
 .small{font-size:13.5px}
 
+.destaque{border:2px solid var(--navy)}
 .drop{display:flex;gap:18px;align-items:center;border:2px dashed var(--navy);border-radius:10px;padding:26px;background:var(--navy-soft);cursor:pointer}
 .drop.over{border-style:solid;background:var(--paper)}
 .drop svg{flex:none;color:var(--navy)}
@@ -220,6 +222,18 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 <section class="etapa on" id="e1" aria-labelledby="e1t">
   <h2 id="e1t">Informe o servidor e envie a CTC ou os relatórios</h2>
   <p class="intro">A CTC ou declaração de tempo de contribuição já basta: dela saem cargo, período, progressão, funções, anuênios, quintos e a limitação ao teto do RGPS. Os relatórios do RH (progressão, funções, substituições, VPNI e ATS), se enviados, prevalecem. Sem nenhum deles, a classe e o padrão são deduzidos do vencimento pago na ficha. AQ e AQ-Treinamento não têm relatório: são conferidos pela ficha (havendo pagamento, o valor devido sai da tabela). A RBC cobre todo o período; antes de 07/1994, na moeda da época, sem conversão (a média da aposentadoria só usa de 07/1994 em diante).</p>
+  <div class="bloco destaque" id="tudoBox">
+    <h3>Comece por aqui: envie a pasta do processo</h3>
+    <p class="muted small" style="margin:0 0 12px">Arraste a pasta inteira do servidor (ou um .zip, ou os arquivos soltos). A calculadora separa sozinha a ficha financeira, a CTC ou declaração, os relatórios do RH e uma RBC já emitida (para comparar), preenche os dados e calcula. E-mails e documentos sem uso são ignorados.</p>
+    <div class="drop" id="dropTudo" role="button" tabindex="0" aria-label="Escolher os arquivos do processo">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M5 12a3 3 0 0 1 3-3h9l4 4h15a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 30V18m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>Arraste a pasta, o .zip ou os arquivos</b><span class="muted">ficha (planilha ou PDF), CTC/declaração, relatórios do RH, RBC anterior — em qualquer ordem</span></div>
+      <input type="file" id="fileTudo" multiple hidden>
+    </div>
+    <div style="margin-top:8px"><button class="btn link" id="escolherPasta">Escolher uma pasta</button><input type="file" id="pastaTudo" webkitdirectory directory multiple hidden></div>
+    <ul class="arqs" id="filesTudo"></ul>
+    <p class="muted small" id="tudoSt" role="status" style="margin:8px 0 0"></p>
+  </div>
   <div class="bloco">
     <h3>Servidor</h3>
     <div class="campos4">
@@ -298,6 +312,30 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <button class="btn link" id="x_load">Abrir escolhas salvas</button><input type="file" id="decfile" accept=".json" hidden>
     </div>
     <p class="muted small" id="x_msg" role="status" style="margin:10px 0 0"></p>
+  </div>
+  <div class="bloco" id="cmpBox" hidden>
+    <h3>Comparação com a RBC anterior</h3>
+    <div id="cmpRes"></div>
+  </div>
+  <div class="bloco" id="certBox">
+    <h3>Certidão para assinatura (Word)</h3>
+    <p class="muted small" style="margin:0 0 12px">Relação das bases de cálculo de contribuição no modelo da DIPROF, com os valores da RBC acima. Os campos vêm da CTC e da ficha; confira antes de baixar. Os dados ficam só neste computador.</p>
+    <div class="campos4" id="certCampos">
+      <label class="l2">Nome do servidor<input type="text" id="c_nome"></label>
+      <label>Matrícula<input type="text" id="c_matricula"></label>
+      <label>Data de nascimento<input type="text" id="c_nascimento" placeholder="dd/mm/aaaa"></label>
+      <label class="l2">Nome da mãe<input type="text" id="c_mae" list="c_maeOp"><datalist id="c_maeOp"></datalist><span class="ajuda" id="c_maeDica"></span></label>
+      <label>PIS/PASEP<input type="text" id="c_pis"></label>
+      <label>CPF<input type="text" id="c_cpf"></label>
+      <label>Início da contribuição/admissão<input type="text" id="c_inicio" placeholder="dd/mm/aaaa"></label>
+      <label>Exoneração/vacância<input type="text" id="c_fim" placeholder="dd/mm/aaaa"></label>
+      <label class="l2">Referente à<input type="text" id="c_referencia" placeholder="CERTIDÃO DE TEMPO DE CONTRIBUIÇÃO Nº __/____, de __/__/____"></label>
+      <label>Data da emissão<input type="text" id="c_data"></label>
+      <label>Chefe da DIPROF<input type="text" id="c_chefe"></label>
+      <label>Secretário(a) de Gestão de Pessoas<input type="text" id="c_secretario"></label>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap"><button class="btn" id="x_cert">Baixar certidão (.docx)</button><button class="btn sec" id="x_certGN" hidden>Baixar certidão de 13º (.docx)</button></div>
+    <p class="muted small" id="certMsg" role="status" style="margin:8px 0 0"></p>
   </div>
   <div class="bloco" id="gnCertBox" hidden>
     <h3>Certidão complementar de gratificação natalina</h3>
