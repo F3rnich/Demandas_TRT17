@@ -12,7 +12,7 @@ Sem dados pessoais. Fichas, relatórios do RH e RBCs da DIPROF ficam em `casos/`
 | `calc/esperada.js` | Tabela esperada (base + relatórios), pesos por dia, AQ pela ficha, correção de classe/padrão |
 | `calc/relatorios.js` | Leitores dos relatórios do RH (PDF de texto, CSV/XLSX; OCR da progressão em imagem fica em `ui.js`) |
 | `calc/certidao.js` | Leitura de RBC já emitida (docx, PDF do SEI, planilha de trabalho) para comparação; geração da certidão de RBC e da certidão de 13º em .docx no modelo da DIPROF |
-| `calc/ui.js` | Interface em 4 etapas, regras de cálculo (`REGRA_IDS`), modelo DIPROF (`aplicarTabelaAntiga`), exportação XLSX |
+| `calc/ui.js` | Interface em 2 etapas (arquivos e servidor; conferência e emissão, com o quadro "A resolver" e os "Ajustes da RBC"), regras de cálculo (`REGRA_IDS`), modelo DIPROF (`aplicarTabelaAntiga`), exportação XLSX |
 | `calc/template.html` | Leiaute; recebe os scripts e as bases embutidos |
 | `calc/base_calc.json`, `calc/tabela.json` | Base de remuneração compacta e tabela de VB/GAJ (geradas de `base/final.json.gz`) |
 | `calc/build_html.js` | Monta a página autocontida em `../calculadora_rbc.html` |
@@ -107,3 +107,7 @@ Mudanças: limite ao teto do RGPS (Funpresp/CTC), progressão deduzida da ficha 
 | Fase 14, entrada única | 3.272/4.749 (68,9%) | 956/1.584 (60,4%) | 164/520 |
 
 Entrada única em 108 casos: cargo certo em 105, especialidade em 103, ingresso no mesmo mês em 72 (25 sem CTC/data na ficha).
+
+### Fase 14b: interface em 2 etapas
+
+As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de ser paradas: no corpus, metade dos casos não tem nada a decidir nelas. O que exige decisão (rubrica não reconhecida, valor sem mês, devolução sem período, cargo ausente, progressão por imagem) vai para o quadro "A resolver" no topo da conferência; o resto (datas deduzidas, atrasados distribuídos, passivos, lançamentos manuais, classificação das rubricas) fica em "Ajustes da RBC", recolhido. Envios separados (CTC/relatórios e ficha) ficam em "Enviar por tipo". A entrada única abre a conferência sempre que há cálculo. `--tudo` registra em `uso` o que ficaria para o usuário em cada caso.

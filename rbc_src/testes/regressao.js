@@ -118,8 +118,14 @@ async function rodar(b, id, c) {
     rel: window.__RBC_STATE.relArqs.map(a => a.nome + ': ' + (a.erro ? 'ERRO ' + a.erro : (a.tipo || '?') + ' ' + a.n + ' linha(s)')),
     prog: ((window.__RBC_STATE.rel || {}).PROGRESSAO || []).map(r => [r.ini, r.classe + '-' + r.padrao, r.origem].join(' ')),
   }));
-  await p.evaluate(() => window.__RBC_IR(4)); await p.waitForTimeout(300);
-  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#x_rbc')]);
+  // o que ficaria para o usuário decidir (etapas 2 e 3): rubricas sem categoria, valores sem mês, datas a confirmar
+  const uso = await p.evaluate(() => { const C = window.__RBC_CONT && window.__RBC_CONT(); if (!C) return null; const R = window.__RBC_STATE.res;
+    const sm = l => Math.round(l.reduce((a, x) => a + Math.abs(x.valor || x.total || 0), 0));
+    return { naoRec: C.naoRec.length, naoRecV: sm(C.naoRec), pend: C.pend.length, pendV: sm(C.pend), parc: C.parc.length, passivos: R.passivos.length, retro: R.log.filter(l => l.tipo === 'retroativo').length,
+      devol: window.__RBC_STATE.devol.length, devolSemPer: window.__RBC_STATE.devol.filter(d => !(d.ini && d.fim)).length, anosAtt: C.att, divMes: C.divMes.size }; });
+  await p.evaluate(() => window.__RBC_IR(2)); await p.waitForTimeout(300);
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.click('#x_rbc', { timeout: 30000 })])
+    .catch(async e => { throw new Error('exportação: ' + e.message.split('\n')[0] + (erros.length ? ' | erros da página: ' + erros.join(' / ') : '') + ' | ' + await p.evaluate(() => document.getElementById('x_msg').textContent).catch(() => '')); });
   const saida = f(SEM_REL ? '_saida_semrel.xlsx' : '_saida_calculadora.xlsx'); await dl.saveAs(saida);
   await ctx.close();
 
@@ -160,7 +166,7 @@ async function rodar(b, id, c) {
     gnCert = { total: 0, iguais: 0, div: [] };
     for (const [y, v] of Object.entries(c.gnCert)) { gnCert.total++; const cv = calcC[y]; if (cv != null && Math.abs(cv - v) <= 0.05) gnCert.iguais++; else gnCert.div.push({ ano: y, calc: cv == null ? null : cv, dip: v }); }
   }
-  return { id, auto, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
+  return { id, auto, uso, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
 }
 
 (async () => {
@@ -174,7 +180,7 @@ async function rodar(b, id, c) {
   const fila = ids.slice();
   await Promise.all(Array.from({ length: PAR }, async () => { while (fila.length) { const id = fila.shift();
     const c = JSON.parse(fs.readFileSync(path.join(DIR, id, 'caso.json'), 'utf8'));
-    try { out[id] = await Promise.race([rodar(b, id, c), new Promise((_, rj) => setTimeout(() => rj(new Error('tempo esgotado')), 300000))]); } catch (e) { out[id] = { id, falha: String(e).slice(0, 300) }; }
+    try { out[id] = await Promise.race([rodar(b, id, c), new Promise((_, rj) => setTimeout(() => rj(new Error('tempo esgotado')), 300000).unref())]); } catch (e) { out[id] = { id, falha: String(e).slice(0, 300) }; }
   } }));
   for (const id of ids) {
     const r = out[id];

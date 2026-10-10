@@ -109,7 +109,7 @@ function renderRelTabelas(){
     const aberto = rows.length && (t==='PROGRESSAO' || S.abertos['rel'+t]);
     return `<details class="relbox" data-rel="${t}"${aberto||S.abertos['rel'+t]?' open':''}><summary>${esc(R.titulo)} <span class="muted small" style="font-weight:400">${rows.length?rows.length+' linha(s)':'vazio'}${arq?' · '+esc(arq.nome):''}</span>${nInc?` <span class="tag att">${nInc} a conferir</span>`:''}</summary>
       ${R.dica?`<p class="muted small" style="margin:6px 0 8px">${esc(R.dica)}</p>`:''}
-      ${t==='PROGRESSAO'&&rows.some(r=>r.ocr)&&!S.res?'<div class="aviso info" style="margin:0 0 10px"><span class="ic">i</span><div>A progressão veio como imagem. A classe e o padrão serão conferidos com o vencimento pago assim que você enviar a ficha (etapa 2).</div></div>':''}
+      ${t==='PROGRESSAO'&&rows.some(r=>r.ocr)&&!S.res?'<div class="aviso info" style="margin:0 0 10px"><span class="ic">i</span><div>A progressão veio como imagem. A classe e o padrão serão conferidos com o vencimento pago assim que a ficha for enviada.</div></div>':''}
       ${rows.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr>${R.cols.map(c=>`<th class="l">${esc(c[2])}</th>`).join('')}${t==='PROGRESSAO'?'<th class="l">Conferência</th>':''}<th></th></tr></thead><tbody>${rows.map((r,i)=>`<tr>${R.cols.map(c=>`<td>${celula(t,i,c,r)}</td>`).join('')}${t==='PROGRESSAO'?`<td data-tag="${i}">${tagOrigem(r)}</td>`:''}<td><button class="btn link" data-rm-rel="${t}|${i}" aria-label="Remover linha ${i+1}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:''}
       <button class="btn sec peq" data-add-rel="${t}" style="margin-top:10px">Adicionar linha</button>
     </details>`; }).join('');
@@ -375,7 +375,7 @@ function espPelaFicha(){
   }
   return null;
 }
-// ------------------------------------------------------------ etapa 2: ficha
+// ------------------------------------------------------------ ficha financeira
 async function lerArquivos(list){
   // planilhas antes dos PDFs (trazem a folha de cada lançamento); cópias de trabalho por último
   const fila=[...list].sort((a,b)=>(/\.pdf$/i.test(a.name)?1:0)-(/\.pdf$/i.test(b.name)?1:0)||(COPIA.test(a.name)?1:0)-(COPIA.test(b.name)?1:0)); if(!fila.length) return;
@@ -617,7 +617,7 @@ function contagens(){
 
 // ------------------------------------------------------------ navegação
 function irPara(n){
-  if(n>2 && !S.res) return;
+  if(n>1 && !S.res) return;
   S.etapa=n;
   document.querySelectorAll('.etapa').forEach(s=>s.classList.toggle('on', s.id==='e'+n));
   window.scrollTo({top:0});
@@ -626,13 +626,14 @@ function irPara(n){
 }
 document.querySelectorAll('#trilho li').forEach(li=>li.querySelector('button').onclick=()=>irPara(+li.dataset.e));
 $('voltar').onclick=()=>irPara(Math.max(1,S.etapa-1));
-$('avancar').onclick=()=>{ if(S.etapa<4) irPara(S.etapa+1); else $('x_rbc').click(); };
+$('avancar').onclick=()=>{ if(S.etapa<2) irPara(2); else $('x_rbc').click(); };
 
 function etapa1Status(){
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
   if(!$('cargo').value) return 'Escolha o cargo do servidor.';
-  if(!S.rel.PROGRESSAO.length&&!S.esp) return 'Envie a ficha financeira (a progressão é deduzida do vencimento pago) ou os relatórios do RH.';
-  if(nInc) return `${nInc} linha(s) da progressão com classe/padrão a conferir${S.res?'':' (a ficha, na etapa 2, ajuda a confirmar)'}.`;
+  if(!S.recs.length&&!S.rel.PROGRESSAO.length) return 'Envie a pasta do processo (ou ao menos a ficha financeira).';
+  if(!S.esp) return 'Remuneração esperada não calculada: confira o cargo e a progressão (a CTC pode ser de outro cargo). A RBC sai da ficha mesmo assim.';
+  if(nInc) return `${nInc} linha(s) da progressão com classe/padrão a conferir${S.res?'':' (a ficha ajuda a confirmar)'}.`;
   return S.esp?`Remuneração esperada calculada para ${S.esp.linhas.length} meses.`:'Informe o ingresso ou envie a ficha.';
 }
 function renderGNCert(){
@@ -644,32 +645,31 @@ function renderGNCert(){
 $('gnCertTxt').addEventListener('input',()=>{ $('gnCertTxt').dataset.editado='1'; });
 $('gnCertCopiar').onclick=async()=>{ try{ await navigator.clipboard.writeText($('gnCertTxt').value); $('gnCertMsg').textContent='Copiado.'; }catch(e){ $('gnCertTxt').select(); $('gnCertMsg').textContent='Selecione e copie (Ctrl+C).'; } };
 function renderTudo(){
-  preencherCert(); renderGNCert(); renderComparacao();
+  preencherCert(); renderGNCert(); renderCmpAnterior();
   const C=contagens();
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
+  const nRes=C?resolverItens(C).length:0;
   document.querySelectorAll('#trilho li').forEach(li=>{
     const n=+li.dataset.e; li.classList.toggle('atual', n===S.etapa); li.classList.toggle('feito', n<S.etapa);
-    const b=li.querySelector('button'); b.disabled = n>2 && !S.res;
+    const b=li.querySelector('button'); b.disabled = n>1 && !S.res;
     if(n===S.etapa) b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current');
-    li.classList.toggle('alerta', !!((n===1 && (nInc || (S.esp&&S.esp.avisos.length))) || (C && ((n===2 && C.naoRec.length) || (n===3 && (C.pend.length || C.parc.length)) || (n===4 && (C.att || C.divMes.size))))));
+    li.classList.toggle('alerta', !!((n===1 && (!$('cargo').value || nInc || (S.esp&&S.esp.avisos.length))) || (C && n===2 && (nRes || C.att))));
   });
   $('voltar').hidden = S.etapa===1;
   $('avancar').disabled = S.etapa>=2 && !S.res;
-  $('avancar').textContent = S.etapa===4 ? 'Baixar RBC em Excel' : 'Continuar';
+  $('avancar').textContent = S.etapa===2 ? 'Baixar RBC em Excel' : 'Conferir e emitir';
   let st='';
   if(S.etapa===1) st=etapa1Status();
-  else if(!S.recs.length) st='Envie a ficha financeira.';
+  else if(!S.recs.length&&!S.res) st='Envie a ficha financeira.';
   else if(!S.res) st='Confira as datas de ingresso e desligamento na etapa 1.';
-  else if(S.etapa===2) st=C.naoRec.length?`${C.naoRec.length} rubrica(s) sem categoria.`:`${S.res.linhas.length} meses; todas as rubricas reconhecidas.`;
-  else if(S.etapa===3) st=(C.pend.length||C.parc.length)?`${C.pend.length} valor(es) sem mês, ${C.parc.length} data(s) a confirmar.`:'Nada pendente.';
-  else st=(C.att?`${C.att} ano(s) com diferença na contribuição. `:'Contribuição conferida. ')+(S.cmp?`${C.divMes.size} mês(es) com pagamento diferente do esperado.`:'');
+  else st=(nRes?`${nRes} item(ns) a resolver. `:'')+(C.att?`${C.att} ano(s) com diferença na contribuição. `:'Contribuição conferida. ')+(S.cmp?`${C.divMes.size} mês(es) com pagamento diferente do esperado.`:'');
   $('barraSt').textContent=st;
   { const temEsp=!!$('especialidade').value; $('espDesde').disabled=!temEsp; if(!temEsp) $('espDesde').value=''; $('espAjuda').textContent=temEsp?'Em branco = data de posse':'Escolha a especialidade para informar'; }
   $('inicioDica').textContent=$('inicio').value&&$('inicio').value<'1994-07-01'?'Antes de 07/1994: moeda da época, fora da média':'Data de posse';
   renderArquivos(); renderCobertura(); renderPrevia();
-  if(S.etapa===2) renderRubricas(C);
-  if(S.etapa===3) renderPend(C);
-  if(S.etapa===4) renderConferencia(C);
+  { const n=S.rel.PROGRESSAO.length+S.rel.FUNCOES.length+S.rel.ATS.length+S.rel.VPNI.length; $('tabelasResumo').textContent=nInc?`(${nInc} linha(s) a conferir)`:n?`(${n} linha(s) lidas)`:'(nenhuma: deduzidas da ficha)'; if(nInc) $('tabelasBox').open=true; }
+  $('r_gasAte').disabled=$('r_gas').checked;
+  if(S.etapa===2&&C) renderConferencia(C);
   $('x_rbc').disabled=!S.res;
 }
 function renderPrevia(){
@@ -679,7 +679,7 @@ function renderPrevia(){
   el.innerHTML=`<div class="aviso ${av.length?'att':'ok'}"><span class="ic">${av.length?'!':'✓'}</span><div>Remuneração esperada calculada de ${mesTxt(S.esp.linhas[0].comp)} a ${mesTxt(S.esp.linhas[S.esp.linhas.length-1].comp)}.${av.length?' Atenção: '+av.map(a=>esc(a.texto)+' ('+faixas(a.meses)+')').join('; ')+'.':''}</div></div>`;
 }
 
-// ------------------------------------------------------------ etapa 2
+// ------------------------------------------------------------ arquivos da ficha, cobertura e rubricas
 function renderArquivos(){
   $('files').innerHTML = S.arquivos.map(a=>`<li><span class="sit ${a.erro?'att':'ok'}">${esc(a.nome)}</span><span class="q">${a.erro?esc(a.erro):esc(a.anos)+(a.dup?` · ${a.dup} lançamentos repetidos ignorados`:'')}</span></li>`).join('')
     + (S.arquivos.length?`<li><button class="btn link" id="limpar">Remover todos os arquivos da ficha</button></li>`:'');
@@ -693,7 +693,7 @@ function renderCobertura(){
   const sem=ls.filter(l=>!l.fonte&&!l.daTabela&&!(ehBorda(l)&&Math.abs(l.total)>0.005)).map(l=>l.comp);
   const tab=ls.filter(l=>!l.fonte&&l.daTabela&&!l.borda).map(l=>l.comp), borda=ls.filter(l=>!l.fonte&&(l.borda||(ehBorda(l)&&!l.daTabela&&Math.abs(l.total)>0.005)));
   const semBorda=sem.filter(k=>ehBorda(ls.find(l=>l.comp===k))), semMeio=sem.filter(k=>!semBorda.includes(k));
-  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês na etapa 4.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração, como nos demais meses anteriores a 07/1994. Função e substituição sem tabela precisam ser lançadas na etapa 3.</div></div>`:'') + (semMeio.length
+  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês no mapa mês a mês.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração, como nos demais meses anteriores a 07/1994. Função e substituição sem tabela precisam ser lançadas em "Ajustes da RBC" (lançar outro valor).</div></div>`:'') + (semMeio.length
     ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${semMeio.length} mês(es): <b>${faixas(semMeio)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
     : (tab.length||borda.length||semBorda.length)?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
 }
@@ -711,21 +711,21 @@ function sugerirCategoria(desc){
   for(const r of RUBVEC){ let s=0; for(const [k,x] of v){ const y=r.v.get(k); if(y) s+=x*y; } if(!best||s>best.s) best={s,d:r.d,c:r.c}; }
   return best&&best.s>=0.6?best:null;
 }
-function renderRubricas(C){
-  const el=$('rubricas'); if(!C){ el.innerHTML=''; return; }
+// rubricas: as não reconhecidas vão para "A resolver"; a lista completa, para "Ajustes da RBC"
+function htmlRubricas(C){
   const linha=e=>{ const sg=e.cat==='CLASSIFICAR'?sugerirCategoria(e.desc):null; return `<tr><td class="l">${esc(e.cod)}</td><td class="l wrap">${esc(e.desc)}</td><td class="l">${mesTxt(e.primeiro)} a ${mesTxt(e.ultimo)}</td><td>${f2(e.total)}</td><td class="l">${catSelect(e.cod+'|'+e.desc,e.cat)}${S.cats[e.cod+'|'+e.desc]?' <span class="muted small">alterada</span>':''}${sg?`<div class="muted small" style="margin-top:4px">Sugestão: <b>${esc(nome(sg.c))}</b> — parecida com “${esc(sg.d)}” (${Math.round(sg.s*100)}%) <button class="btn link" data-sug="${esc(e.cod+'|'+e.desc)}" data-cat="${sg.c}">usar</button></div>`:''}</td></tr>`; };
   const cab='<thead><tr><th class="l">Código</th><th class="l">Descrição na ficha</th><th class="l">Aparece em</th><th>Soma</th><th class="l">É o quê?</th></tr></thead>';
-  let h='';
-  if(C.naoRec.length) h+=`<div class="bloco"><h3>${C.naoRec.length} rubrica(s) não reconhecida(s)</h3><p class="muted small" style="margin:0 0 12px">Escolha o que cada uma representa. Se não fizer parte da remuneração (desconto, auxílio, indenização), escolha "Não entra na RBC".</p><div class="tw"><table>${cab}<tbody>${C.naoRec.map(linha).join('')}</tbody></table></div></div>`;
-  else h+=`<div class="aviso ok" style="margin:0 0 16px"><span class="ic">✓</span><div>As ${C.inv.length} rubricas da ficha foram reconhecidas. Nada a fazer aqui.</div></div>`;
+  const res=C.naoRec.length?`<section class="res-item"><h4>${C.naoRec.length} rubrica(s) não reconhecida(s)</h4><p class="muted small" style="margin:0 0 10px">Ficam fora da RBC até você dizer o que são. Se não fizer parte da remuneração (desconto, auxílio, indenização), escolha "Não entra na RBC".</p><div class="tw"><table>${cab}<tbody>${C.naoRec.map(linha).join('')}</tbody></table></div></section>`:'';
   const outras=C.inv.filter(e=>e.cat!=='CLASSIFICAR');
-  h+=`<details class="bloco"><summary>Ver como cada rubrica foi classificada (${outras.length})</summary><p class="muted small">Corrija se alguma estiver errada. A mudança vale para a ficha inteira.</p><div class="tw"><table>${cab}<tbody>${outras.map(linha).join('')}</tbody></table></div></details>`;
-  el.innerHTML=h;
+  const aju=`<details class="res-item"><summary>Como cada rubrica foi classificada (${outras.length})</summary><p class="muted small">Corrija se alguma estiver errada. A mudança vale para a ficha inteira.</p><div class="tw"><table>${cab}<tbody>${outras.map(linha).join('')}</tbody></table></div></details>`;
+  return [res,aju];
+}
+function ligarRubricas(el){
   el.querySelectorAll('select[data-k]').forEach(s=>s.onchange=()=>{ const k=s.dataset.k, i=k.indexOf('|'); if(s.value===RBC.classify(k.slice(0,i),k.slice(i+1))) delete S.cats[k]; else S.cats[k]=s.value; calc(); });
   el.querySelectorAll('button[data-sug]').forEach(b=>b.onclick=()=>{ S.cats[b.dataset.sug]=b.dataset.cat; calc(); });
 }
 
-// ------------------------------------------------------------ etapa 3
+// ------------------------------------------------------------ valores sem mês e ajustes
 const REMUN_OPC = RBC.REMUN.filter(c=>c!=='FALTAS');
 function formDist(key, o){
   const id=k=>`d_${k}_${key}`;
@@ -766,50 +766,54 @@ function ligarForm(key, o){
     S.manual.push(m); delete S.abertos[key]; calc();
   };
 }
-function renderPend(C){
-  const el=$('pend'); if(!C){ el.innerHTML=''; return; }
-  const R=S.res; let h=''; const ate=S.esp?(getRegras().tabelaAte||''):''; const vale=k=>!ate||k>ate;
+function htmlPend(C){
+  const R=S.res; let h='', r=''; const ate=S.esp?(getRegras().tabelaAte||''):''; const vale=k=>!ate||k>ate;
   const abrir=(key,txt)=>S.abertos[key]?'':`<button class="btn sec peq" data-abrir="${key}">${txt||'Distribuir'}</button>`;
   const desc=(key)=>S.abertos[key]?'':`<button class="btn link" data-ack="${key}">Desconsiderar</button>`;
-  h+=`<div class="bloco"><h3>Valores sem mês de referência</h3>`;
   if(C.pend.length){
-    h+=`<p class="muted small" style="margin:0">Pagamentos que a calculadora não conseguiu ligar a um mês. Informe a que período se referem ou desconsidere. Enquanto não forem distribuídos, não entram na RBC.</p>`;
-    R.pend.forEach((p,i)=>{ if(S.ack[p.id]||!vale(p.comp)) return; const key='p'+i; h+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
-  } else h+=`<div class="aviso ok"><span class="ic">✓</span><div>Todos os pagamentos foram ligados a um mês${R.pend.length?' ou desconsiderados':''}.</div></div>`;
-  h+=`</div><div class="bloco"><h3>Datas a confirmar</h3>`;
+    r+=`<section class="res-item"><h4>${C.pend.length} valor(es) pago(s) sem mês de referência</h4><p class="muted small" style="margin:0">Pagamentos que a calculadora não conseguiu ligar a um mês. Informe a que período se referem ou desconsidere. Enquanto não forem distribuídos, não entram na RBC.</p>`;
+    R.pend.forEach((p,i)=>{ if(S.ack[p.id]||!vale(p.comp)) return; const key='p'+i; r+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
+    r+=`</section>`;
+  }
+  h+=`<section class="res-item"><h4>Datas a confirmar (${C.parc.length})</h4>`;
   if(C.parc.length){
     h+=`<p class="muted small" style="margin:0 0 12px">Nestes meses o atrasado cobriu só parte do mês. A data de início foi deduzida do valor pago e pode variar um dia. Confirme no ato (progressão, título, portaria).</p><div class="tw"><table><thead><tr><th class="l">Mês</th><th class="l">Parcela</th><th class="l">Início deduzido</th><th>Valor no mês</th><th class="l">Pago em</th></tr></thead><tbody>`+
       C.parc.map(a=>`<tr><td class="l">${mesTxt(a.comp)}</td><td class="l">${esc(nome(a.cat))}</td><td class="l">${a.diaInicio?'dia '+a.diaInicio+' ('+a.dias+' dias)':''}</td><td>${f2(a.valor)}</td><td class="l">${mesTxt(a.pagoEm)}</td></tr>`).join('')+`</tbody></table></div>`;
-  } else h+=`<div class="aviso ok"><span class="ic">✓</span><div>Nenhuma data a confirmar.</div></div>`;
-  h+=`</div>`;
+  } else h+=`<p class="muted small" style="margin:0">Nenhuma.</p>`;
+  h+=`</section>`;
   // atrasados que a calculadora distribuiu sozinha: o usuário pode desconsiderar
   const auto=R.log.filter(l=>l.tipo==='retroativo');
   if(auto.length){
-    h+=`<details class="bloco"><summary>Atrasados distribuídos automaticamente (${auto.length})</summary><p class="muted small">Pagamentos posteriores que a calculadora ligou aos meses de origem comparando com a tabela ou com o valor do mês seguinte. Desconsidere os que não devem entrar na RBC.</p><div class="tw"><table><thead><tr><th class="l">Parcela</th><th class="l">Pago em</th><th>Valor</th><th class="l">Distribuído em</th><th></th></tr></thead><tbody>`+
+    h+=`<details class="res-item"><summary>Atrasados distribuídos automaticamente (${auto.length})</summary><p class="muted small">Pagamentos posteriores que a calculadora ligou aos meses de origem comparando com a tabela ou com o valor do mês seguinte. Desconsidere os que não devem entrar na RBC.</p><div class="tw"><table><thead><tr><th class="l">Parcela</th><th class="l">Pago em</th><th>Valor</th><th class="l">Distribuído em</th><th></th></tr></thead><tbody>`+
       auto.map(l=>`<tr><td class="l">${esc(nome(l.cat))}</td><td class="l">${mesTxt(l.pagoEm)}</td><td>${f2(l.valor)}</td><td class="l">${faixas(l.aloc.map(a=>a.comp))}</td><td><button class="btn link" data-ign="${l.pagoEm}|${l.cat}" data-v="${l.valor}">Desconsiderar</button></td></tr>`).join('')+`</tbody></table></div></details>`;
   }
   if(S.manual.length){
     const logs=R.log.filter(l=>l.tipo==='manual');
-    h+=`<div class="bloco"><h3>Distribuições feitas por você</h3>`+S.manual.map((m,i)=>{
+    h+=`<section class="res-item"><h4>Distribuições feitas por você</h4>`+S.manual.map((m,i)=>{
       const lg=logs.find(l=>l.cat===m.cat && Math.abs((l.valor||0)-(m.valor||0))<0.005); const tot=lg?lg.aloc.reduce((s,a)=>s+a.valor,0):null;
       const como=m.modo==='igual'?'em partes iguais':m.modo==='unidade'?'em '+rs(m.unidade)+' por mês':(m.pct*100).toLocaleString('pt-BR')+'% do vencimento';
       const dif=tot!=null&&m.valor?m.valor-tot:0;
-      return `<div class="item feito"><div class="item-top"><span class="t">${esc(nome(m.cat))}</span><span class="muted small">${dataBr(m.ini)} a ${dataBr(m.fim)}, ${como}</span><span class="v">${tot==null?'':rs(tot)}</span><button class="btn link" data-rm="${i}">Desfazer</button></div>${Math.abs(dif)>0.05?`<p class="d">Pago: ${rs(m.valor)}. Diferença de ${rs(dif)} entre o pago e o calculado.</p>`:''}</div>`; }).join('')+`</div>`;
+      return `<div class="item feito"><div class="item-top"><span class="t">${esc(nome(m.cat))}</span><span class="muted small">${dataBr(m.ini)} a ${dataBr(m.fim)}, ${como}</span><span class="v">${tot==null?'':rs(tot)}</span><button class="btn link" data-rm="${i}">Desfazer</button></div>${Math.abs(dif)>0.05?`<p class="d">Pago: ${rs(m.valor)}. Diferença de ${rs(dif)} entre o pago e o calculado.</p>`:''}</div>`; }).join('')+`</section>`;
   }
   const descs=[...Object.entries(S.ack).map(([id,a])=>({tipo:'ack',id,...a})),...Object.entries(S.ignorar).map(([id,a])=>({tipo:'ign',id,...a}))];
   if(descs.length){
-    h+=`<div class="bloco"><h3>Desconsiderados por você (${descs.length})</h3><p class="muted small" style="margin:0 0 6px">Ficam fora da RBC e são listados na planilha.</p>`+
-      descs.map(d=>`<div class="item"><div class="item-top"><span class="t">${esc(d.desc||nome(d.cat))}</span><span class="muted small">pago em ${mesTxt(d.comp)}</span><span class="v">${rs(d.valor)}</span><button class="btn link" data-undo="${d.tipo}|${esc(d.id)}">Desfazer</button></div></div>`).join('')+`</div>`;
+    h+=`<section class="res-item"><h4>Desconsiderados por você (${descs.length})</h4><p class="muted small" style="margin:0 0 6px">Ficam fora da RBC e são listados na planilha.</p>`+
+      descs.map(d=>`<div class="item"><div class="item-top"><span class="t">${esc(d.desc||nome(d.cat))}</span><span class="muted small">pago em ${mesTxt(d.comp)}</span><span class="v">${rs(d.valor)}</span><button class="btn link" data-undo="${d.tipo}|${esc(d.id)}">Desfazer</button></div></div>`).join('')+`</section>`;
   }
   const pas=R.passivos.map((p,i)=>({p,i})).filter(x=>!S.ack[x.p.id]);
-  h+=`<details class="bloco"${Object.keys(S.abertos).some(k=>k[0]==='q')?' open':''}><summary>Passivos e exercícios anteriores (${pas.length})</summary><p class="muted small">Pagamentos judiciais e de exercícios anteriores. Em geral não entram na RBC porque não tiveram contribuição. Distribua só se a DIPROF decidir incluir; desconsidere para registrar a exclusão.</p>`+
+  h+=`<details class="res-item"${Object.keys(S.abertos).some(k=>k[0]==='q')?' open':''}><summary>Passivos e exercícios anteriores (${pas.length})</summary><p class="muted small">Pagamentos judiciais e de exercícios anteriores. Em geral não entram na RBC porque não tiveram contribuição. Distribua só se a DIPROF decidir incluir; desconsidere para registrar a exclusão.</p>`+
     pas.map(({p,i})=>{ const key='q'+i; return `<div class="item"><div class="item-top"><span class="t">${esc(p.desc)}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div>${S.abertos[key]?formDist(key,{cat:'VB',valor:p.valor}):''}</div>`; }).join('')+`</details>`;
-  h+=`<div class="bloco"><h3>Contribuição devolvida ao servidor</h3><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
+  const dvFalta=S.devol.filter(p=>!(p.ini&&p.fim)).length;
+  const dv=`<section class="res-item"><h4>${dvFalta?dvFalta+' devolução(ões) de contribuição sem período':'Contribuição devolvida ao servidor'}</h4><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
     (S.devol.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr><th class="l">Fora do benefício especial</th><th class="l">De</th><th class="l">Até</th><th class="l">Origem</th><th></th></tr></thead><tbody>${S.devol.map((p,i)=>`<tr><td><input type="checkbox" data-dvap="${i}"${p.aplicar!==false?' checked':''} aria-label="Excluir do benefício especial"></td><td><input type="date" data-dv="${i}" data-c="ini" value="${esc(p.ini)}" aria-label="Início"></td><td><input type="date" data-dv="${i}" data-c="fim" value="${esc(p.fim)}" aria-label="Fim"></td><td class="l wrap small">${p.semPeriodo&&!(p.ini&&p.fim)?'<span class="tag att">informe o período</span> ':''}${p.origem==='ficha'&&p.aplicar===false?'<span class="tag info">pode ser devolução parcial: marque se foi integral</span> ':''}${esc(p.obs||'informado por você')}</td><td><button class="btn link" data-dvrm="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small" style="margin:0 0 8px">Nenhuma devolução encontrada na ficha.</p>')+
-    `<button class="btn sec peq" id="dvAdd" style="margin-top:10px">Adicionar período</button></div>`;
-  h+=`<div class="bloco"><h3>Lançar outro valor</h3><p class="muted small" style="margin:0 0 10px">Para um valor que não aparece na ficha, como a VPNI judicial informada pela DIPROF.</p>${S.abertos.livre?formDist('livre',{cat:'VB'}):abrir('livre','Lançar valor')}</div>`;
-  el.innerHTML=h;
-  el.querySelectorAll('[data-abrir]').forEach(b=>b.onclick=()=>{ const k=b.dataset.abrir; S.abertos={[k]:true}; renderTudo(); const f=document.querySelector(`[data-form="${k}"]`); if(f){ f.scrollIntoView({block:'center'}); f.querySelector('input[type=date]').focus(); } });
+    `<button class="btn sec peq" id="dvAdd" style="margin-top:10px">Adicionar período</button></section>`;
+  if(dvFalta) r+=dv; else h+=dv;
+  h+=`<section class="res-item"><h4>Lançar outro valor</h4><p class="muted small" style="margin:0 0 10px">Para um valor que não aparece na ficha, como a VPNI judicial informada pela DIPROF.</p>${S.abertos.livre?formDist('livre',{cat:'VB'}):abrir('livre','Lançar valor')}</section>`;
+  return [r,h];
+}
+function ligarPend(el){
+  const R=S.res;
+  el.querySelectorAll('[data-abrir]').forEach(b=>b.onclick=()=>{ const k=b.dataset.abrir; S.abertos={[k]:true}; renderTudo(); const f=document.querySelector(`[data-form="${k}"]`); if(f){ for(let d=f.closest('details');d;d=d.parentElement&&d.parentElement.closest('details')) d.open=true; f.scrollIntoView({block:'center'}); f.querySelector('input[type=date]').focus(); } });
   el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ S.manual.splice(+b.dataset.rm,1); calc(); });
   el.querySelectorAll('input[data-dv]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dv]; if(p){ p[x.dataset.c]=x.value; renderTudo(); } });
   el.querySelectorAll('input[data-dvap]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dvap]; if(p){ p.aplicar=x.checked; renderTudo(); } });
@@ -828,7 +832,7 @@ function renderPend(C){
   }
 }
 
-// ------------------------------------------------------------ etapa 4
+// ------------------------------------------------------------ etapa 2: conferência e emissão
 const SIT_TXT={ok:'confere',comp:'diferença no mês, compensada no ano',att:'diferença a verificar',nv:'não verificado',none:'sem ficha'};
 const SIT_CMP={'moeda diferente':['none','Ficha em outra escala de moeda'],'pago a menor':['att','Pago abaixo do esperado'],'pago a maior':['comp','Pago acima do esperado'],'não pago':['att','Esperado e não pago'],'pago sem previsão':['comp','Pago sem previsão nos relatórios'],'sem ficha':['none','Sem ficha']};
 const GRUPO_NOME={TOTAL:'Remuneração total',VPNI:'VPNI (inclui judicial)',GAJ:'GAJ / abono',VPI:'VPI'};
@@ -849,20 +853,47 @@ function renderComparacao(C){
   </div>`;
   el.querySelectorAll('tr[data-mes]').forEach(tr=>{ const go=()=>{ S.sel=tr.dataset.mes; renderConferencia(C); $('detalhe').scrollIntoView({block:'start'}); }; tr.onclick=go; tr.onkeydown=e=>{ if(e.key==='Enter') go(); }; });
 }
+// o que exige decisão antes de emitir; o resto fica em "Ajustes da RBC"
+function resolverItens(C){
+  const it=[]; const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
+  if(!$('cargo').value) it.push('cargo'); if(nInc) it.push('progressao');
+  for(const x of C.naoRec) it.push('rubrica'); for(const x of C.pend) it.push('valor');
+  for(const p of S.devol) if(!(p.ini&&p.fim)) it.push('devolucao');
+  return it;
+}
+function renderEtapa2Extras(C){
+  const sv=[$('nome').value||'Servidor sem nome', $('cargo').value?$('cargo').value.toLowerCase():'<b>cargo não informado</b>', {OFICIAL:'oficial de justiça',SEGURANCA:'segurança'}[$('especialidade').value], brData(iniEf())+' a '+brData(fimEf()), $('processo').value&&'SEI '+$('processo').value].filter(Boolean);
+  $('servResumo').innerHTML=sv.map(x=>x.startsWith('<b>')?x:esc(x)).join(' · ')+` <button class="btn link" id="editServ">alterar</button>`;
+  $('editServ').onclick=()=>irPara(1);
+  if(S.notasEntrada) $('servResumo').insertAdjacentHTML('beforeend',`<div class="aviso info" style="margin:10px 0 0"><span class="ic">i</span><div>Deduzido dos arquivos: ${S.notasEntrada}</div></div>`);
+  const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
+  const [rr,ra]=htmlRubricas(C), [pr,pa]=htmlPend(C);
+  let ex='';
+  if(!$('cargo').value) ex+=`<section class="res-item"><h4>Cargo não informado</h4><p class="muted small" style="margin:0">Sem o cargo não há remuneração esperada nem conferência de classe e padrão. <button class="btn link" data-ir1="1">Informar na etapa 1</button></p></section>`;
+  if(nInc) ex+=`<section class="res-item"><h4>${nInc} linha(s) da progressão com classe/padrão a conferir</h4><p class="muted small" style="margin:0">Lidas por imagem e não confirmadas pelo vencimento pago. <button class="btn link" data-ir1="1">Conferir na etapa 1</button></p></section>`;
+  const res=ex+rr+pr, n=resolverItens(C).length;
+  $('resolverBox').hidden=!res; $('resolver').innerHTML=res; $('resolverTit').textContent=`A resolver antes de emitir (${n})`;
+  $('ajustes').innerHTML=pa+ra;
+  const a=S.manual.length+Object.keys(S.ack).length+Object.keys(S.ignorar).length;
+  $('ajustesResumo').textContent=`(${C.parc.length} data(s) deduzida(s)${a?', '+a+' ajuste(s) seu(s)':''})`;
+  const e2=$('e2'); ligarRubricas(e2); ligarPend(e2);
+  e2.querySelectorAll('[data-ir1]').forEach(b=>b.onclick=()=>{ irPara(1); if(nInc){ $('tabelasBox').open=true; $('tabelasBox').scrollIntoView({block:'start'}); } });
+}
 function renderConferencia(C){
+  renderEtapa2Extras(C);
   const R=S.res; if(!R) return;
-  const pend=[]; if(C.naoRec.length) pend.push(`${C.naoRec.length} rubrica(s) não reconhecida(s)`); if(C.pend.length) pend.push(`${C.pend.length} valor(es) sem mês`); if(C.none) pend.push(`${C.none} mês(es) sem ficha`);
+  const pend=[]; const nRes=resolverItens(C).length; if(nRes) pend.push(`${nRes} item(ns) no quadro "A resolver"`); if(C.none) pend.push(`${C.none} mês(es) sem ficha`);
   const ok=!C.att && !pend.length;
   const titulo = ok ? 'A RBC está consistente com a ficha' : C.att ? `A contribuição não confere em ${C.att} ano(s)` : 'Há pendências antes de gerar';
   const lista = C.anosAtt.map(a=>`<li><b>${a.ano}</b>: diferença de ${rs(a.dif)} ${a.dif>0?'(descontado a mais do que a RBC explica)':'(descontado a menos do que a RBC exige)'}${a.causas.length?'. Provável causa: '+esc(a.causas.join('; ')):'. Sem causa identificada: confira a composição dos meses em laranja'}.</li>`).join('');
   $('veredito').innerHTML=`<div class="veredito ${ok?'ok':'att'}"><div class="selo" aria-hidden="true">${ok?'✓':'!'}</div><div>
     <h3>${titulo}</h3>
     <p>${C.anosVerif?`A contribuição descontada confere com a RBC em ${C.anosOk} de ${C.anosVerif} anos verificáveis (tolerância de 1% da contribuição do ano).`:'Nenhum ano verificável no período.'}${C.nv?` Antes de ${mesTxt(R.regras.conferirDesde)} não há verificação.`:''}${S.cmp?` O pagamento difere do esperado em ${C.divMes.size} mês(es); veja abaixo.`:''}</p>
-    ${pend.length?`<p>Pendente: ${pend.join('; ')}. <button class="btn link" id="irPend">Resolver</button></p>`:''}
+    ${pend.length?`<p>Pendente: ${pend.join('; ')}.${nRes?' <button class="btn link" id="irPend">Ver</button>':''}</p>`:''}
   </div></div>
   ${lista?`<details class="bloco"${C.anosAtt.length<=6?' open':''}><summary>Anos com diferença na contribuição (${C.anosAtt.length})</summary><ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px">${lista}</ul></details>`:''}
   <div class="numeros"><div><span>Contribuição descontada na ficha</span><b>${rs(R.resumo.pssFicha)}</b></div><div><span>Contribuição esperada pela RBC</span><b>${rs(R.resumo.pssCalc)}</b></div><div><span>Diferença no período</span><b style="color:${Math.abs(R.resumo.dif)>1?'var(--att)':'var(--ok)'}">${rs(R.resumo.dif)}</b></div></div>`;
-  if($('irPend')) $('irPend').onclick=()=>irPara(C.naoRec.length?2:C.pend.length?3:2);
+  if($('irPend')) $('irPend').onclick=()=>$('resolverBox').scrollIntoView({block:'start'});
   renderComparacao(C);
   const gn={}; for(const g of R.gns) gn[g.ano]=g;
   const anos=[...new Set(R.meses.map(k=>k.slice(0,4)))];
@@ -896,7 +927,7 @@ function renderDetalhe(C){
   const ajTxt=l.ajustes?`<div class="aviso info"><span class="ic">i</span><div>Pela tabela neste mês: ${esc(l.ajustes.join('; '))}. A coluna "Pago" mostra a ficha.</div></div>`:'';
   const tabTxt=l.daTabela?`<div class="aviso info"><span class="ic">i</span><div>Competência anterior a 07/1994: a RBC usa a tabela de remuneração (coluna "Esperado"); a ficha fica só como conferência.</div></div>`:'';
   const parc=l.parcialInferido&&l.parcialInferido.length?`<div class="aviso info"><span class="ic">i</span><div>Data a confirmar: ${l.parcialInferido.map(p=>esc(nome(p.cat))+(p.diaInicio?' a partir do dia '+p.diaInicio:'')).join('; ')}.</div></div>`:'';
-  const txt={ok:'A contribuição descontada confere com a esperada.',comp:'Há diferença na contribuição deste mês, mas o ano confere. Em geral é atrasado: a contribuição é descontada no mês em que ele é pago.',att:'O ano não confere. Veja a provável causa no quadro "Anos com diferença" e confira a composição abaixo.',nv:'Antes de '+mesTxt(R.regras.conferirDesde)+' a calculadora não modela as alíquotas e devoluções da época; a contribuição do mês não é verificada.',none:'Não há ficha para este mês. Envie a ficha correspondente na etapa 2.'}[s];
+  const txt={ok:'A contribuição descontada confere com a esperada.',comp:'Há diferença na contribuição deste mês, mas o ano confere. Em geral é atrasado: a contribuição é descontada no mês em que ele é pago.',att:'O ano não confere. Veja a provável causa no quadro "Anos com diferença" e confira a composição abaixo.',nv:'Antes de '+mesTxt(R.regras.conferirDesde)+' a calculadora não modela as alíquotas e devoluções da época; a contribuição do mês não é verificada.',none:'Não há ficha para este mês. Envie a ficha correspondente (área de envio da etapa 1).'}[s];
   const info=e?[e.ref&&'enquadramento '+e.ref, e.funcao&&'função '+e.funcao, e.subst&&'substituição '+e.subst, e.vpni&&'VPNI '+e.vpni, e.aq&&'AQ '+e.aq, e.atsPct&&'ATS '+(e.atsPct*100).toLocaleString('pt-BR')+'%'].filter(Boolean).join(' · '):'';
   el.innerHTML=`<h3 style="margin:0 0 4px">${mesTxt(l.comp)}${moedaDe(l.comp)!=='R$'?` <span class="tag info">valores em ${moedaDe(l.comp)} · fora da média</span>`:''}</h3>${info?`<p class="small" style="margin:0 0 4px">Pelos relatórios: ${esc(info)}</p>`:''}<p class="muted small" style="margin:0">${txt}</p>${tabTxt}${ajTxt}${parc}
    <div class="cols2"><div><div class="tw" style="max-height:none"><table><thead><tr><th class="l">Parcela</th>${e?'<th>Esperado</th>':''}<th>Pago</th><th>Na RBC</th></tr></thead><tbody>${linhas||'<tr><td class="l">Sem valores</td></tr>'}</tbody>
@@ -994,7 +1025,7 @@ $('x_rbc').onclick=async()=>{
     const notas=[];
     if($('processo').value.trim()) notas.push('Processo: '+$('processo').value.trim());
     const rg=getRegras();
-    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':'não incide'}; AQ-Treinamento ${rg.aqTrein==='ficha'?'conforme a ficha (entra no ano em que houve contribuição sobre ele'+(Object.keys(R.aqTreinAnos||{}).length?': '+(Object.entries(R.aqTreinAnos).filter(e=>e[1]).map(e=>e[0]).join(', ')||'nenhum ano'):'')+')':rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento conferidos pela ficha: direito presumido quando pagos, valor devido pela tabela da carreira.`);
+    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':rg.gasAte?'incide até '+rg.gasAte:'não incide'}; AQ-Treinamento ${rg.aqTrein==='ficha'?'conforme a ficha (entra no ano em que houve contribuição sobre ele'+(Object.keys(R.aqTreinAnos||{}).length?': '+(Object.entries(R.aqTreinAnos).filter(e=>e[1]).map(e=>e[0]).join(', ')||'nenhum ano'):'')+')':rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento conferidos pela ficha: direito presumido quando pagos, valor devido pela tabela da carreira.`);
     if(R.linhas.some(l=>l.daTabela)) notas.push(`Até ${mesTxt(rg.tabelaAte)}, valores pelas tabelas de remuneração da época (prática da DIPROF), com pro rata pelos dias do mês; função, substituição e lançamentos sem tabela conforme a ficha ou informados.`);
     { const comBE=R.linhas.filter(l=>{const b=baseBE(l); return b!=null&&b>0;}).length, dv=S.devol.filter(p=>p.aplicar!==false&&p.ini&&p.fim);
       notas.push(`Base p/ benefício especial (Lei 12.618/2012, art. 3º, § 2º): remuneração das competências a partir de 07/1994 com contribuição mantida; ${dv.length?'excluídos os períodos de contribuição devolvida: '+dv.map(p=>fd(p.ini)+' a '+fd(p.fim)).join('; ')+' (pro rata pelos dias do mês)':'sem períodos de contribuição devolvida informados'}. Competências com base positiva: ${comBE} (13º não incluído).`); }
@@ -1161,11 +1192,12 @@ async function lerTudo0(lista){
   if($('fim').value&&S.recs.length){ const ult=S.recs.map(r=>r.comp).sort().pop();
     if(ult>RBC.addM($('fim').value.slice(0,7),2)) notaCargo+=` A ficha vai até ${ult.slice(5)}/${ult.slice(0,4)}, depois do desligamento informado (${brData($('fim').value)}${S.ctc&&S.ctc.fim===$('fim').value?', tirado da CTC':''}): se a certidão cobre também o vínculo seguinte, apague ou ajuste o desligamento.`; }
   const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
+  S.notasEntrada=notaCargo.trim();
   $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s), ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
     (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler por imagem</button>`:'')+
     notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
   if($('lerImg')) $('lerImg').onclick=async()=>{ const l=S.digitalizados.splice(0); await lerRelatorios(l); };
-  if(S.res&&!falta.length) irPara(4);
+  if(S.res) irPara(2);
 }
 { const d=$('dropTudo'), f=$('fileTudo');
   d.onclick=()=>f.click();
@@ -1179,7 +1211,7 @@ async function lerTudo0(lista){
 }
 
 // ------------------------------------------------------------ comparação com a RBC anterior
-function renderComparacao(){
+function renderCmpAnterior(){
   const box=$('cmpBox'); if(!box) return;
   if(!S.res||!S.anteriores.length||!CC){ box.hidden=true; return; }
   box.hidden=false;
@@ -1224,5 +1256,5 @@ async function baixarCertGN(){
 }
 $('x_cert').onclick=baixarCert; $('x_certGN').onclick=baixarCertGN;
 
-window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; // usados nos testes automatizados
+window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; window.__RBC_CONT=contagens; // usados nos testes automatizados
 })();
