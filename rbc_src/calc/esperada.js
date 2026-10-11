@@ -373,6 +373,8 @@
     return best ? Object.assign({ origem: bs >= 4 ? 'leitura' : 'incerta' }, best) : null;
   }
 
-  const api = { sugerirRef, candidatos, comparar, calcularEsperada, indexar, pesos, valorFuncao, valorVPNI };
+  // vencimento da tabela para a referência na data (conferência de reajuste pago com atraso)
+  function vbTabela(base, cargo, classe, padrao, d) { const ix = base.__ix || (base.__ix = indexar(base)); const t = servNaData(ix, cargo, classe, padrao, d); return t && t.VB ? t.VB.v : null; }
+  const api = { vbTabela, sugerirRef, candidatos, comparar, calcularEsperada, indexar, pesos, valorFuncao, valorVPNI };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBCEsperada = api;
 })(typeof self !== 'undefined' ? self : this);

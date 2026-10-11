@@ -266,13 +266,20 @@ function aplicarSugestoes(){
   const npd=x=>{ x=String(x||'').trim().toUpperCase(); return /^\d+$/.test(x)?String(+x):x; };
   for(const r of S.rel.PROGRESSAO){
     // linha de relatório em texto: confere com o vencimento pago; se a ficha indicar outra referência, ajusta e avisa
-    if(!r.ocr&&(r.origem==='relatorio'||r.origem==='relatorioOk'||r.origem==='corrigido')&&r.ini&&!r.revogada){
+    // CTC lida por imagem com classe/padrão: mesma conferência; sem mês de ficha para conferir, continua incerta
+    const ctcImg=r.fonte==='CTC'&&r.origem==='incerta'&&r.classe&&r.padrao;
+    if(!r.ocr&&(r.origem==='relatorio'||r.origem==='relatorioOk'||r.origem==='corrigido'||ctcImg)&&r.ini&&!r.revogada){
       const ref=vbFichaPara(r.ini,r.fim); if(!ref) continue;
       const d=ref.k+'-01'>r.ini?ref.k+'-01':r.ini;
-      const sg=E.sugerirRef(BASE,cargo,d,'',ref.vb);
+      const sg=E.sugerirRef(BASE,r.cargo||cargo,d,'',ref.vb);   // dois vínculos: a linha traz o cargo do período
       const orig=r.relOrig?r.relOrig.split(' '):[r.classe,r.padrao];
       if(!sg||sg.origem!=='ficha') continue;
-      const igual=nrm(sg.classe)===nrm(orig[0])&&npd(sg.padrao)===npd(orig[1]);
+      let igual=nrm(sg.classe)===nrm(orig[0])&&npd(sg.padrao)===npd(orig[1]);
+      // reajuste pago com atraso (ex.: Lei 12.774 em 2013): o vencimento pago é o da referência do relatório na tabela anterior
+      if(!igual) for(let m=1;m<=18&&!igual;m++){ const v=E.vbTabela(BASE,r.cargo||cargo,orig[0],orig[1],RBC.addM(d.slice(0,7),-m)+'-15'); if(v!=null&&Math.abs(v-ref.vb)<0.02) igual=true; }
+      // progressão paga com atraso: algum mês do período pagou o vencimento da referência do relatório
+      if(!igual){ const k0=r.ini.slice(0,7), kf=r.fim?r.fim.slice(0,7):'9999-12';
+        igual=S.res.linhas.some(l=>l.comp>k0&&l.comp<=kf&&l.fonte&&l.bruto&&l.bruto.VB>0&&Math.abs((E.vbTabela(BASE,r.cargo||cargo,orig[0],orig[1],l.comp+'-15')??-1)-l.bruto.VB)<0.02); }
       const n=igual?{classe:orig[0],padrao:orig[1],origem:'relatorioOk',relOrig:undefined}:{classe:sg.classe,padrao:sg.padrao,origem:'corrigido',relOrig:orig.join(' ')};
       if(n.classe!==r.classe||n.padrao!==r.padrao||n.origem!==r.origem){ Object.assign(r,n); if(!n.relOrig) delete r.relOrig; mud=true; }
       continue;
