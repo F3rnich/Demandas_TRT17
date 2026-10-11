@@ -1587,7 +1587,12 @@ function causasCmp(dif){
       const f=delta(Object.assign({},d0,{aq:[{ini:d0.inicio,fim:null,tipo:t}]})); if(f) hip.push({txt:`adicional de qualificação (${nm.toLowerCase()}) não informado`,f}); }
   }
   const lin=k=>R.linhas.find(l=>l.comp===k);
-  hip.push({txt:'VPI: a calculadora inclui de 08/2016 a 12/2018 (regra "VPI pela tabela", decisão do STJ); a RBC anterior não', f:k=>{ const l=lin(k); return k>='2016-07'&&k<='2018-12'&&l&&l.v?-(l.v.VPI||0):0; }});
+  // VPI absorvida pela Lei 13.317/2016 a partir de 21/07/2016 nas RRCs antigas (valores pagos); a calculadora segue a decisão do STJ.
+  // Em jul/2016 a RBC anterior tem 20/30 da VPI: a diferença é a parte de 21 a 31/07.
+  hip.push({txt:'VPI: a RBC anterior tirou a partir de 21/07/2016 (absorvida pela Lei 13.317/2016, valor pago); a calculadora mantém até 12/2018 (regra "VPI pela tabela", decisão do STJ)', f:k=>{ const l=lin(k); if(!(k>='2016-07'&&k<='2018-12'&&l&&l.v)) return 0; const v=l.v.VPI||0; return k==='2016-07'?-Math.round(100*v*10/30)/100:-v; }});
+  // Sem ficha, a calculadora divide o mês da Lei 13.317 (tabela nova desde 21/07/2016) pelos dias do mês; as RRCs antigas, por 30.
+  if(!S.recs.length){ const sv=k=>{ const l=lin(k); return l?(l.total!=null?l.total:l.rbc||0)-((l.v&&l.v.VPI)||0):null; };
+    hip.push({txt:'mudança de tabela em 21/07/2016 (Lei 13.317): a RBC anterior dividiu o mês por 30 (20 dias na tabela antiga, 10 na nova); a calculadora usa os dias do mês', f:k=>{ if(k!=='2016-07') return 0; const a=sv('2016-06'), b=sv('2016-08'); return a!=null&&b!=null?-Math.round(100*(b-a)*(11/31-10/30))/100:0; }}); }
   hip.push({txt:'função ou substituição: a RBC anterior incluiu; sem opção do servidor ficam fora (Lei 10.887/2004, art. 4º, § 1º, VIII)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.FC||0)+(l.bruto.SUBST||0):0; }});
   hip.push({txt:'GAS: a RBC anterior incluiu; a calculadora exclui (Tema 163 do STF)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.GAS||0):0; }});
   const ini=iniEf(), fim=fimEf(), dm=k=>new Date(+k.slice(0,4),+k.slice(5,7),0).getDate();
@@ -1613,7 +1618,9 @@ function causasCmp(dif){
       const n=dm(k); let a=null;
       if(ini&&k===ini.slice(0,7)&&+ini.slice(8)>1){ const dI=+ini.slice(8), cheio=x.calc*n/(n-dI+1); a=cheio*Math.max(0,31-dI)/30; }
       if(fim&&k===fim.slice(0,7)&&+fim.slice(8)<n){ const dF=+fim.slice(8), cheio=x.calc*n/dF; a=cheio*Math.min(dF,30)/30; }
-      if(a!=null&&Math.abs(a-x.ant)<=tol) c.push('pro rata do mês de ingresso/desligamento: a RBC anterior dividiu por 30; a calculadora usa os dias do mês (prática da DIPROF desde 2018)');
+      const pr='pro rata do mês de ingresso/desligamento: a RBC anterior dividiu por 30; a calculadora usa os dias do mês (prática da DIPROF desde 2018)';
+      if(a!=null&&Math.abs(a-x.ant)<=tol) c.push(pr);
+      else if(a!=null){ const esc=a/x.calc, h=hs.find(h=>Math.abs(a+h.v*esc-x.ant)<=tol); if(h) c.push(pr,h.txt); }
     }
     if(!c.length){   // mês em que a parcela começa ou termina: a RBC anterior tem parte dela (pro rata)
       for(const h of hs){ const r=falta/h.v; if(r>0.02&&r<0.98){ const ant=dif.find(y=>y.k===RBC.addM(k,-1)), dep=dif.find(y=>y.k===RBC.addM(k,1));
@@ -1641,7 +1648,7 @@ function renderCmpAnterior(){
   $('cmpRes').innerHTML=sel+`<div class="aviso ${ok?'ok':'info'}" style="margin:10px 0"><span class="ic">${ok?'✓':'i'}</span><div>${c.iguais} de ${c.total} meses iguais${c.dif.length?`; ${c.dif.length} diferente(s)`:''}${c.gnDif.length?`; 13º diferente em ${c.gnDif.length} ano(s)`:''}.</div></div>`+
     (c.dif.length?`<div class="tw"><table><thead><tr><th class="l">Mês</th><th>RBC anterior</th><th>Calculadora</th><th>Diferença</th><th class="l">Provável causa</th></tr></thead><tbody>${c.dif.slice(0,120).map(d=>`<tr><td class="l">${mesTxt(d.k)}</td><td>${f2(d.ant)}</td><td>${f2(d.calc)}</td><td>${f2(d.d)}</td><td class="l wrap small">${cs[d.k]?esc(cs[d.k]):'<span class="tag att">sem causa identificada — confira o mês no mapa</span>'}</td></tr>`).join('')}</tbody></table></div>`:'')+
     (resumo.length?`<p class="small" style="margin:10px 0 0"><b>Resumo das causas:</b> ${resumo.map(([t,n])=>`${esc(t)} (${n} mês(es))`).join('; ')}.</p>`:'')+
-    (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>{ const dz=cs[g.ano+'-12']; return `${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)}${dz?' — provavelmente a mesma causa de dez/'+g.ano:''})`; }).join('; ')}</p>`:'');
+    (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>{ const ks=Object.keys(cs).filter(k=>k.startsWith(g.ano+'-')&&cs[k]&&!/^pro rata/.test(cs[k])).sort(), kz=cs[g.ano+'-12']?g.ano+'-12':ks.pop(), dz=kz&&cs[kz], mz=kz?MESES[+kz.slice(5,7)-1]:''; return `${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)}${dz?' — provavelmente a mesma causa de '+mz+'/'+g.ano:''})`; }).join('; ')}</p>`:'');
   if($('cmpSel')) $('cmpSel').onchange=e=>{ S.cmpSel=+e.target.value; renderCmpAnterior(); };
 }
 
