@@ -1388,5 +1388,11 @@ async function baixarCertGN(){
 }
 $('x_cert').onclick=baixarCert; $('x_certGN').onclick=baixarCertGN;
 
+// Limpar dados: recarrega a página do zero (nova navegação, sem o navegador restaurar os campos).
+// Pede confirmação no próprio botão; mantém só os assinantes da certidão, que ficam salvos neste navegador.
+document.querySelectorAll('[data-limpar]').forEach(b=>{ const txt=b.textContent; let t=null;
+  b.onclick=()=>{ if(b.dataset.armado){ location.replace(location.pathname+location.search); return; }
+    b.dataset.armado='1'; b.textContent='Confirmar: apagar tudo?'; clearTimeout(t);
+    t=setTimeout(()=>{ delete b.dataset.armado; b.textContent=txt; },5000); }; });
 window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; window.__RBC_CONT=contagens; // usados nos testes automatizados
 })();

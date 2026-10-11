@@ -232,7 +232,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <div><b>Arraste a pasta, o .zip ou os arquivos</b><span class="muted">ficha (planilha ou PDF), CTC/declaração, relatórios do RH, RBC anterior — em qualquer ordem</span></div>
       <input type="file" id="fileTudo" multiple hidden>
     </div>
-    <div style="margin-top:8px"><button class="btn link" id="escolherPasta">Escolher uma pasta</button><input type="file" id="pastaTudo" webkitdirectory directory multiple hidden></div>
+    <div style="margin-top:8px"><button class="btn link" id="escolherPasta">Escolher uma pasta</button> <span class="muted small">·</span> <button class="btn link" data-limpar>Limpar dados e começar de novo</button><input type="file" id="pastaTudo" webkitdirectory directory multiple hidden></div>
     <ul class="arqs" id="filesTudo"></ul>
     <p class="muted small" id="tudoSt" role="status" style="margin:8px 0 0"></p>
   </div>
@@ -385,6 +385,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 
 <div class="barra"><div class="barra-in">
   <span class="st" id="barraSt" role="status"></span>
+  <button class="btn sec" data-limpar title="Apaga arquivos, dados do servidor, tabelas e ajustes desta tela">Limpar dados</button>
   <button class="btn sec" id="voltar">Voltar</button>
   <button class="btn" id="avancar">Continuar</button>
 </div></div>

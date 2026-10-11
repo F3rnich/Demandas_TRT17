@@ -232,7 +232,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <div><b>Arraste a pasta, o .zip ou os arquivos</b><span class="muted">ficha (planilha ou PDF), CTC/declaração, relatórios do RH, RBC anterior — em qualquer ordem</span></div>
       <input type="file" id="fileTudo" multiple hidden>
     </div>
-    <div style="margin-top:8px"><button class="btn link" id="escolherPasta">Escolher uma pasta</button><input type="file" id="pastaTudo" webkitdirectory directory multiple hidden></div>
+    <div style="margin-top:8px"><button class="btn link" id="escolherPasta">Escolher uma pasta</button> <span class="muted small">·</span> <button class="btn link" data-limpar>Limpar dados e começar de novo</button><input type="file" id="pastaTudo" webkitdirectory directory multiple hidden></div>
     <ul class="arqs" id="filesTudo"></ul>
     <p class="muted small" id="tudoSt" role="status" style="margin:8px 0 0"></p>
   </div>
@@ -385,6 +385,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 
 <div class="barra"><div class="barra-in">
   <span class="st" id="barraSt" role="status"></span>
+  <button class="btn sec" data-limpar title="Apaga arquivos, dados do servidor, tabelas e ajustes desta tela">Limpar dados</button>
   <button class="btn sec" id="voltar">Voltar</button>
   <button class="btn" id="avancar">Continuar</button>
 </div></div>
@@ -3564,6 +3565,12 @@ async function baixarCertGN(){
 }
 $('x_cert').onclick=baixarCert; $('x_certGN').onclick=baixarCertGN;
 
+// Limpar dados: recarrega a página do zero (nova navegação, sem o navegador restaurar os campos).
+// Pede confirmação no próprio botão; mantém só os assinantes da certidão, que ficam salvos neste navegador.
+document.querySelectorAll('[data-limpar]').forEach(b=>{ const txt=b.textContent; let t=null;
+  b.onclick=()=>{ if(b.dataset.armado){ location.replace(location.pathname+location.search); return; }
+    b.dataset.armado='1'; b.textContent='Confirmar: apagar tudo?'; clearTimeout(t);
+    t=setTimeout(()=>{ delete b.dataset.armado; b.textContent=txt; },5000); }; });
 window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; window.__RBC_CONT=contagens; // usados nos testes automatizados
 })();
 
