@@ -161,3 +161,11 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Rubrica "AQ-TS Ad Quali Técnico c/ curso superior" = AQ (a regra de "CURSO" a ignorava).
 - Mês de início de período sem remuneração, pago na folha seguinte como D.E.A. com PSS → o valor (e o PSS) vão para o mês de origem. Início da opção pela FC integral (vencimento parcial, mês seguinte sem vencimento) → cargo efetivo pela tabela.
 - Conferência por ano só com meses com ficha; ano sem ficha não é verificável. VPNI de mês sem ficha não duplica a VPNI judicial da esperada.
+
+### Fase 15i (11/10/2026): RBC antiga (1996–2004), segurança, CTC com funções centralizadas
+
+- Funções da CTC: rótulo sem datas na própria linha também indica leiaute centralizado; empate de distância vai para o rótulo sem datas; "FC-04 em" + "Substituição" na linha seguinte = substituição.
+- "DEDUÇÃO VPI … (S. JUD. 13,23%)" com valor positivo na ficha entra como redução (a DIPROF tira a VPI nos meses com 13,23%).
+- `limitarRetroativos`: retroativo distribuído que deixa as parcelas de tabela do cargo efetivo (VB, GAJ, APJ, DIF2886, GEXTRA, ATS) acima da tabela devida no mês volta à tabela, quando o padrão está confirmado (vencimento original ou final = tabela). Casos: GAJ de 07/2004 paga por 12 meses; reestruturação da Lei 10.475 (06/2002) com a estrutura antiga somada à nova.
+- Modo tabela (`tabelaAte`): cargo efetivo, função, substituição e VPNI vêm só da tabela; parcelas antigas que só existem na ficha (gratificação extraordinária, representação, substituição paga no mês seguinte) não se somam.
+- Comparação: mês até 2001 em que a RBC anterior é a remuneração pela tabela → causa "ajuste a regra Tabela até". No caso testado, "Tabela até" = 11/1999 reproduz 338/348 (padrão 06/1994: 301/348).

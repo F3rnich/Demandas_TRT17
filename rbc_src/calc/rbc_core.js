@@ -469,9 +469,11 @@
     const fontes = {};
     const cur = {}, extra = {}, supl = {}, pss = {}, passivos = [], semComp = [];
     for (const k of meses) { cur[k] = {}; extra[k] = {}; pss[k] = 0; }
-    for (const r of recs) {
+    for (let r of recs) {
       if (r.comp < addM(ini, -1) || r.comp > addM(fim, 24)) continue;
       const cat = catOf(r);
+      // dedução da VPI (13,23%) às vezes vem com valor positivo na ficha: é sempre redução
+      if (cat === 'VPI_DED' && r.v > 0 && /DEDU/i.test(r.desc || '')) r = Object.assign({}, r, { v: -r.v });
       fontes[r.comp] = r.fonte;
       if (cat === 'PSS') { if (pss[r.comp] !== undefined && r.folha !== 'G') pss[r.comp] += -r.v; continue; }
       if (cat === 'PASSIVO') { if (r.v > 0 && r.comp >= ini) passivos.push({ id: 'P' + r.comp + r.cod + r.seq + passivos.length, comp: r.comp, cod: r.cod, desc: r.desc, valor: r2(r.v) }); continue; }

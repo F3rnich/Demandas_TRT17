@@ -480,11 +480,16 @@
     const rotF = itensF.filter(x => x.mc).map(x => { const cod = x.mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1');
       const tira = t => t.replace(RXD, ' ').replace(/\s*\(?\s*em substitui\S*\)?/i, ' ').replace(/\b(a|até)\b/gi, ' ').replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
       const nome = tira(x.l.slice(0, x.mc.index)) || tira(x.l.slice(x.mc.index + x.mc[1].length));
-      return { i: x.i, cod, nome, subst: /em substitui/i.test(x.l) }; });
-    const centrF = rotF.length && itensF.some(x => x.ds.length && x.i < rotF[0].i);
+      // "… FC-04 em" + linha seguinte "Substituição" (rótulo quebrado)
+      const cont = itensF.slice(x.i + 1, x.i + 3).map(y => y.l).join(' ');
+      return { i: x.i, cod, nome, subst: /em substitui/i.test(x.l) || (/\bem\s*$/i.test(x.l.replace(RXD, ' ').replace(/\s+a\s*$/i, '')) && /^\s*Substitui/i.test(cont.replace(RXD, ' ').replace(/^\s*(a\s+)+/i, '').trim())), soRotulo: !x.ds.length }; });
+    // rótulo sem datas na própria linha (centralizado no bloco) ou datas antes do 1º rótulo: leiaute centralizado
+    const centrF = rotF.length && (rotF.some(r => r.soRotulo) || itensF.some(x => x.ds.length && x.i < rotF[0].i));
     for (const x of itensF) {
       if (!x.ds.length) continue;
-      const r = x.mc ? rotF.find(o => o.i === x.i) : centrF ? rotF.reduce((a, b) => Math.abs(b.i - x.i) < Math.abs(a.i - x.i) ? b : a) : [...rotF].reverse().find(o => o.i < x.i);
+      // empate de distância: o rótulo sem datas próprias (o bloco é dele)
+      const dist = o => Math.abs(o.i - x.i) - (o.soRotulo ? 0.5 : 0);
+      const r = x.mc ? rotF.find(o => o.i === x.i) : centrF ? rotF.reduce((a, b) => dist(b) < dist(a) ? b : a) : [...rotF].reverse().find(o => o.i < x.i);
       if (!r) continue;
       // "1 a 13-6-1991" (CTC antiga): mesmo mês; "(em substituição)": substituição, não titularidade
       const dest = r.subst || /em substitui/i.test(x.l) ? SUBSTITUICOES : FUNCOES;

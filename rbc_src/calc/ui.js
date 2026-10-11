@@ -526,6 +526,7 @@ function calc(){ ajustarCargo();
   if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{},
     // ficha com competência própria (Big Grid: "Ano/Mês" × "Ano/Mês Folha"): a substituição já está no mês do exercício
     substMesSeguinte:!S.recs.some(r=>/SUBSTITU/i.test(r.desc||'')&&r.pago&&r.pago!==r.comp)})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res&&S.recs.length) S.cmp=E.comparar(S.esp,S.res); /* sem ficha não há pago para comparar */ }catch(e){ console.error(e); S.esp=null; } }
+  limitarRetroativos();
   aplicarTabelaAntiga();
   aplicarSemFicha();
   aplicarTeto();
@@ -544,11 +545,35 @@ function padraoDevidoAplica(k,vbPago){
   for(let m=0;m<=18;m++){ const s=E.sugerirRef(BASE,cg,RBC.addM(k,-m)+'-15','',vbPago); if(s&&s.origem==='ficha') return true; }
   return false;
 }
+// retroativo distribuído além do valor de tabela devido no mês (ex.: GAJ de 07/2004 paga em 10/2004 por 12 meses): a parte
+// que passa da tabela sai da RBC (a DIPROF põe o aumento só a partir da vigência). Só quando o vencimento do mês confere com
+// a tabela (padrão confirmado), e só para parcelas de tabela do cargo efetivo
+function limitarRetroativos(){
+  if(!S.res||!S.esp) return;
+  const TAB=['VB','GAJ','APJ','DIF2886','GEXTRA','ATS'];
+  const porMes={};   // retroativo distribuído em cada mês, por parcela
+  for(const lg of S.res.log||[]){ if(lg.tipo!=='retroativo'||!TAB.includes(lg.cat)) continue;
+    for(const a of lg.aloc||[]){ const m=porMes[a.comp]=porMes[a.comp]||{cats:{},pagoEm:new Set()}; m.cats[lg.cat]=(m.cats[lg.cat]||0)+a.valor; m.pagoEm.add(lg.pagoEm); } }
+  for(const [k,m] of Object.entries(porMes)){
+    const l=S.res.linhas.find(x=>x.comp===k), e=S.espBy[k]; if(!l||!e||!l.fonte||!(e.inc.VB>0)) continue;
+    // padrão confirmado: o vencimento da ficha antes do retroativo, ou o vencimento final, é o da tabela devida
+    const vbOrig=RBC.r2((l.v.VB||0)-(m.cats.VB||0));
+    if(!(Math.abs(vbOrig-e.inc.VB)<0.02||Math.abs((l.v.VB||0)-e.inc.VB)<0.02)) continue;
+    const soma=o=>TAB.reduce((a,c)=>a+(o[c]||0),0);
+    if(soma(l.v)<=soma(e.inc)+0.05) continue;
+    if(!l.vFicha) l.vFicha=l.v; l.v=Object.assign({},l.v);
+    for(const c of TAB){ if(e.inc[c]!=null) l.v[c]=e.inc[c]; else delete l.v[c]; }
+    l.total=RBC.r2(Object.values(l.v).reduce((x,y)=>x+y,0)); (l.ajustes=l.ajustes||[]).push(`retroativo de ${[...m.pagoEm].map(mesTxt).join(', ')} limitado ao valor de tabela do mês`);
+    l.pssCalc=RBC.pssDevida(l.total,l.comp,getRegras().teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
+  }
+}
 function aplicarTabelaAntiga(){
   const ate=getRegras().tabelaAte; if(!ate||!S.esp||!S.res) return;
   for(const l of S.res.linhas){
     if(l.comp>ate) continue; const e=S.espBy[l.comp]; if(!e) continue;
-    const v=Object.assign({},e.inc); for(const c in l.v) if(!(c in e.v)) v[c]=l.v[c];
+    // parcelas que a tabela define (cargo efetivo, função, substituição, VPNI) vêm só dela; da ficha fica o resto (AQ, GAS…)
+    const DA_TABELA=['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR','FC','SUBST','VPNI','VPNI_JUD'];
+    const v=Object.assign({},e.inc); for(const c in l.v) if(!(c in e.v)&&!DA_TABELA.includes(c)) v[c]=l.v[c];
     l.vFicha=l.v; l.v=v; l.total=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); l.daTabela=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
@@ -1520,6 +1545,8 @@ function causasCmp(dif){
         if((dep&&Math.abs(h.f(dep.k)-(dep.ant-dep.calc))<=Math.max(1,dep.ant*0.001))||(ant&&Math.abs(h.f(ant.k)-(ant.ant-ant.calc))<=Math.max(1,ant.ant*0.001))){ c.push(h.txt+' — mês em que começa ou termina (proporcional a '+Math.round(r*30)+'/30)'); break; } } } }
     if(!c.length&&Math.abs(falta)<Math.max(5,Math.abs(x.ant)*0.001)) c.push('arredondamento ou dia da mudança no mês (progressão, pro rata)');
     if(!c.length&&k==='2012-12') c.push('enquadramento da Lei 12.774 em 31/12/2012: a DIPROF tratou dezembro/2012 de forma própria');
+    // a RBC anterior é a remuneração pela tabela (cargo efetivo, função e VPNI), não a paga: prática da DIPROF em RBCs antigas
+    if(!c.length&&k<='2001-12'){ const e=S.espBy[k]; if(e&&Math.abs(e.total-x.ant)<=tol&&Math.abs(e.total-x.calc)>tol) c.push('a RBC anterior usou a tabela de remuneração (cargo, função e VPNI), não o valor pago: ajuste a regra "Tabela até" em Regras de cálculo'); }
     out[k]=c.length?c.join(' + '):'';
   }
   return out;
