@@ -17,11 +17,17 @@ Caminhos fixos: corpus em `/home/claude/corpus`, trabalho em `/home/claude/work`
 | 3 | `gold_gn.py` | 13º e certidão complementar de GN |
 | 4 | `gold_xls.py` | Reserva: planilha de trabalho da DIPROF (só se o título tiver o nome da pessoa) |
 | 5 | `registry.py` | Registro de pessoas × pastas × documentos |
-| 6 | `dump_recs.js` | Lê as fichas com o motor da página → `dataset.json` |
+| 6 | `dump_recs.js` | Lê as fichas com o motor da página → `recs/` (planilha longa, Big Grid, exportação "SQL Results", PDF do FolhaWeb, do sistema antigo, do SGRH e do CSJT) |
 | 7 | `learn.py` | Escolhe o gabarito de cada caso e mede regras |
 | 8 | `mkcasos.py` | Cria `casos/<id>/caso.json` + cópias das fichas/CTCs |
 | 9 | `infer_cargo.py` | Cargo pelo vencimento pago (magistrado pela tag) |
 | 10 | `mkrel.py` | Liga CTCs/relatórios e `gnCert` aos casos |
 | 11 | `post.py` | Metadados do gabarito |
 
-Depois: `node ../testes/regressao.js /home/claude/work/casos --par=2 --resumo` (e `--tudo`), `python3 resumo2.py casos/_res_X.json rotulo …` para as métricas cert/planilha × com/sem ficha. Auxiliares: `diag.py`, `cmp.py`, `knn.py` (gera `rubricas_ref.json`), `inv_rub.js`.
+Depois: `node ../testes/regressao.js /home/claude/work/casos --par=2 --resumo` (e `--tudo`), `python3 resumo2.py casos/_res_X.json rotulo …` para as métricas cert/planilha × com/sem ficha. Tabela de códigos do sistema antigo (para a exportação "SQL Results", que não traz a descrição): `python3 mk_codref.py` depois do passo 7 gera `calc/rubricas_cod.json`; se mudar, rode de novo a partir do passo 6.
+
+Diagnóstico na regressão: `RBC_DUMP='<expressão JS>' node ../testes/regressao.js …` grava o resultado da expressão, avaliada na página, em `dump` de cada caso. O resultado também traz `uso.pendL` (valores sem mês), `uso.naoRecL` (rubricas não reconhecidas) e `uso.devolL` (devoluções).
+
+Comparar duas rodadas (ganhos e regressões por caso): `python3 cmp2.py casos/_res_A.json casos/_res_B.json`. Valores sem mês contra o gabarito: `python3 pend_an.py casos/_res_X.json`.
+
+Auxiliares: `diag.py`, `cmp.py`, `knn.py` (gera `rubricas_ref.json`), `inv_rub.js`.

@@ -371,6 +371,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label class="chk"><input type="checkbox" id="r_semFichaTabela"> Meses sem ficha pela tabela</label>
       <label class="chk"><input type="checkbox" id="r_gnFicha"> 13º pelo valor pago na ficha <span class="dica">(automático para magistrado)</span></label>
       <label class="chk"><input type="checkbox" id="r_vpiTabela"> VPI pela tabela quando a ficha não paga <span class="dica">(abr/2016–dez/2018)</span></label>
+      <label class="chk"><input type="checkbox" id="r_passivoTabela"> Exercício anterior com contribuição distribuído nos meses de origem <span class="dica">(ex.: D.E.A. RRA de 01/2014; só quando houve PSS sobre o valor)</span></label>
     </div>
     <div class="regras" style="margin-top:14px">
       <label><span>GAS conta na RBC até <span class="dica">(em branco = nunca; a RBC de 05/2025 usou abr/2014, véspera da restituição; ignorado se a GAS contar em todo o período)</span></span><input type="month" id="r_gasAte"></label>
@@ -401,6 +402,7 @@ const TABELA = /*__TABELA__*/;
 <script>
 const BASE = /*__BASE__*/;
 const RUBREF = /*__RUBREF__*/;
+const RUBCOD = /*__RUBCOD__*/;
 </script>
 <script>
 /*__UI__*/

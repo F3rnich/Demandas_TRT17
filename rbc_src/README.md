@@ -13,6 +13,7 @@ Sem dados pessoais. Fichas, relatórios do RH e RBCs da DIPROF ficam em `casos/`
 | `calc/relatorios.js` | Leitores dos relatórios do RH (PDF de texto, CSV/XLSX; OCR da progressão em imagem fica em `ui.js`) |
 | `calc/certidao.js` | Leitura de RBC já emitida (docx, PDF do SEI, planilha de trabalho) para comparação; geração da certidão de RBC e da certidão de 13º em .docx no modelo da DIPROF |
 | `calc/ui.js` | Interface em 2 etapas (arquivos e servidor; conferência e emissão, com o quadro "A resolver" e os "Ajustes da RBC"), regras de cálculo (`REGRA_IDS`), modelo DIPROF (`aplicarTabelaAntiga`), exportação XLSX |
+| `calc/rubricas_ref.json`, `calc/rubricas_cod.json` | Rubricas já classificadas (sugestão para rubrica nova) e descrição por código do sistema antigo (exportação "SQL Results" sem descrição); geradas por `pipeline/knn.py` e `pipeline/mk_codref.py`, sem dados pessoais |
 | `calc/template.html` | Leiaute; recebe os scripts e as bases embutidos |
 | `calc/base_calc.json`, `calc/tabela.json` | Base de remuneração compacta e tabela de VB/GAJ (geradas de `base/final.json.gz`) |
 | `calc/build_html.js` | Monta a página autocontida em `../calculadora_rbc.html` |
@@ -111,3 +112,13 @@ Entrada única em 108 casos: cargo certo em 105, especialidade em 103, ingresso 
 ### Fase 14b: interface em 2 etapas
 
 As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de ser paradas: no corpus, metade dos casos não tem nada a decidir nelas. O que exige decisão (rubrica não reconhecida, valor sem mês, devolução sem período, cargo ausente, progressão por imagem) vai para o quadro "A resolver" no topo da conferência; o resto (datas deduzidas, atrasados distribuídos, passivos, lançamentos manuais, classificação das rubricas) fica em "Ajustes da RBC", recolhido. Envios separados (CTC/relatórios e ficha) ficam em "Enviar por tipo". A entrada única abre a conferência sempre que há cálculo. `--tudo` registra em `uso` o que ficaria para o usuário em cada caso.
+
+## Fase 15 (10/10/2026): menos itens para o usuário, dois vínculos, exercício anterior e novos formatos de ficha
+
+- **Rubricas:** regras explícitas para as rubricas que ficavam sem categoria no corpus (restos a pagar, despesa de exercício anterior sem espaço, 13,23% sobre GN/proventos, complementação de salário-mínimo, vale-refeição, devolução de INSS, custeio, gratificação por deliberação coletiva de classista, cargo em comissão por opção). A sugestão kNN continua só como sugestão: aplicada automaticamente, acertaria 75–78% mesmo com similaridade ≥ 0,9 (erra justamente nas variantes "- CM", "- JR", "GN", "TREINAM.").
+- **Valores sem mês:** pagamento e estorno do mesmo valor anulam-se; VPI de ago/2016–dez/2018 paga depois (passivo de 10/2024) fica fora quando a regra "VPI pela tabela" já pôs a VPI nesses meses; atalho "Incluir em <mês>" no próprio item. Resolvidos ficam listados em "Ajustes da RBC".
+- **Devolução sem período:** só pede decisão quando marcada como integral (a da ficha sem período entra desmarcada).
+- **Dois vínculos:** a progressão deduzida da ficha guarda o cargo de cada período (vencimento de outro cargo em ≥ 6 meses seguidos); a esperada e os meses sem vencimento usam a tabela do cargo do período; nota na conferência.
+- **Exercício anterior com contribuição** (regra `passivoTabela`, padrão ligado): "D.E.A.RRA-ATIVOS"/"DESPESA EXERCICIO ANTERIOR" sem qualificador, quando a contribuição do mês do pagamento mostra PSS sobre o valor, é distribuído nos meses de origem pela diferença para o nível pago depois (até 3 meses antes do pagamento).
+- **Fichas:** SGRH anual em PDF ("FICHA FINANCEIRA - AAAA", Telerik), CSJT "por folha" com ponto decimal (Jasper), exportação do banco antigo ("SQL Results", descrição pela tabela `rubricas_cod.json`); linhas de anotação no meio da planilha longa são ignoradas.
+- Regressão (corpus remontado, 110 casos com cálculo): 4.761/7.624 → 4.841/7.657 meses iguais; 85 ganhos, 5 regressões explicadas no documento da fase (ficha nova lida onde a tabela acertava por acaso). Entrada única = campos manuais.

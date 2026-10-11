@@ -31,6 +31,7 @@ const SO = (args.find(a => a.startsWith('--so=')) || '').slice(5).split(',').fil
 const LB = args.includes('--linha-base');
 const SEM_REL = args.includes('--sem-rel');
 const TUDO = args.includes('--tudo');   // usa a entrada única (pasta inteira) em vez dos campos e envios separados   // ignora os relatórios/CTC do caso (mede o efeito deles)
+const DUMP = process.env.RBC_DUMP;   // expressão JS avaliada na página (diagnóstico); vai em "dump" no resultado
 const SAIDA = (args.find(a => a.startsWith('--saida=')) || '--saida=_resultado.json').slice(8);
 
 const MAP = { 'jszip.min.js': 'jszip/dist/jszip.min.js', 'xlsx.full.min.js': 'xlsx/dist/xlsx.full.min.js', 'pdf.min.js': 'pdfjs-dist/build/pdf.min.js', 'pdf.worker.min.js': 'pdfjs-dist/build/pdf.worker.min.js', 'exceljs.min.js': 'exceljs/dist/exceljs.min.js' };
@@ -122,7 +123,9 @@ async function rodar(b, id, c) {
   const uso = await p.evaluate(() => { const C = window.__RBC_CONT && window.__RBC_CONT(); if (!C) return null; const R = window.__RBC_STATE.res;
     const sm = l => Math.round(l.reduce((a, x) => a + Math.abs(x.valor || x.total || 0), 0));
     return { naoRec: C.naoRec.length, naoRecV: sm(C.naoRec), pend: C.pend.length, pendV: sm(C.pend), parc: C.parc.length, passivos: R.passivos.length, retro: R.log.filter(l => l.tipo === 'retroativo').length,
-      devol: window.__RBC_STATE.devol.length, devolSemPer: window.__RBC_STATE.devol.filter(d => !(d.ini && d.fim)).length, anosAtt: C.att, divMes: C.divMes.size }; });
+      devol: window.__RBC_STATE.devol.length, devolSemPer: window.__RBC_STATE.devol.filter(d => !(d.ini && d.fim)).length, anosAtt: C.att, divMes: C.divMes.size,
+      pendL: C.pend.map(x => [x.comp, x.cat, x.valor, x.motivo]), naoRecL: C.naoRec.map(x => [x.cod, x.desc, x.primeiro, x.ultimo, x.total]), devolL: window.__RBC_STATE.devol.map(d => [d.ini, d.fim, d.origem, d.obs]) }; });
+  const dump = DUMP ? await p.evaluate(DUMP).catch(e => 'erro: ' + e.message) : undefined;
   await p.evaluate(() => window.__RBC_IR(2)); await p.waitForTimeout(300);
   const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.click('#x_rbc', { timeout: 30000 })])
     .catch(async e => { throw new Error('exportação: ' + e.message.split('\n')[0] + (erros.length ? ' | erros da página: ' + erros.join(' / ') : '') + ' | ' + await p.evaluate(() => document.getElementById('x_msg').textContent).catch(() => '')); });
@@ -166,7 +169,7 @@ async function rodar(b, id, c) {
     gnCert = { total: 0, iguais: 0, div: [] };
     for (const [y, v] of Object.entries(c.gnCert)) { gnCert.total++; const cv = calcC[y]; if (cv != null && Math.abs(cv - v) <= 0.05) gnCert.iguais++; else gnCert.div.push({ ano: y, calc: cv == null ? null : cv, dip: v }); }
   }
-  return { id, auto, uso, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
+  return { id, auto, uso, dump, total: meses.length, iguais: iguais.length, mesesIguais: iguais, divergencias: div, gn, gnCert, erros, leitura };
 }
 
 (async () => {

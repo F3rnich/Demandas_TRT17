@@ -81,8 +81,11 @@
         const pr = naFaixa(prog, dt).pop();
         if (!pr) { aviso(k, 'Sem progressão/enquadramento para a data'); continue; }
         info.ref.add(pr.classe + (/^\d+$/.test(pr.padrao) ? '-' : ' ') + pr.padrao); info.refc.add((String(pr.classe).toUpperCase().replace(/^N[ISA]\s*-?\s*/, '') || String(pr.classe).toUpperCase().replace(/-$/, '') + '-') + padN(pr.padrao));
-        const t = servNaData(ix, dados.cargo, pr.classe, pr.padrao, dt);
-        if (!t) { aviso(k, `Sem tabela para ${dados.cargo} ${pr.classe} ${pr.padrao}`); continue; }
+        // servidor com dois vínculos (ex.: técnico e depois analista): a linha da progressão traz o cargo do período
+        const cgo = pr.cargo || dados.cargo;
+        const t = servNaData(ix, cgo, pr.classe, pr.padrao, dt);
+        if (!t) { aviso(k, `Sem tabela para ${cgo} ${pr.classe} ${pr.padrao}`); continue; }
+        if (pr.cargo && pr.cargo !== dados.cargo) info.cargo = pr.cargo;
         const vb = t.VB ? t.VB.v : 0;
         add('VB', vb * wd); if (t.VB) fontes.add(t.VB.id);
         for (const [rub, cat, sinal] of [['GAJ', 'GAJ', 1], ['GRAT_JUDICIARIA', 'GAJ', 1], ['APJ', 'APJ', 1], ['DIF_28_86', 'DIF2886', 1], ['GRAT_EXTRAORDINARIA', 'GEXTRA', 1], ['REDUTOR', 'REDUTOR', -1]])
@@ -150,7 +153,7 @@
         // 13,23% (decisão judicial) — tabela "VPI 12,23%" da base, nos períodos informados
         if (naFaixa(dados.v1323, dt).length) {
           const cl = String(pr.classe).toUpperCase().replace(/^N[ISA]\s*-?\s*/, ''), pp = padN(pr.padrao);
-          const tv = vig(ix.v1323.get((NIVEL[dados.cargo] || dados.cargo) + '|' + cl + '|' + pp), dt);
+          const tv = vig(ix.v1323.get((NIVEL[cgo] || cgo) + '|' + cl + '|' + pp), dt);
           const by = {}; for (const x of tv) by[x.rub] = x.v;
           if (by.VPI_12_23 != null) {
             add('V1323_VB', by.VPI_12_23 * wd); add('V1323_GAJ', (by.GAJ_SOBRE_VPI || 0) * wd);

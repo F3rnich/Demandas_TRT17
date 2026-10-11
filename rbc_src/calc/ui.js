@@ -16,7 +16,7 @@ const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];
 const S = { devol:[], arquivos:[], recs:[], refs:{}, basePSO:{}, fichaInfo:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{}, anteriores:[], digitalizados:[] };
 const CC = (typeof RBCCert!=='undefined') ? RBCCert : null;
-const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto','tetoDesde','tetoAuto','semFichaTabela','gasAte','vpiTabela','gnFicha'];
+const REGRA_IDS = ['vpniTabela','fcTabela','tabelaAte','divisor30Desde','fcAte','atsDesde','conferirDesde','ajuste1198Desde','ajuste1198Ate','gnDesde','gnSemVPIAte','divisorDiasDesde','gas','aqTrein','descontarFaltas','teto','tetoDesde','tetoAuto','semFichaTabela','gasAte','vpiTabela','gnFicha','passivoTabela'];
 const NOME = { SUBSIDIO:'Subsídio (magistrado)', FC_PREV:'Função com opção de contribuição', VB:'Vencimento', DIF2886:'Diferença Leis 8.622/8.627', GEXTRA:'Gratificação extraordinária', GAJ:'GAJ', APJ:'Adicional padrão judiciário', REDUTOR:'Redutor', ATS:'Adicional por tempo de serviço', VPI:'VPI', VPI_DED:'Dedução de VPI', VPNI:'VPNI (quintos/décimos)', VPNI_JUD:'VPNI judicial', VPNI_JUD_SEM_PSS:'VPNI judicial (sem contribuição)', FC:'Função comissionada', SUBST:'Substituição', V1323_VB:'13,23% s/ vencimento', V1323_GAJ:'13,23% s/ GAJ', V1323_ATS:'13,23% s/ ATS', V1323_VPNI:'13,23% s/ VPNI', V1323_FC:'13,23% s/ função', AQ:'Adicional de qualificação', AQ_TREIN:'AQ-Treinamento', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%', PSS:'Contribuição previdenciária (PSS)', GN:'Gratificação natalina (13º)', PASSIVO:'Passivo / exercício anterior', IGNORAR:'Não entra na RBC', CLASSIFICAR:'Não reconhecida' };
 const CURTO = { SUBSIDIO:'Subsídio', FC_PREV:'Função c/ PSS', VB:'Venc.', DIF2886:'Dif. 8622', GEXTRA:'Grat. extr.', GAJ:'GAJ', APJ:'APJ', REDUTOR:'Redutor', ATS:'ATS', VPI:'VPI', VPI_DED:'Ded. VPI', VPNI:'VPNI', VPNI_JUD:'VPNI jud.', FC:'Função', SUBST:'Subst.', V1323_VB:'13,23% VB', V1323_GAJ:'13,23% GAJ', V1323_ATS:'13,23% ATS', V1323_VPNI:'13,23% VPNI', V1323_FC:'13,23% FC', AQ:'AQ', AQ_TREIN:'AQ-Trein.', GAE:'GAE', GAS:'GAS', FALTAS:'Faltas', V1198:'11,98%' };
 const nome = c => NOME[c] || RBC.CAT[c] || c;
@@ -283,7 +283,7 @@ function dadosServidor(){
   const per=l=>ord(l.filter(r=>r.ini)).map(r=>Object.assign({},r,{fim:r.fim||null}));
   const atsRel=per(S.rel.ATS).filter(r=>r.pct!=null);
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
-    progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada})),
+    progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada,cargo:p.cargo&&p.cargo!==cargo?p.cargo:undefined})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
     vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:atsRel.length?atsRel:atsDaFicha(), aq:[], v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
 }
@@ -296,30 +296,37 @@ function progDaFicha(cargo,ini,fim){
   const pts=[];
   for(const l of S.res.linhas){
     if(!l.fonte||!l.bruto||!(l.bruto.VB>0)||l.comp===ini.slice(0,7)||l.comp===fim.slice(0,7)) continue;
-    const sg=E.sugerirRef(BASE,cargo,l.comp+'-15','',l.bruto.VB); if(!sg||sg.origem!=='ficha') continue;
-    pts.push({k:l.comp,classe:sg.classe,padrao:String(sg.padrao)});
+    // o vencimento pode ser de outro cargo (servidor com dois vínculos, ex.: técnico e depois analista)
+    let sg=E.sugerirRef(BASE,cargo,l.comp+'-15','',l.bruto.VB), cg=cargo;
+    if((!sg||sg.origem!=='ficha')&&cargo!=='MAGISTRADO') for(const c of CARGOS){ if(c===cargo) continue; const s2=E.sugerirRef(BASE,c,l.comp+'-15','',l.bruto.VB); if(s2&&s2.origem==='ficha'){ sg=s2; cg=c; break; } }
+    if(!sg||sg.origem!=='ficha') continue;
+    pts.push({k:l.comp,classe:sg.classe,padrao:String(sg.padrao),cargo:cg});
   }
   if(!pts.length) return [];
-  const ref=p=>p.classe+'-'+(/^\d+$/.test(p.padrao)?+p.padrao:p.padrao);
+  // outro cargo só vale como vínculo próprio se aparecer em pelo menos 6 meses seguidos (evita acerto casual de valor)
+  for(let i=0;i<pts.length;){ let j=i; while(j<pts.length&&pts[j].cargo===pts[i].cargo) j++; if(pts[i].cargo!==cargo&&j-i<6) pts.splice(i,j-i); else i=j; }
+  if(!pts.length) return [];
+  const ref=p=>p.cargo+'|'+p.classe+'-'+(/^\d+$/.test(p.padrao)?+p.padrao:p.padrao);
   const out=[]; let cur=null;
-  for(const p of pts){ if(cur&&ref(cur)===ref(p)){ cur.ult=p.k; continue; } cur={ini:p.k+'-01',ult:p.k,classe:p.classe,padrao:p.padrao,origem:'ficha'}; out.push(cur); }
-  const passo=(r,n)=>{ const i=SEQ11416.indexOf(ref(r)); if(i<0) return null; const j=Math.min(SEQ11416.length-1,Math.max(0,i+n)); const [c,pd]=SEQ11416[j].split('-'); return {classe:c,padrao:pd}; };
+  for(const p of pts){ if(cur&&ref(cur)===ref(p)){ cur.ult=p.k; continue; } cur={ini:p.k+'-01',ult:p.k,classe:p.classe,padrao:p.padrao,cargo:p.cargo,origem:'ficha'}; out.push(cur); }
+  const refCP=p=>p.classe+'-'+(/^\d+$/.test(p.padrao)?+p.padrao:p.padrao);
+  const passo=(r,n)=>{ const i=SEQ11416.indexOf(refCP(r)); if(i<0) return null; const j=Math.min(SEQ11416.length-1,Math.max(0,i+n)); const [c,pd]=SEQ11416[j].split('-'); return {classe:c,padrao:pd}; };
   const res=[];
   // antes da primeira referência vista
   const f0=out[0]; if(ini.slice(0,7)<f0.ini.slice(0,7)){
     let k=f0.ini.slice(0,7), n=0; const ant=[];
     while(k>ini.slice(0,7)){ const k2=RBC.addM(k,-12); n--; const st=k>='2007-01'?passo(f0,n):null; const iniP=k2<ini.slice(0,7)?ini:k2+'-01';
-      ant.unshift(Object.assign({ini:iniP,fim:ultimoDia(RBC.addM(k,-1)),origem:'inferida'},st||{classe:f0.classe,padrao:f0.padrao})); k=k2; }
+      ant.unshift(Object.assign({ini:iniP,fim:ultimoDia(RBC.addM(k,-1)),origem:'inferida',cargo:f0.cargo},st||{classe:f0.classe,padrao:f0.padrao})); k=k2; }
     res.push(...ant);
   }
-  out.forEach((o,i)=>{ const nx=out[i+1]; res.push({ini:o.ini,fim:nx?ultimoDia(RBC.addM(nx.ini.slice(0,7),-1)):null,classe:o.classe,padrao:o.padrao,origem:'ficha'}); });
+  out.forEach((o,i)=>{ const nx=out[i+1]; res.push({ini:o.ini,fim:nx?ultimoDia(RBC.addM(nx.ini.slice(0,7),-1)):null,classe:o.classe,padrao:o.padrao,cargo:o.cargo,origem:'ficha'}); });
   // depois da última referência vista: progressão anual presumida (só na carreira da Lei 11.416)
   const ul=out[out.length-1], last=res[res.length-1];
-  if(ul.ult<fim.slice(0,7)&&SEQ11416.includes(ref(ul))){
+  if(ul.ult<fim.slice(0,7)&&SEQ11416.includes(refCP(ul))){
     last.fim=ultimoDia(ul.ult); let k=RBC.addM(ul.ult,1), base=ul.ini.slice(0,7), n=0;
     while(k<=fim.slice(0,7)){ let prox=RBC.addM(base,12*(n+1)); while(prox<=ul.ult){ n++; prox=RBC.addM(base,12*(n+1)); }
       const st=passo(ul,n); const ate=prox>fim.slice(0,7)?null:ultimoDia(RBC.addM(prox,-1));
-      res.push(Object.assign({ini:k+'-01',fim:ate,origem:'inferida'},st)); if(!ate) break; k=prox; n++; }
+      res.push(Object.assign({ini:k+'-01',fim:ate,origem:'inferida',cargo:ul.cargo},st)); if(!ate) break; k=prox; n++; }
   }
   return res;
 }
@@ -384,13 +391,13 @@ async function lerArquivos(list){
     const info={nome:f.name, anos:'', erro:'', dup:0};
     try{
       const buf=await f.arrayBuffer(); let recs=[], refs={};
-      if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFichaAntigaPDF(pg)?RBC.parseFichaAntigaPDF(pg):RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=RBC.isFichaAntigaPDF(pg)?{}:(r.refs||{}); if(r.info) infoFicha(r.info); }
+      if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFichaSGRH(pg)?RBC.parseFichaSGRH(pg):RBC.isFichaAntigaPDF(pg)?RBC.parseFichaAntigaPDF(pg):RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg))?{}:(r.refs||{}); if(r.info) infoFicha(r.info); }
       else if (/\.xlsx?$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'});
         // sistema antigo (planilha longa) ou FolhaWeb exportado em planilha (Big Grid). Usa a primeira aba reconhecida: as
         // seguintes costumam ser cópias de trabalho (conferências, ajustes) e duplicariam lançamentos
         for(const n of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[n]); let r=null;
           if(RBC.isBigGrid(rows)){ const b=RBC.parseBigGrid(rows); r=b.recs; if(r.length){ Object.assign(S.basePSO,b.basePSO); infoFicha(b.info); } }
-          else if(rows.length&&('Código Rubrica' in rows[0])) r=RBC.parseLongRows(rows);
+          else if(rows.length&&(('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) r=RBC.parseLongRows(rows,typeof RUBCOD!=='undefined'?RUBCOD:null);
           if(r&&r.length){ recs=r; break; } } }
       else info.erro='Formato não aceito. Envie .xls, .xlsx ou .pdf.';
       if(!info.erro && !recs.length) info.erro='Nenhum lançamento encontrado. Confira se é a ficha financeira exportada do sistema.';
@@ -465,6 +472,45 @@ function aplicarTabelaAntiga(){
     if(!aj.length) continue;
     const tot=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); if(Math.abs(tot-l.total)<0.005){ continue; }
     l.vFicha=l.v; l.v=v; l.total=tot; l.ajustes=aj; l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
+  }
+  // Exercício anterior pago com contribuição (ex.: "D.E.A.RRA-ATIVOS" de 01/2014: progressão ou reajuste de 2013 pagos
+  // depois). As RBCs da DIPROF certificam o valor devido nos meses de origem (13 casos no corpus). A calculadora distribui
+  // como um atrasado: a diferença entre o nível novo (primeiro mês pago no valor novo, até 3 meses antes do pagamento) e o
+  // de cada mês anterior, do mais recente para trás, até esgotar o valor. Só quando a contribuição descontada no mês do
+  // pagamento mostra que houve PSS sobre o valor (sobra de contribuição ≈ alíquota × valor, ±15%).
+  S.passivoAuto={};
+  if(rg.passivoTabela!==false){
+    const PRINC=/^(D\.?E\.?A\.?\s*RRA\s*-\s*ATIVOS|DESPESA (DE )?EXERC[IÍ]CIO ANTERIOR)$/i;
+    const NIV=['VB','GAJ','APJ','ATS','VPI','AQ','GAE','VPNI','DIF2886','GEXTRA'];
+    const ls=S.res.linhas, idx={}; ls.forEach((l,i)=>idx[l.comp]=i);
+    const porMes={}; for(const p of S.res.passivos){ if(S.ack[p.id]||!PRINC.test(p.desc.trim())||(S.manual||[]).some(m=>m.id===p.id)) continue; (porMes[p.comp]=porMes[p.comp]||[]).push(p); }
+    for(const [comp,ps] of Object.entries(porMes)){
+      const valor=RBC.r2(ps.reduce((a,p)=>a+p.valor,0)); if(valor<1) continue;
+      const lp=ls[idx[comp]]; if(!lp||!lp.fonte) continue;
+      // houve contribuição sobre o valor? (sobra de PSS no mês do pagamento)
+      const al=RBC.pssDevida(lp.total+valor,comp,rg.teto)-RBC.pssDevida(lp.total,comp,rg.teto);
+      if(!(al>0)||Math.abs((lp.pssFicha-lp.pssCalc)-al)>al*0.15) continue;
+      // nível novo: mês (de 1 a 3 antes do pagamento; o próprio mês pode trazer o reajuste do ano) em que as parcelas do cargo sobem em relação ao anterior
+      const nivel=l=>NIV.reduce((a,c)=>a+(l.v[c]||0),0);
+      let m=-1; for(let i=idx[comp]-1;i>=Math.max(1,idx[comp]-3);i--){ const a=ls[i], b=ls[i-1]; if(a.fonte&&b.fonte&&nivel(a)-nivel(b)>0.05){ m=i; break; } }
+      if(m<0) continue;
+      const planejar=m=>{ const novo=ls[m]; let resto=valor; const plano=[];
+        for(let i=m-1;i>=0&&i>=m-24&&resto>0.005;i--){ const l=ls[i]; if(!l.fonte) break;
+          const g={}; for(const c of NIV){ const d=RBC.r2((novo.v[c]||0)-(l.v[c]||0)); if(d>0.005) g[c]=d; }
+          const t=RBC.r2(Object.values(g).reduce((a,b)=>a+b,0)); if(t<0.05) break;
+          if(resto>=t-0.02){ plano.push({l,g,f:1,t}); resto=RBC.r2(resto-t); }
+          else { const f=resto/t; for(const c in g) g[c]=RBC.r2(g[c]*f); plano.push({l,g,f,t}); resto=0; } }
+        return {novo,plano,resto}; };
+      let pl=planejar(m);
+      // o mês logo antes do nível novo com diferença pequena (< 25% da mediana) já tinha outro aumento: o nível de referência é ele
+      if(pl.plano.length>=3){ const ts=pl.plano.map(x=>x.t).sort((a,b)=>a-b), med=ts[Math.floor(ts.length/2)]; if(pl.plano[0].t<med*0.25) pl=planejar(m-1); }
+      const {novo,plano,resto}=pl;
+      if(!plano.length||Math.abs(resto)>0.05*plano.length) continue;
+      for(const {l,g,f} of plano){ if(!l.vFicha) l.vFicha=l.v; l.v=Object.assign({},l.v); for(const [c,d] of Object.entries(g)) l.v[c]=RBC.r2((l.v[c]||0)+d);
+        l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); (l.ajustes=l.ajustes||[]).push('exercício anterior pago em '+mesTxt(comp)+(f<1?' (parte do mês)':''));
+        l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc); }
+      for(const p of ps) S.passivoAuto[p.id]={meses:plano.map(x=>x.l.comp).sort(), pago:valor, nivel:novo.comp};
+    }
   }
   // 13º recalculado sobre a remuneração final do mês-base
   for(const g of S.res.gns){ if(g.daFicha) continue; const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb) continue;
@@ -593,11 +639,19 @@ function anosConf(R){
     if(sy.CLASSIFICAR) a.causas.push(`há ${rs(sy.CLASSIFICAR)} em rubricas não reconhecidas`);
     const pas=R.passivos.filter(p=>p.comp.startsWith(y) && !/ISEN/i.test(p.desc));
     if(pas.length){ const t=pas.reduce((s,p)=>s+p.valor,0); a.causas.push(`houve ${rs(t)} em passivos/exercícios anteriores sem isenção de PSS (${[...new Set(pas.map(p=>mesTxt(p.comp)))].join(', ')}), cuja contribuição não corresponde a meses da RBC`); }
-    for(const p of R.pend) if(p.comp.startsWith(y)) a.causas.push(`${rs(p.valor)} de ${nome(p.cat).toLowerCase()} pago em ${mesTxt(p.comp)} ${S.ack[p.id]?'desconsiderado':'ainda sem mês de referência'}`);
+    for(const p of R.pend) if(p.comp.startsWith(y)) a.causas.push(`${rs(p.valor)} de ${nome(p.cat).toLowerCase()} pago em ${mesTxt(p.comp)} ${S.ack[p.id]?'desconsiderado':pendAutoMotivo(p)?'fora da RBC (resolvido pela calculadora)':'ainda sem mês de referência'}`);
     for(const k in S.ignorar) if(k.startsWith(y)) a.causas.push(`${rs(S.ignorar[k].valor)} de ${nome(S.ignorar[k].cat).toLowerCase()} pago em ${mesTxt(S.ignorar[k].comp)} foi desconsiderado`);
     if(a.semFicha) a.causas.push(`${a.semFicha} mês(es) sem ficha`);
   }
   return out;
+}
+// valores sem mês que a própria calculadora resolve (ficam listados em "Ajustes da RBC")
+function pendAutoMotivo(p){
+  const R=S.res;
+  // VPI de ago/2016 a dez/2018 paga depois (ex.: passivo de 10/2024): com "VPI pela tabela", esses meses já têm a VPI
+  if(p.cat==='VPI'&&p.comp>='2019-01'&&getRegras().vpiTabela!==false&&R.linhas.some(l=>l.comp>='2016-08'&&l.comp<='2018-12'&&l.v&&l.v.VPI>0))
+    return 'VPI de ago/2016 a dez/2018 paga depois: a RBC já tem a VPI nesses meses (regra "VPI pela tabela")';
+  return '';
 }
 function contagens(){
   const R=S.res; if(!R) return null;
@@ -610,7 +664,7 @@ function contagens(){
     sit[l.comp]= (!l.fonte&&(l===R.linhas[0]||l===R.linhas[R.linhas.length-1]))?'nv' : !l.fonte?'none' : !l.conferir?'nv' : Math.abs(l.dif)<=0.5?'ok' : (a.ok?'comp':'att'); }
   const lv=Object.values(anos).filter(a=>a.verif);
   const cmp=S.cmp||[]; const divMes=new Set(cmp.filter(m=>m.itens.length).map(m=>m.comp));
-  return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]&&vale(p.comp)), pendTodos:R.pend, parc, sit, anos, divMes,
+  return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]&&vale(p.comp)&&!pendAutoMotivo(p)), pendAuto:R.pend.filter(p=>!S.ack[p.id]&&pendAutoMotivo(p)).map(p=>({...p,auto:pendAutoMotivo(p)})), pendTodos:R.pend, parc, sit, anos, divMes,
     anosVerif:lv.length, anosOk:lv.filter(a=>a.ok).length, anosAtt:lv.filter(a=>!a.ok),
     none:Object.values(sit).filter(x=>x==='none').length, nv:Object.values(sit).filter(x=>x==='nv').length, att:lv.filter(a=>!a.ok).length };
 }
@@ -772,8 +826,14 @@ function htmlPend(C){
   const desc=(key)=>S.abertos[key]?'':`<button class="btn link" data-ack="${key}">Desconsiderar</button>`;
   if(C.pend.length){
     r+=`<section class="res-item"><h4>${C.pend.length} valor(es) pago(s) sem mês de referência</h4><p class="muted small" style="margin:0">Pagamentos que a calculadora não conseguiu ligar a um mês. Informe a que período se referem ou desconsidere. Enquanto não forem distribuídos, não entram na RBC.</p>`;
-    R.pend.forEach((p,i)=>{ if(S.ack[p.id]||!vale(p.comp)) return; const key='p'+i; r+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
+    R.pend.forEach((p,i)=>{ if(S.ack[p.id]||!vale(p.comp)||pendAutoMotivo(p)) return; const key='p'+i; r+=`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${S.abertos[key]?'':`<button class="btn link" data-proprio="${i}">Incluir em ${mesTxt(p.comp)}</button>`}${desc(key)}</div><p class="d">${p.motivo==='Sobra após alocar retroativo'?'Parte de um atrasado que sobrou depois da distribuição automática.':'Pago sem indicação do mês a que se refere.'}</p>${S.abertos[key]?formDist(key,{cat:p.cat,valor:p.valor}):''}</div>`; });
     r+=`</section>`;
+  }
+  const est=R.log.filter(l=>l.tipo==='estorno');
+  if(C.pendAuto.length||est.length){
+    h+=`<details class="res-item"><summary>Resolvidos pela calculadora (${C.pendAuto.length+est.length})</summary><p class="muted small">Valores sem mês de referência que não entram na RBC por um motivo identificado. Para incluir algum, use "Lançar outro valor".</p>`+
+      C.pendAuto.map(p=>`<div class="item"><div class="item-top"><span class="t">${esc(nome(p.cat))}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span></div><p class="d">${esc(p.auto)}.</p></div>`).join('')+
+      est.map(l=>`<div class="item"><div class="item-top"><span class="t">${esc(nome(l.cat))}</span><span class="muted small">pago em ${mesTxt(l.comp)}, estornado em ${mesTxt(l.compEstorno)}</span><span class="v">${rs(l.valor)}</span></div><p class="d">Pagamento e estorno do mesmo valor: anulam-se.</p></div>`).join('')+`</details>`;
   }
   h+=`<section class="res-item"><h4>Datas a confirmar (${C.parc.length})</h4>`;
   if(C.parc.length){
@@ -802,10 +862,10 @@ function htmlPend(C){
   }
   const pas=R.passivos.map((p,i)=>({p,i})).filter(x=>!S.ack[x.p.id]);
   h+=`<details class="res-item"${Object.keys(S.abertos).some(k=>k[0]==='q')?' open':''}><summary>Passivos e exercícios anteriores (${pas.length})</summary><p class="muted small">Pagamentos judiciais e de exercícios anteriores. Em geral não entram na RBC porque não tiveram contribuição. Distribua só se a DIPROF decidir incluir; desconsidere para registrar a exclusão.</p>`+
-    pas.map(({p,i})=>{ const key='q'+i; return `<div class="item"><div class="item-top"><span class="t">${esc(p.desc)}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${abrir(key)}${desc(key)}</div>${S.abertos[key]?formDist(key,{cat:'VB',valor:p.valor}):''}</div>`; }).join('')+`</details>`;
-  const dvFalta=S.devol.filter(p=>!(p.ini&&p.fim)).length;
+    pas.map(({p,i})=>{ const key='q'+i, au=(S.passivoAuto||{})[p.id]; return `<div class="item${au?' feito':''}"><div class="item-top"><span class="t">${esc(p.desc)}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${au?'':abrir(key)}${desc(key)}</div>${au?`<p class="d">Teve contribuição: distribuído em ${faixas(au.meses)} pela diferença para o nível pago desde ${mesTxt(au.nivel)} (regra "Exercício anterior com contribuição"). Desconsidere para tirar da RBC.</p>`:''}${S.abertos[key]?formDist(key,{cat:'VB',valor:p.valor}):''}</div>`; }).join('')+`</details>`;
+  const dvFalta=S.devol.filter(p=>p.aplicar!==false&&!(p.ini&&p.fim)).length;
   const dv=`<section class="res-item"><h4>${dvFalta?dvFalta+' devolução(ões) de contribuição sem período':'Contribuição devolvida ao servidor'}</h4><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
-    (S.devol.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr><th class="l">Fora do benefício especial</th><th class="l">De</th><th class="l">Até</th><th class="l">Origem</th><th></th></tr></thead><tbody>${S.devol.map((p,i)=>`<tr><td><input type="checkbox" data-dvap="${i}"${p.aplicar!==false?' checked':''} aria-label="Excluir do benefício especial"></td><td><input type="date" data-dv="${i}" data-c="ini" value="${esc(p.ini)}" aria-label="Início"></td><td><input type="date" data-dv="${i}" data-c="fim" value="${esc(p.fim)}" aria-label="Fim"></td><td class="l wrap small">${p.semPeriodo&&!(p.ini&&p.fim)?'<span class="tag att">informe o período</span> ':''}${p.origem==='ficha'&&p.aplicar===false?'<span class="tag info">pode ser devolução parcial: marque se foi integral</span> ':''}${esc(p.obs||'informado por você')}</td><td><button class="btn link" data-dvrm="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small" style="margin:0 0 8px">Nenhuma devolução encontrada na ficha.</p>')+
+    (S.devol.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr><th class="l">Fora do benefício especial</th><th class="l">De</th><th class="l">Até</th><th class="l">Origem</th><th></th></tr></thead><tbody>${S.devol.map((p,i)=>`<tr><td><input type="checkbox" data-dvap="${i}"${p.aplicar!==false?' checked':''} aria-label="Excluir do benefício especial"></td><td><input type="date" data-dv="${i}" data-c="ini" value="${esc(p.ini)}" aria-label="Início"></td><td><input type="date" data-dv="${i}" data-c="fim" value="${esc(p.fim)}" aria-label="Fim"></td><td class="l wrap small">${p.semPeriodo&&!(p.ini&&p.fim)&&p.aplicar!==false?'<span class="tag att">informe o período</span> ':''}${p.origem==='ficha'&&p.aplicar===false?'<span class="tag info">pode ser devolução parcial: marque se foi integral</span> ':''}${esc(p.obs||'informado por você')}</td><td><button class="btn link" data-dvrm="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small" style="margin:0 0 8px">Nenhuma devolução encontrada na ficha.</p>')+
     `<button class="btn sec peq" id="dvAdd" style="margin-top:10px">Adicionar período</button></section>`;
   if(dvFalta) r+=dv; else h+=dv;
   h+=`<section class="res-item"><h4>Lançar outro valor</h4><p class="muted small" style="margin:0 0 10px">Para um valor que não aparece na ficha, como a VPNI judicial informada pela DIPROF.</p>${S.abertos.livre?formDist('livre',{cat:'VB'}):abrir('livre','Lançar valor')}</section>`;
@@ -815,6 +875,9 @@ function ligarPend(el){
   const R=S.res;
   el.querySelectorAll('[data-abrir]').forEach(b=>b.onclick=()=>{ const k=b.dataset.abrir; S.abertos={[k]:true}; renderTudo(); const f=document.querySelector(`[data-form="${k}"]`); if(f){ for(let d=f.closest('details');d;d=d.parentElement&&d.parentElement.closest('details')) d.open=true; f.scrollIntoView({block:'center'}); f.querySelector('input[type=date]').focus(); } });
   el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{ S.manual.splice(+b.dataset.rm,1); calc(); });
+  // atalho: o valor sem mês refere-se ao próprio mês do pagamento
+  el.querySelectorAll('[data-proprio]').forEach(b=>b.onclick=()=>{ const p=R.pend[+b.dataset.proprio]; if(!p) return; const k=p.comp;
+    S.manual.push({cat:p.cat,modo:'igual',valor:p.valor,ini:k+'-01',fim:ultimoDia(k),origem:p.comp,id:p.id}); calc(); });
   el.querySelectorAll('input[data-dv]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dv]; if(p){ p[x.dataset.c]=x.value; renderTudo(); } });
   el.querySelectorAll('input[data-dvap]').forEach(x=>x.onchange=()=>{ const p=S.devol[+x.dataset.dvap]; if(p){ p.aplicar=x.checked; renderTudo(); } });
   el.querySelectorAll('[data-dvrm]').forEach(b=>b.onclick=()=>{ S.devol.splice(+b.dataset.dvrm,1); renderTudo(); });
@@ -858,7 +921,8 @@ function resolverItens(C){
   const it=[]; const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
   if(!$('cargo').value) it.push('cargo'); if(nInc) it.push('progressao');
   for(const x of C.naoRec) it.push('rubrica'); for(const x of C.pend) it.push('valor');
-  for(const p of S.devol) if(!(p.ini&&p.fim)) it.push('devolucao');
+  // devolução sem período só pede decisão quando marcada como integral (a da ficha sem período entra desmarcada: pode ser parcial)
+  for(const p of S.devol) if(p.aplicar!==false&&!(p.ini&&p.fim)) it.push('devolucao');
   return it;
 }
 function renderEtapa2Extras(C){
@@ -1035,7 +1099,7 @@ $('x_rbc').onclick=async()=>{
     for(const m of S.manual) notas.push(`Distribuição manual: ${nome(m.cat)} ${m.modo==='percentualVB'?(m.pct*100).toLocaleString('pt-BR')+'% do vencimento':'R$ '+f2(m.valor)+(m.modo==='unidade'?' em parcelas de '+f2(m.unidade):' em partes iguais')} de ${fd(m.ini)} a ${fd(m.fim)}${m.origem&&m.origem!=='manual'?' (pago em '+m.origem+')':''}.`);
     for(const a of Object.values(S.ack)) notas.push(`Desconsiderado: ${a.desc||nome(a.cat)}, R$ ${f2(a.valor)} pago em ${mesTxt(a.comp)}.`);
     for(const a of Object.values(S.ignorar)) notas.push(`Desconsiderado: atrasado de ${nome(a.cat)}, R$ ${f2(a.valor)} pago em ${mesTxt(a.comp)}.`);
-    const pendN=R.pend.filter(p=>!S.ack[p.id]).length; if(pendN) notas.push(`Valores sem mês não distribuídos: ${pendN} (ver aba Ajustes).`);
+    const pendN=R.pend.filter(p=>!S.ack[p.id]&&!pendAutoMotivo(p)).length; if(pendN) notas.push(`Valores sem mês não distribuídos: ${pendN} (ver aba Ajustes).`);
     notas.push('Gerado pela Calculadora de RBC. Conferência da contribuição na aba "Conferência PSS".');
     for(const t of notas){ ws.getCell('A'+r).value=t; ws.getCell('A'+r).font={size:9,italic:true}; r++; }
     const larg={A:9,B:10,I:7,L:16,O:9,P:9,Y:7,[cBE]:13}; letras.forEach(c=>ws.getColumn(c).width=larg[c]||10.5);
@@ -1070,7 +1134,8 @@ $('x_rbc').onclick=async()=>{
     wa.columns=[{header:'Tipo',width:20},{header:'Parcela',width:28},{header:'Pago em',width:10},{header:'Competência',width:12},{header:'Valor',width:12},{header:'Fração do mês',width:12},{header:'Início deduzido',width:14},{header:'Observação',width:40}];
     const tipo={retroativo:'atrasado distribuído',manual:'distribuição manual',pico:'atrasado no mês'};
     for(const l of R.log) for(const a of (l.aloc||[])) wa.addRow([tipo[l.tipo]||l.tipo,nome(l.cat),l.pagoEm||'',a.comp,a.valor,a.fracao<1?a.fracao:null,a.diaInicio?'dia '+a.diaInicio:'',a.fonteNivel||'']);
-    for(const p of R.pend) wa.addRow(['sem mês',nome(p.cat),p.comp,'',p.valor,null,'',S.ack[p.id]?'desconsiderado':'não incluído na RBC']);
+    for(const p of R.pend){ const au=pendAutoMotivo(p); wa.addRow(['sem mês',nome(p.cat),p.comp,'',p.valor,null,'',S.ack[p.id]?'desconsiderado':au?'não incluído: '+au:'não incluído na RBC']); }
+    for(const l of R.log.filter(x=>x.tipo==='estorno')) wa.addRow(['estorno',nome(l.cat),l.comp,'',l.valor,null,'','anulado pelo estorno de '+l.compEstorno]);
     for(const a of Object.values(S.ignorar)) wa.addRow(['atrasado desconsiderado',nome(a.cat),a.comp,'',a.valor,null,'','não incluído na RBC']);
     for(const p of R.passivos) wa.addRow(['passivo',p.desc,p.comp,'',p.valor,null,'',S.ack[p.id]?'desconsiderado':'não incluído salvo distribuição manual']);
     wa.getRow(1).font={bold:true}; wa.getColumn(5).numFmt='#,##0.00'; wa.getColumn(6).numFmt='0.0%';
@@ -1132,7 +1197,7 @@ async function classificar(f){
     const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=txt.replace(/\s/g,'').length;
     if(chars<30) return {tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
-    if(RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
+    if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
     if(/^\s*(De|From):|Assunto:|Subject:|Enviado em/im.test(txt.slice(0,1500))) return {tipo:'ignorado',motivo:'e-mail'};
     const tp=RR.tipoRelatorio(pg); if(tp&&tp!=='AQ') return {tipo:'rel',sub:tp};
     return {tipo:'ignorado',motivo:'PDF não reconhecido'};
@@ -1141,7 +1206,7 @@ async function classificar(f){
     try{
       if(/\.csv$/i.test(n)) return {tipo:'rel'};
       const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
-      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0]))) return {tipo:'ficha'}; }
+      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) return {tipo:'ficha'}; }
       const abas=wb.SheetNames.map(sn=>({nome:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null})}));
       const r=CC&&CC.lerRBCPlanilha(abas); if(r) return {tipo:'rbc',dados:r};
       const m2=[].concat(...wb.SheetNames.map(sn=>XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,dateNF:'dd/mm/yyyy',defval:''})));
@@ -1191,6 +1256,9 @@ async function lerTudo0(lista){
       notaCargo+=` Especialidade deduzida da ficha: <b>${e.esp==='OFICIAL'?'oficial de justiça (GAE)':'segurança (GAS)'}</b>${e.desde?' desde '+brData(e.desde):''} — confira.`; calc(); } }
   if($('fim').value&&S.recs.length){ const ult=S.recs.map(r=>r.comp).sort().pop();
     if(ult>RBC.addM($('fim').value.slice(0,7),2)) notaCargo+=` A ficha vai até ${ult.slice(5)}/${ult.slice(0,4)}, depois do desligamento informado (${brData($('fim').value)}${S.ctc&&S.ctc.fim===$('fim').value?', tirado da CTC':''}): se a certidão cobre também o vínculo seguinte, apague ou ajuste o desligamento.`; }
+  // dois vínculos (ex.: técnico e depois analista): a tabela esperada usa o cargo de cada período
+  if($('cargo').value&&iniEf()&&fimEf()){ const vs=[]; for(const p of progDaFicha($('cargo').value,iniEf(),fimEf())){ const cg=p.cargo||$('cargo').value; if(vs.length&&vs[vs.length-1].cg===cg) vs[vs.length-1].fim=p.fim; else vs.push({cg,ini:p.ini,fim:p.fim}); }
+    if(vs.length>1) notaCargo+=` Vencimento de mais de um cargo na ficha: ${vs.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> ${v.ini.slice(5,7)}/${v.ini.slice(0,4)} a ${v.fim?v.fim.slice(5,7)+'/'+v.fim.slice(0,4):'fim'}`).join(', ')}. A remuneração esperada e os meses sem vencimento usam a tabela do cargo de cada período — confira as datas de posse.`; }
   const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
   S.notasEntrada=notaCargo.trim();
   $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s), ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+

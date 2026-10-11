@@ -17,11 +17,26 @@
 
   // ------------------------------------------------------------------ LEITURA DE FICHAS
   /** Planilha longa do sistema antigo (Ano, Mês, Tipo, Código Rubrica, Descrição Rubrica, Tipo Rubrica, Sequencial Rubrica, Valor Rubrica) */
-  function parseLongRows(rows) {
+  /** Exportação direta do banco do sistema antigo ("SQL Results": ANO_PAG, MES_PAG, COD_TIPO_PAG, COD_RUBRICA,
+   *  IND_TIP_RUBRICA, NUM_SEQ_RUBRICA, VAL_RUBRICA), sem a descrição: vem da tabela de códigos (codRef: {cod: [[anoIni, anoFim, desc]]}). */
+  function isLongDB(rows) { return !!(rows && rows.length && 'COD_RUBRICA' in rows[0] && 'VAL_RUBRICA' in rows[0] && 'ANO_PAG' in rows[0]); }
+  function descPorCodigo(codRef, cod, ano) {
+    const l = codRef && codRef[String(+cod)]; if (!l || !l.length) return '';
+    const dentro = l.filter(e => e[0] <= ano && ano <= e[1]); if (dentro.length) return dentro[0][2];
+    let best = l[0], bd = 1e9; for (const e of l) { const d = Math.min(Math.abs(ano - e[0]), Math.abs(ano - e[1])); if (d < bd) { bd = d; best = e; } }
+    return best[2];
+  }
+  function parseLongRows(rows, codRef) {
+    if (isLongDB(rows)) rows = rows.map(r => ({ 'Ano': r.ANO_PAG, 'Mês': r.MES_PAG, 'Tipo': r.COD_TIPO_PAG, 'Código Rubrica': r.COD_RUBRICA,
+      'Descrição Rubrica': descPorCodigo(codRef, r.COD_RUBRICA, +r.ANO_PAG) || ('RUBRICA ' + r.COD_RUBRICA), 'Tipo Rubrica': r.IND_TIP_RUBRICA,
+      'Sequencial Rubrica': r.NUM_SEQ_RUBRICA, 'Valor Rubrica': r.VAL_RUBRICA }));
     const out = [];
     for (const r of rows) {
       const ano = +r['Ano'], mes = +r['Mês'];
       if (!ano || !mes) continue;
+      // anotações da DIPROF no meio da ficha (totais, rubrica sem descrição nem natureza) não são lançamentos
+      if (!Number.isInteger(mes) || mes < 1 || mes > 12 || ano < 1900 || ano > 2100) continue;
+      if (!String(r['Descrição Rubrica'] || '').trim() && !String(r['Tipo Rubrica'] || '').trim()) continue;
       const nat = String(r['Tipo Rubrica'] || '').trim().toUpperCase();
       const v = +r['Valor Rubrica'] || 0;
       const tipo = +r['Tipo'] || 0;
@@ -131,6 +146,9 @@
    *  suplementares, Pagamentos - Passivos). A coluna é o mês do PAGAMENTO; comp = mês da folha. seq 0 = folha normal,
    *  13 = gratificação natalina, demais = suplementar. Rubricas depois de "Total Receitas" são descontos. */
   const VAL = /^(?:R\$\s*)?-?[\d.]*\d,\d{2}$/;
+  // leiaute do CSJT (JasperReports): valores sem separador de milhar e com ponto decimal (ex.: 4428.3)
+  const VALP = /^-?\d+(?:\.\d{1,2})?$/;
+  const numPF = s => VAL.test(s) ? brNum(s.replace(/^R\$\s*/, '')) : parseFloat(s);
   function isFolhaWebPorFolha(pages) {
     if (pages.some(pg => groupLines(pg.items).some(ln => ln.filter(i => MES.includes(i.str.trim())).length >= 12))) return false;
     return pages.some(pg => pg.items.some(i => /^\d{1,2}\/\d{4}-\d{1,2}$/.test(i.str.trim())));
@@ -140,6 +158,8 @@
     let cols = null, secao = 'N', desconto = false, cur = null;
     const all = [];
     for (const pg of pages) for (const ln of groupLines(pg.items)) all.push(ln);
+    // valores com ponto decimal só no leiaute do CSJT, que não tem nenhum valor no formato 1.234,56
+    const ponto = !pages.some(pg => pg.items.some(i => VAL.test(i.str.trim())));
     for (let li = 0; li < all.length; li++) {
       const ln = all[li];
       const joined = ln.map(i => i.str.trim()).filter(Boolean).join(' ');
@@ -151,19 +171,21 @@
       if (hs.length) {
         cols = hs.map(i => { const m = i.str.trim().match(/^(\d{1,2})\/(\d{4})-(\d{1,2})$/); return { x: i.x + i.w / 2, comp: ym(+m[2], +m[1]), seq: +m[3] }; });
         const tot = ln.find(i => /^Total Rubricas/.test(i.str.trim())); if (tot) cols.push({ x: tot.x + tot.w / 2, total: true });
-        desconto = false; cur = null; continue;
+        // no leiaute do CSJT o cabeçalho de colunas se repete depois de "Total Receitas": continua nos descontos
+        const ant = li > 0 ? all[li - 1].map(i => i.str.trim()).filter(Boolean).join(' ') : '';
+        desconto = /^Total Receitas/.test(ant); cur = null; continue;
       }
       if (!cols) continue;
       if (/^Total Receitas/.test(joined)) { desconto = true; cur = null; continue; }
-      if (/^(Total Descontos|Valor L[ií]quido)/.test(joined)) { cur = null; continue; }
+      if (/^(Total Descontos|Total Despesas|Valor L[ií]quido)/.test(joined)) { cur = null; continue; }
       const xMin = Math.min(...cols.map(c => c.x)) - 70;
       const label = ln.filter(i => i.x + i.w < xMin + 40 && !VAL.test(i.str.trim()) && i.str.trim() !== 'R$').map(i => i.str.trim()).join(' ').trim();
       const vals = [];
       for (const i of ln) {
-        const s = i.str.trim(); if (!VAL.test(s) || i.x < xMin) continue;
+        const s = i.str.trim(); if (!(VAL.test(s) || (ponto && VALP.test(s))) || i.x < xMin) continue;
         const cx = i.x + i.w / 2; let best = null, bd = 1e9;
         for (const c of cols) { const d = Math.abs(c.x - cx); if (d < bd) { bd = d; best = c; } }
-        if (best && !best.total) vals.push({ col: best, v: brNum(s.replace(/^R\$\s*/, '')) });
+        if (best && !best.total) vals.push({ col: best, v: numPF(s) });
       }
       const mc = label.match(/^(\d{7}) - ?(.*)$/);
       if (mc) cur = { cod: mc[1], desc: mc[2], got: false };
@@ -229,6 +251,54 @@
     return { recs, refs, info };
   }
 
+  /** Ficha do SGRH em PDF (relatório anual "FICHA FINANCEIRA - AAAA", gerado pelo Telerik Reporting; meses Janeiro…Dezembro
+   *  e "total"; receitas até "Total da Receita", depois despesas até "Total da Despesa"). A descrição da rubrica pode quebrar
+   *  em linhas logo acima e abaixo da linha do código. */
+  function isFichaSGRH(pages) { return pages.some(pg => groupLines(pg.items).some(ln => /^FICHA FINANCEIRA\s*-\s*\d{4}\b/.test(ln.map(i => i.str.trim()).filter(Boolean).join(' ')))); }
+  function parseFichaSGRH(pages) {
+    const recs = [], info = {};
+    let ano = null, desp = false;
+    for (const pg of pages) {
+      const its = pg.items.filter(i => i.str && i.str.trim()).sort((a, b) => a.y - b.y || a.x - b.x);
+      const lns = groupLines(its);
+      let centers = null;
+      // eventos na ordem vertical: título (ano), cabeçalho de meses, totais, linhas de rubrica
+      const codes = its.filter(i => /^\d{5}$/.test(i.str.trim()));
+      const ev = [];
+      for (const ln of lns) {
+        const j = ln.map(i => i.str.trim()).join(' ');
+        const mt = j.match(/FICHA FINANCEIRA\s*-\s*(\d{4})/); if (mt) ev.push({ y: ln[0].y, t: 'ano', ano: +mt[1] });
+        const ms = ln.filter(i => MESX.includes(i.str.trim().toUpperCase().replace('MARCO', 'MARÇO')));
+        if (ms.length >= 12) { const c = {}; for (const i of ms) c[MESX.indexOf(i.str.trim().toUpperCase().replace('MARCO', 'MARÇO')) + 1] = i.x + i.w / 2; const tot = ln.find(i => /^total$/i.test(i.str.trim())); if (tot) c.T = tot.x + tot.w / 2; ev.push({ y: ln[0].y, t: 'cab', c }); }
+        if (/Total da Receita/i.test(j)) ev.push({ y: ln[0].y, t: 'rec' });
+        if (/Total da Despesa/i.test(j)) ev.push({ y: ln[0].y, t: 'desp' });
+        const mc = j.match(/^(.*?)\s*Cargo$/); if (!info.cargo && /Cargo/.test(j)) { const ix = lns.indexOf(ln); const nx = lns[ix + 1]; if (nx) { const t = nx.map(i => i.str.trim()); const ci = ln.find(i => i.str.trim() === 'Cargo'); if (ci) info.cargo = nx.filter(i => i.x >= ci.x - 2).map(i => i.str.trim()).join(' '); } }
+      }
+      for (const c of codes) ev.push({ y: c.y, t: 'cod', it: c });
+      ev.sort((a, b) => a.y - b.y || (a.t === 'cod' ? 1 : -1));
+      for (const e of ev) {
+        if (e.t === 'ano') { ano = e.ano; desp = false; continue; }
+        if (e.t === 'cab') { centers = e.c; continue; }
+        if (e.t === 'rec') { desp = true; continue; }
+        if (e.t === 'desp') { desp = false; continue; }
+        if (!centers || !ano) continue;
+        const c = e.it, x0 = Math.min(...Object.values(centers)) - 40;
+        if (c.x > x0) continue;
+        const vals = its.filter(i => Math.abs(i.y - c.y) <= 2.5 && i.x > x0 && NUM.test(i.str.trim()));
+        if (!vals.length) continue;
+        const lab = its.filter(i => Math.abs(i.y - c.y) <= 5.5 && i.x > c.x + c.w && i.x < x0 && !NUM.test(i.str.trim()) && !/^\d{5}$/.test(i.str.trim()))
+          .sort((a, b) => a.y - b.y || a.x - b.x).map(i => i.str.trim()).join(' ');
+        for (const i of vals) {
+          const cx = i.x + i.w / 2; let best = null, bd = 1e9;
+          for (const k in centers) { const d = Math.abs(centers[k] - cx); if (d < bd) { bd = d; best = k; } }
+          const v = brNum(i.str.trim()); if (best === 'T' || !v) continue;
+          recs.push({ ano, mes: +best, comp: ym(ano, +best), fonte: 'pdfSGRH', folha: 'N', tipoFolha: 0, cod: String(+c.str.trim()), desc: lab.replace(/\s+/g, ' ').trim(), seq: 0, v: desp ? -v : v });
+        }
+      }
+    }
+    return { recs, refs: {}, info };
+  }
+
   // ------------------------------------------------------------------ CLASSIFICAÇÃO DE RUBRICAS
   const CAT = {
     VB: 'Vencimento', DIF2886: 'Dif. Lei 8622/8627', GEXTRA: 'Grat. Extraordinária 170%', GAJ: 'GAJ / Abono', APJ: 'APJ',
@@ -250,14 +320,20 @@
     if (/NATALINA|\(13O?\.?\)|GN \(13|13[°º]/.test(d)) return /PREVID|RPPS|PSS|IMPOSTO/.test(d) ? 'IGNORAR' : 'GN';
     if (/RESTITUI/.test(d) && /PSS/.test(d)) return 'IGNORAR';
     if (/^(0099504|0099404|98002|98003|98004)$/.test(c) || (/(PREVID[EÊ]NCIA SOCIAL|CONTRIBUI[CÇ][AÃ]O RPPS|^PSS)/.test(d) && !/ISENT|DEVOLU/.test(d))) return 'PSS';
-    if (/(D\.E\.A|\bDEA\b|DESPESA EXERC|DESP\.? EX\.? ANT|EXERC[IÍ]CIO ANTERIOR|\bRRA\b|PASSIVO|DEC\.? JUDICIAL|S(ENT)?\.? ?JUD\.? ?10,87)/.test(d)) return 'PASSIVO';
-    if (/(DEVOLU[CÇ][AÃ]O PSS|HONOR[AÁ]RIOS|IND\. FAZENDA|AJUDA DE CUSTO|ASSOJAFES)/.test(d)) return 'IGNORAR';
+    if (/(D\.E\.A|\bDEA\b|DESP)/.test(d) && /(EXERC|EX\.? ?ANT)/.test(d) && /(IND\.? ?TRANSP|TRANSPORTE|INDENIZ|AUX[IÍ]LIO)/.test(d)) return 'IGNORAR';
+    if (/(D\.E\.A|\bDEA\b|DESPESA EXERC|DESP\.? ?EX(ERC)?\.? ?ANT|EXERC[IÍ]CIO ANTERIOR|\bRRA\b|PASSIVO|DEC\.? JUDICIAL|S(ENT)?\.? ?JUD\.? ?10,87)/.test(d)) return 'PASSIVO';
+    if (/(DEVOLU[CÇ][AÃ]O (PSS|INSS)|DEV\.? ?PREVID|VALE-REFEI|VALE REFEI|CUSTEIO|APCEF|PREV\. SOCIAL (INATIVO|- GRAT)|HONOR[AÁ]RIOS|IND\. FAZENDA|AJUDA DE CUSTO|ASSOJAFES)/.test(d)) return 'IGNORAR';
     // até 1994: adiantamento da Lei 8.272/91 e abono de Cr$ 102.000 (Lei 8.622/93) integram o vencimento; a diferença de URV fica fora (RBCs da DIPROF)
     if (/ADIANT.*8\.?272|^ABONO$/.test(d)) return 'VB';
-    if (/DIFEREN[CÇ]A DE URV/.test(d)) return 'IGNORAR';
+    if (/DIFEREN[CÇ]A DE URV|DIF\. URV/.test(d)) return 'IGNORAR';
+    // restos a pagar: despesa do exercício anterior; o 13º segue a regra de dezembro × avos
+    if (/RESTOS A PAGAR/.test(d)) return /NATAL/.test(d) ? 'GN' : 'PASSIVO';
     if (/F[EÉ]RIAS|1\/3|ADIANTAMENTO|ANTECIPA/.test(d)) return 'IGNORAR';
     if (/(AUX[IÍ]LIO|AUX\.|ASSIST|ALIMENTA|SA[UÚ]DE|PR[EÉ]-ESCOLAR|NATALIDADE|TRANSPORTE|DI[AÁ]RIA|INDENIZ|PERMAN[EÊ]NCIA|UNIMED|CONSIGNA|AJUSTE|EMPR[EÉ]STIMO|SINPOJUFES|ANAJUSTRA|ANASTRA|IMPOSTO|PENS[AÃ]O|ABONO PECUNI|SAL[AÁ]RIO-FAM|SAL[AÁ]RIO FAM|GOLDEN|PLANO DE SA)/.test(d)) return 'IGNORAR';
     if (/(SERVI[CÇ]O EXTRAORD|HORA EXTRA|CURSO|CONCURSO|GECC|ADICIONAL NOTURNO|^GRU$|RESTITUI[CÇ][AÃ]O OUTROS|FUNPRESP|PREV\. SOCIAL - (INSS|FMP)|PREV\. SOCIAL-GRAT|AGEPOLJUS|ASSOJAF|AJUCLA|ANAMATRA|AMATRA|ASSOCIACAO MAGISTRADOS|FINANCIAMENTO|ALUGUEL|A B S P|DEP[OÓ]SITO EM JU[IÍ]ZO)/.test(d)) return 'IGNORAR';
+    if (/COMPLEMENTA[CÇ][AÃ]O SAL[AÁ]RIO.?M[IÍ]NIMO/.test(d)) return 'IGNORAR';
+    // juiz classista: gratificação por sessão (deliberação coletiva) é a remuneração do mês
+    if (/DELIBERA[CÇ][AÃ]O COLETIVA/.test(d)) return 'SUBSIDIO';
     // magistrados: subsídio (Lei 11.143/2005 e seguintes) é a base de contribuição
     if (/SUBS[IÍ]DIO/.test(d) && /MAGISTR|JUIZ|LEI 11\.?143|LEI 1[2-4]\./.test(d)) return 'SUBSIDIO';
     // diferença de subsídio por substituição de magistrado (Lei 10.474/2002): integra o subsídio (RBC de juiz, 2006–2010)
@@ -273,12 +349,14 @@
       if (/VPNI/.test(d)) return 'V1323_VPNI';
       if (/FC|FUN[CÇ]/.test(d)) return 'V1323_FC';
       if (/SUBST/.test(d)) return 'SUBST';
+      if (/NATAL/.test(d)) return 'GN';
+      if (/PROVENTO/.test(d)) return 'IGNORAR';
       return 'CLASSIFICAR';
     }
     if (/(GABINETE|FUN[CÇ][AÃ]O GAB|-GAB\.?$)/.test(d)) return 'FC';
     if (/FALTA/.test(d)) return 'FALTAS';
     if (/SUBSTITUI/.test(d)) return 'SUBST';
-    if (/(FUN[CÇ][AÃ]O COMISS|FUNC\. COMISS|F\.C\. |CARGO EM COMISS|GRATIFICA[CÇ][AÃ]O DE GABINETE|^DAS)/.test(d)) return 'FC';
+    if (/(FUN[CÇ][AÃ]O COMISS|FUNC\. COMISS|F\.C\. |CARGO EM COMISS|CARGO COMISS|GRATIFICA[CÇ][AÃ]O DE GABINETE|^DAS)/.test(d)) return 'FC';
     if (/(QUALIF.*TREIN|AQ-AT|QUALIFICA[CÇ][AÃ]O - TREINAMENTO|QUALIFICA[CÇ][AÃ]O TREINAMENTO|AQ.*TREINAMENTO)/.test(d)) return 'AQ_TREIN';
     if (/(ADIC\.? ?QUALIF|AQ-PG|ADICIONAL DE QUALIFICA|AQ - )/.test(d)) return 'AQ';
     if (/(GAS\b|ATIV\.? ?SEGURAN|ATIVIDADE DE SEGURAN)/.test(d)) return /SEM PREVID/.test(d) ? 'IGNORAR' : 'GAS';
@@ -342,7 +420,7 @@
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI', 'REDUTOR'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
   const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false };
+    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false, passivoTabela: true };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -458,6 +536,14 @@
         }
         if (aloc.length) log.push({ tipo: 'retroativo', cat: c, pagoEm: k, valor: r2(extra[k][c] - rest), aloc });
       }
+    }
+    // pagamento e estorno: mesmo valor com sinal trocado na mesma parcela, até 2 meses depois, sem mês de referência → anulam-se
+    for (let i = 0; i < pend.length; i++) {
+      const a = pend[i]; if (a.motivo !== 'Pagamento sem competência identificável') continue;
+      const j = pend.findIndex((b, jj) => jj !== i && b.cat === a.cat && b.motivo === a.motivo && Math.abs(a.valor + b.valor) < 0.01 && b.comp >= a.comp && b.comp <= addM(a.comp, 2));
+      if (j < 0) continue;
+      const b = pend[j]; log.push({ tipo: 'estorno', cat: a.cat, comp: a.comp, compEstorno: b.comp, valor: a.valor });
+      pend.splice(Math.max(i, j), 1); pend.splice(Math.min(i, j), 1); i = -1;
     }
     // 3) alocações manuais (passivos e pendências)
     for (const ma of (opts.manual || [])) {
@@ -611,6 +697,6 @@
     return u.length === 1 ? u[0] + ' (inferido)' : '';
   }
 
-  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, parseFichaAntigaPDF, isFichaAntigaPDF, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
+  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, isLongDB, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, parseFichaAntigaPDF, isFichaAntigaPDF, parseFichaSGRH, isFichaSGRH, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBC = api;
 })(typeof self !== 'undefined' ? self : this);
