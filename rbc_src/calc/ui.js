@@ -12,7 +12,7 @@ const dataBr = d => d ? d.split('-').reverse().join('/') : '';
 const ultimoDia = k => k+'-'+String(new Date(+k.slice(0,4),+k.slice(5,7),0).getDate()).padStart(2,'0');
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','V1323'];   // AQ e AQ-Treinamento: sem relatório, conferidos pela ficha
+const TIPOS_REL = ['PROGRESSAO','FUNCOES','SUBSTITUICOES','VPNI','ATS','AQ','V1323'];   // AQ: sem relatório; com ficha, conferido por ela; sem ficha, informado aqui
 const S = { devol:[], arquivos:[], recs:[], refs:{}, basePSO:{}, fichaInfo:{}, cats:{}, manual:[], res:null, etapa:1, abertos:{}, sel:null,
   rel:Object.fromEntries(TIPOS_REL.map(t=>[t,[]])), relArqs:[], esp:null, espBy:{}, cmp:null, ignorar:{}, ack:{}, anteriores:[], digitalizados:[] };
 const CC = (typeof RBCCert!=='undefined') ? RBCCert : null;
@@ -35,6 +35,9 @@ function getRegras(){
   r.tetoDesde = r.tetoDesde || (r.tetoAuto && S.tetoAuto && S.tetoAuto.desde ? S.tetoAuto.desde : '');
   return r;
 }
+// Sem ficha financeira a RBC sai inteira da tabela e a DIPROF faz o pro rata pelos dias do mês em qualquer competência
+// (RRCs 2017–2021: ingresso em 13/12 = 19/31; progressão em 22/02 = 7/28). Com ficha, vale o divisor da folha (30 até 2017).
+function regrasCalc(){ const r=getRegras(); if(!S.recs.length&&r.divisorDiasDesde===RBC.REGRAS_PADRAO.divisorDiasDesde) r.divisorDiasDesde=r.divisor30Desde||'1994-07'; return r; }
 function regrasAlteradas(){ const a=Object.assign(getRegras(),{tetoDesde:$('r_tetoDesde').value||''}), p=RBC.REGRAS_PADRAO; return REGRA_IDS.filter(k=>String(a[k]==null?'':a[k])!==String(p[k]==null?'':p[k])); }
 setRegras(RBC.REGRAS_PADRAO);
 $('r_reset').onclick=e=>{ e.preventDefault(); setRegras(RBC.REGRAS_PADRAO); calc(); };
@@ -94,7 +97,7 @@ const REL = {
     dica:'Opcional. Sem relatório, vale a ficha: se houve AQ pago no mês, o direito é presumido e o valor devido é calculado pela tabela (até 2025, % do vencimento da Lei 11.416; desde 2026, valores de referência). O nível é deduzido do valor pago. Linhas preenchidas aqui têm prioridade sobre a ficha.'},
   V1323:{titulo:'13,23% (decisão judicial)', cols:[cIni,cFim], dica:'Períodos em que o 13,23% foi devido. Não vem de relatório: informe se houver.'}
 };
-const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], relatorioOk:['ok','do relatório; confere com o vencimento pago'], corrigido:['att','ajustado pelo vencimento pago — confira'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], manual:['info','informado por você'] };
+const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], relatorioOk:['ok','do relatório; confere com o vencimento pago'], corrigido:['att','ajustado pelo vencimento pago — confira'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], presumida:['att','presumida: A1 no exercício, +1 padrão por ano — confira'], manual:['info','informado por você'] };
 function tagOrigem(r){ const o=ORIGEM[r.origem]; return o?`<span class="tag ${o[0]}"${r.dica?` title="Texto lido: ${esc(r.dica)}"`:''}>${o[1]}${r.origem==='corrigido'&&r.relOrig?' (relatório: '+esc(r.relOrig)+')':''}</span>`:''; }
 
 function celula(t,i,c,r){
@@ -274,7 +277,7 @@ function dadosServidor(){
   const cargo=$('cargo').value, ini=iniEf(), fim=fimEf();
   if(!cargo||!ini||!fim||ini>fim) return null;
   const ord=l=>l.slice().sort((a,b)=>a.ini<b.ini?-1:a.ini>b.ini?1:0);
-  let prog=ord(S.rel.PROGRESSAO.filter(p=>p.ini&&p.classe&&p.padrao));
+  let prog=ord(S.rel.PROGRESSAO.filter(p=>p.ini&&p.classe&&p.padrao&&!(p.origem==='presumida'&&S.recs.length)));   // com ficha, a presunção cede ao vencimento pago
   // sem relatório de progressão (caso comum: a DIPROF trabalha com a ficha e a CTC), a classe/padrão vem do vencimento pago
   if(!prog.length) prog=progDaFicha(cargo,ini,fim);
   else if(prog[0].ini>ini){
@@ -289,7 +292,7 @@ function dadosServidor(){
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada,cargo:p.cargo&&p.cargo!==cargo?p.cargo:undefined})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
-    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:atsRel.length?atsRel:atsDaFicha(), aq:[], v1323:per(S.rel.V1323), aqFicha:aqDaFicha() };
+    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:atsRel.length?atsRel:atsDaFicha(), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha(), vpiSem1323:!S.recs.length };
 }
 // Progressão inferida da ficha: classe/padrão de cada mês pelo vencimento pago (mês cheio, folha normal). Meses sem ficha:
 // carreira da Lei 11.416/2006 (A1–A5, B6–B10, C11–C13) avança um padrão a cada 12 meses a partir da última mudança vista
@@ -333,6 +336,22 @@ function progDaFicha(cargo,ini,fim){
       res.push(Object.assign({ini:k+'-01',fim:ate,origem:'inferida',cargo:ul.cargo},st)); if(!ate) break; k=prox; n++; }
   }
   return res;
+}
+// Sem ficha e sem progressão (CTC só com a referência atual): carreira da Lei 11.416 — A1 no exercício e um padrão a cada
+// 12 meses (art. 9º). É presunção: marcada para conferência e substituída por qualquer progressão informada.
+function presumirProgressao(){
+  if(S.recs.length||S.rel.PROGRESSAO.length) return '';
+  const cg=$('cargo').value, ini=(S.ctc&&S.ctc.exercicio)||iniEf(), fim=fimEf();
+  if(!/ANALISTA|T[ÉE]CNICO|AUXILIAR/.test(cg)||!ini||!fim||ini<'2006-12-15'||ini>fim) return '';
+  const dt=s=>new Date(Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))), iso=d=>d.toISOString().slice(0,10);
+  const rows=[]; let d=ini;
+  for(let n=0;d<=fim&&n<SEQ11416.length;n++){
+    const nx=dt(d); nx.setUTCFullYear(nx.getUTCFullYear()+1); const prox=iso(nx), vesp=new Date(nx.getTime()-864e5);
+    const [classe,padrao]=SEQ11416[n].split('-');
+    rows.push({ini:d,fim:prox>fim||n===SEQ11416.length-1?'':iso(vesp),classe,padrao,origem:'presumida'}); d=prox;
+  }
+  S.rel.PROGRESSAO=rows; renderRelTabelas();
+  return ` Sem ficha financeira nem progressão: classe e padrão <b>presumidos</b> (A1 em ${brData(ini)} e um padrão a cada 12 meses) — confira na etapa 1.`;
 }
 // ATS sem relatório: percentual pago na ficha (ATS ÷ vencimento), por período
 function atsDaFicha(){
@@ -432,14 +451,14 @@ function calc(){ ajustarCargo();
   { const t=S.tetoAuto, el=$('tetoDica'); if(el) el.textContent = t&&t.desde ? `Detectado: desde ${t.desde.slice(5,7)}/${t.desde.slice(0,4)} (${t.motivo})` : t ? t.motivo : 'Sem contribuição ao Funpresp na ficha'; }
   // sem ficha, mas com progressão (CTC ou relatório): a RBC sai inteira da tabela (meses marcados "sem ficha")
   if((S.recs.length || S.rel.PROGRESSAO.length) && ini && fim && ini<=fim){
-    try{ const rg=getRegras(); if($('cargo').value==='MAGISTRADO'||S.recs.some(r=>r.fonte==='relSGRH')) rg.gnFicha=true;   // relatório do SGRH traz a linha do 13º
+    try{ const rg=regrasCalc(); if($('cargo').value==='MAGISTRADO'||S.recs.some(r=>r.fonte==='relSGRH')) rg.gnFicha=true;   // relatório do SGRH traz a linha do 13º
       S.res = RBC.calcular(S.recs,{inicio:ini, fim, cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); }
     catch(e){ console.error(e); S.res=null; }
   }
   if(aplicarSugestoes()) renderRelTabelas();
   S.esp=null; S.cmp=null; S.espBy={};
   const d=dadosServidor();
-  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(getRegras(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
+  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
   aplicarTabelaAntiga();
   aplicarSemFicha();
   aplicarTeto();
@@ -549,8 +568,14 @@ function aplicarSemFicha(){
     l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.semFicha=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp);
   }
-  for(const g of S.res.gns){ if(g.daFicha) continue; const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb||!lb.semFicha) continue;
-    let b=lb.total; if(g.obs==='sem VPI') b=RBC.r2(b-(lb.v.VPI||0)-(lb.v.VPI_DED||0)); g.base=b; g.valor=RBC.r2(b*g.avos/12); }
+  const ini=iniEf(), fim=fimEf(), dm=k=>new Date(+k.slice(0,4),+k.slice(5,7),0).getDate();
+  for(const g of S.res.gns){ if(g.daFicha) continue; const lb=S.res.linhas.find(x=>x.comp===g.baseComp); if(!lb||!(lb.semFicha||(!S.recs.length&&lb.daTabela))) continue;
+    let b=lb.total;
+    // base do 13º é o mês cheio: se o mês-base é o do ingresso ou do desligamento, desfaz o pro rata (ingresso em 13/12 → base = mês integral, não os 19/31)
+    { const n=dm(lb.comp); let dias=n; if(ini&&lb.comp===ini.slice(0,7)) dias=n-(+ini.slice(8,10))+1; if(fim&&lb.comp===fim.slice(0,7)) dias=Math.min(dias,+fim.slice(8,10));
+      if(dias<n&&dias>0&&!S.recs.length) b=RBC.r2(b*n/dias); }
+    // sem ficha: a DIPROF usa a remuneração integral na situação do fim do mês-base (progressão em 13/12 → 13º no padrão novo)
+    { const e=S.espBy[lb.comp]; if(!S.recs.length&&e&&e.totalCheio>0&&Math.abs(e.totalCheio-b)>0.005&&!(fim&&lb.comp===fim.slice(0,7))) b=e.totalCheio; } if(g.obs==='sem VPI') b=RBC.r2(b-(lb.v.VPI||0)-(lb.v.VPI_DED||0)); g.base=b; g.valor=RBC.r2(b*g.avos/12); }
 }
 // Regime de previdência complementar (Funpresp): a base de contribuição ao RPPS é limitada ao teto do RGPS
 // (Lei 12.618/2012, art. 3º). A RBC registra o menor valor entre a remuneração e o teto, inclusive no 13º.
@@ -1206,7 +1231,7 @@ async function classificar(f){
     if(chars<30) return {tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
     if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
-    if(/^\s*(De|From):|Assunto:|Subject:|Enviado em/im.test(txt.slice(0,1500))) return {tipo:'ignorado',motivo:'e-mail'};
+    if(/^\s*(De|From):|Assunto:|Subject:|Enviado em|outlook\.(office|live)|mail\.google|\bPara:\s|\d+\s+anexos?\s*\(/im.test(txt.slice(0,1500))&&!/CERTIFICO|PER[ÍI]ODO DE CONTRIBUI/i.test(txt)) return {tipo:'ignorado',motivo:'e-mail'};
     const tp=RR.tipoRelatorio(pg); if(tp&&tp!=='AQ') return {tipo:'rel',sub:tp};
     return {tipo:'ignorado',motivo:'PDF não reconhecido'};
   }
@@ -1243,8 +1268,9 @@ async function lerTudo0(lista){
   const ROT={ficha:'Ficha financeira',rel:'CTC / relatório',rbc:'RBC já emitida (comparação)',img:'Digitalizado',ignorado:'Ignorado'};
   ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
   // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
-  const soImg=!grupos.rel.length&&!grupos.ficha.length&&grupos.img.length;
-  if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…'; await lerRelatorios(grupos.img.map(c=>c.f)); grupos.img=[]; }
+  // ou não há CTC em texto nem ficha: a CTC digitalizada é a fonte do período e do ingresso
+  const soImg=grupos.img.length&&!grupos.ficha.length&&!grupos.rel.some(c=>c.sub==='CTC');
+  let nOCR=0; if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…'; await lerRelatorios(grupos.img.map(c=>c.f)); nOCR=grupos.img.length; grupos.img=[]; }
   if(grupos.rel.length) await lerRelatorios(grupos.rel.map(c=>c.f));
   if(grupos.ficha.length) await lerArquivos(grupos.ficha.map(c=>c.f));
   for(const c of grupos.rbc) S.anteriores.push({nome:c.f.name,r:c.dados});
@@ -1253,6 +1279,8 @@ async function lerTudo0(lista){
   S.digitalizados.push(...grupos.img.map(c=>c.f));
   if(!$('nome').value){ const nm=(S.ctc&&S.ctc.nome)||(S.fichaInfo&&S.fichaInfo.nome)||(S.anteriores[0]&&S.anteriores[0].r.cab&&S.anteriores[0].r.cab.nome)||''; if(nm) $('nome').value=nm; }
   if(!$('processo').value&&S.ctc&&S.ctc.processo) $('processo').value=S.ctc.processo;
+  let notaPres=presumirProgressao();
+  if(!S.recs.length&&(S.rel.PROGRESSAO.length)) notaPres+=' Sem ficha financeira: a RBC sai da tabela de remuneração. Adicional de qualificação e 13,23% não constam da CTC — informe-os nas tabelas da etapa 1 se forem devidos.';
   calc();
   // cargo: o vencimento pago decide quando o usuário não informou; diverge da CTC → avisa
   let notaCargo='';
@@ -1269,8 +1297,8 @@ async function lerTudo0(lista){
   if($('cargo').value&&iniEf()&&fimEf()){ const vs=[]; for(const p of progDaFicha($('cargo').value,iniEf(),fimEf())){ const cg=p.cargo||$('cargo').value; if(vs.length&&vs[vs.length-1].cg===cg) vs[vs.length-1].fim=p.fim; else vs.push({cg,ini:p.ini,fim:p.fim}); }
     if(vs.length>1) notaCargo+=` Vencimento de mais de um cargo na ficha: ${vs.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> ${v.ini.slice(5,7)}/${v.ini.slice(0,4)} a ${v.fim?v.fim.slice(5,7)+'/'+v.fim.slice(0,4):'fim'}`).join(', ')}. A remuneração esperada e os meses sem vencimento usam a tabela do cargo de cada período — confira as datas de posse.`; }
   const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
-  S.notasEntrada=notaCargo.trim();
-  $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s), ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
+  notaCargo+=notaPres; S.notasEntrada=notaCargo.trim();
+  $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s)${nOCR?` (+${nOCR} digitalizado(s) lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
     (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler por imagem</button>`:'')+
     notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
   if($('lerImg')) $('lerImg').onclick=async()=>{ const l=S.digitalizados.splice(0); await lerRelatorios(l); };

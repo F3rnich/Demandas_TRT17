@@ -124,7 +124,7 @@
     if (/PADR/.test(t)) return 'padrao';
     if (/N[IÍ]VEL/.test(t)) return 'nivel';
     if (/^TIPO/.test(t)) return 'tipo';
-    if (/SITUA/.test(t)) return 'situacao';
+    if (/SITUA|^EFEITO$/.test(t)) return 'situacao';   // "Efeito: Sem efeito" (Níveis Salariais do SGRH)
     return 'outro';
   }
   // divide um item de texto em palavras, estimando a posição x de cada uma (o PDF pode juntar células num item só)
@@ -149,7 +149,7 @@
     if (iCab < 0) iCab = L.findIndex(ehCab);
     if (iCab < 0) return parseProgressaoRegex(pages);
     const cab = [...L[iCab]];
-    for (const d of [-1, -2, 1]) { const l = L[iCab + d]; if (!l || temData(l) || !l.some(t => /[A-Za-zÀ-ú]/.test(t.s))) { if (d < 0) continue; else break; } cab.push(...l); }
+    for (const d of [-1, -2, 1]) { const l = L[iCab + d]; if (!l || temData(l) || !l.some(t => /[A-Za-zÀ-ú]/.test(t.s)) || l.some(t => /[A-Za-zÀ-ú]:/.test(t.s))) { if (d < 0) continue; else break; } cab.push(...l); }   // "Nome:"/"Cargo:" acima do cabeçalho não são rótulos de coluna
     const grupos = [];
     for (const t of cab.sort((a, b) => a.c - b.c)) {
       const g = grupos.find(g => Math.abs(g.c - t.c) < 18 || (t.c >= g.x0 && t.c <= g.x1));
@@ -175,7 +175,7 @@
       const sit = j('situacao').toUpperCase();
       const revogada = !!dt('revog') || /REVOG|CANCEL|INV[AÁ]LID|ANULAD|SEM EFEITO|TORNAD/.test(sit);
       if (!ini || !classe) continue;
-      out.push({ ini, fim, revogada, classe: classe.toUpperCase().replace(/\s*-\s*/, '-'), padrao: padrao.toUpperCase(), tipo: j('tipo') });
+      out.push({ ini, fim, revogada, classe: classe.toUpperCase().replace(/\s*-\s*/, '-').replace(/^([A-D])-$/, '$1'), padrao: padrao.toUpperCase(), tipo: j('tipo') });
     }
     return out.length ? out.sort((a, b) => a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0) : parseProgressaoRegex(pages);
   }
@@ -340,8 +340,17 @@
     if (mcg) {
       const c = mcg[1].toUpperCase();
       meta.cargo = /ANALISTA/.test(c) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(c) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(c) ? 'AUXILIAR JUDICIÁRIO' : /JUIZ/.test(c) ? 'JUIZ' : '';
-      meta.especialidade = /OFICIAL DE JUSTI/.test(c) ? 'OFICIAL' : /SEGURAN|POL[ÍI]CIA|AGENTE DE/.test(c) ? 'SEGURANCA' : '';
       meta.cargoTexto = mcg[1].replace(/\s*(REGIME JUR|ÓRG[ÃA]O DE LOTA).*$/i, '').trim();
+      // leiaute em duas colunas ("CARGO EFETIVO: REGIME JURÍDICO:"): o cargo vem nas linhas de baixo, às vezes quebrado
+      const ic = ls.findIndex(l => /CARGO EFETIVO/i.test(l));
+      if (ic >= 0) {
+        const partes = [ls[ic].replace(/.*CARGO EFETIVO:?/i, '').replace(/REGIME JUR\S*:?/i, '').trim()];
+        for (let j = ic + 1; j < Math.min(ls.length, ic + 4); j++) { if (/^(CLASSE|DOCUMENTO|[ÓO]RG[ÃA]O|REGIME|DATA|PUBLICA|LEI\b)/i.test(ls[j])) break; partes.push(ls[j]); }
+        const tx = partes.join(' ').replace(/\s*Estatut[áa]rio\s*[–-]?\s*(Lei\s*)?(n?º?\s*)?8\.?112\/?(19)?90/i, ' ').replace(/\s+/g, ' ').trim();
+        if (tx.length > meta.cargoTexto.length && /JUDICI|JUIZ/i.test(tx)) meta.cargoTexto = tx;
+      }
+      const ce = (c + ' ' + meta.cargoTexto).toUpperCase();
+      meta.especialidade = /OFICIAL DE JUSTI|ESP(\.|ECIALIDADE)?:?\s*OFICIAL/.test(ce) ? 'OFICIAL' : /SEGURAN|POL[ÍI]CIA|AGENTE DE/.test(ce) ? 'SEGURANCA' : '';
     }
     const ex = /EFETIVO EXERC[ÍI]CIO:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat) || /POSSE:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat);
     if (ex) meta.exercicio = dBR(ex[1]);
@@ -372,7 +381,7 @@
           if (t && /^[A-Za-zÀ-ú .']+$/.test(t)) partes.push(t);
         }
         const tudo = partes.join(' ').trim();
-        const nomes = tudo.split(/\s+e\s+/i).map(x => x.trim()).filter(x => x.length > 3);
+        const nomes = partes.length === 2 ? partes : tudo.split(/\s+e\s+/i).map(x => x.trim()).filter(x => x.length > 3);
         meta.filiacao = nomes.length > 1 ? nomes : partes;
         if (meta.filiacao.length) meta.mae = meta.filiacao[meta.filiacao.length - 1];
       }
@@ -384,7 +393,10 @@
     // leiaute da SEINFO (2019): linha de rótulos "SERVIDOR: SEXO: MATRÍCULA:" e, abaixo, "Nome Sobrenome Masculino 308171535"
     { const i = ls.findIndex(l => /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO:?\s+MATR[ÍI]CULA:?\s*$/i.test(l));
       const m3 = i >= 0 && ls[i + 1] && /^(.+?)\s+(Masculino|Feminino|M|F)\s+(\d[\d.\-]{3,14}\d)\s*$/i.exec(ls[i + 1].trim());
-      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/[.\s]/g, ''); } }
+      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/[.\s]/g, '');
+        // sobrenome que não coube na coluna (continua na linha de baixo)
+        const cont = (ls[i + 2] || '').trim();
+        if (/^[A-ZÀ-Úa-zà-ú][A-Za-zÀ-ú .']{1,50}$/.test(cont) && !/:|FILIA|ENDERE|CPF|ÓRG|IDENTID/i.test(cont)) meta.nome += ' ' + cont; } }
     if (meta.nome) meta.nome = tiraSexo(meta.nome);
     mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?\bN(?:[º°o]\.?|\.|\s)\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
     const tipoDoc = /DECLARA[ÇC][ÃA]O(?: COMPLEMENTAR)? (?:DE|À) /i.test(flat.slice(0, 1500)) && !/CERTID[ÃA]O DE TEMPO/i.test(flat.slice(0, 600)) ? 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' : 'CERTIDÃO DE TEMPO DE CONTRIBUIÇÃO';
@@ -403,7 +415,7 @@
     if (meta.teto === 'migrou' && mig) meta.tetoDesde = dBR(mig[1]);
     // progressão: "Classe A, Padrão 1 = de 02/06/2023 a 01/06/2024 - ...", "Classe D, Padrão III = ...", "Classe A, Ref. NA-03 = ..."
     const PROGRESSAO = [];
-    const rx = /CLASSE\s+([A-D])\s*,?\s*(?:PADR[ÃA]O|REF\.?|REFER[ÊE]NCIA)\s*([A-Z]{2}\s*-?\s*\d+|[IVX]+|\d+)\s*=?\s*(?:DE\s+)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})(?:\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}))?/gi;
+    const rx = /CLASSE\s+([A-D])\s*,?\s*(?:PADR[ÃA]O|REF\.?|REFER[ÊE]NCIA)\s*([A-Z]{2}\s*-?\s*\d+|[IVX]+|\d+)\s*=?\s*(?:DE\s+|A PARTIR DE\s+|DESDE\s+)?(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})(?:\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}))?/gi;
     for (const m of flat.matchAll(rx)) {
       let classe = m[1].toUpperCase(), padrao = m[2].toUpperCase().replace(/\s+/g, '');
       const nv = /^(N[AIS])-?(\d+)$/.exec(padrao); if (nv) { classe = nv[1]; padrao = String(+nv[2]); }

@@ -70,13 +70,15 @@
     for (let k = ini; k <= fim; k = RBC.addM(k, 1)) {
       const w = pesos(k, regras.divisorDiasDesde, regras.divisor30Desde), n = diasMes(k);
       const v = {}, info = { aq: [], ref: new Set(), refc: new Set(), funcao: new Set(), subst: new Set(), vpni: new Set(), ats: null };
-      const add = (c, x) => { v[c] = (v[c] || 0) + x; };
+      // dia: valores do último dia do mês com peso 1 (situação em 31/12 = base do 13º quando há mudança no mês)
+      let dia = null, wdia = 1, ultDia = null;
+      const add = (c, x) => { v[c] = (v[c] || 0) + x; if (dia) dia[c] = (dia[c] || 0) + x / wdia; };
       const fontes = new Set(), aqRel = {};
       for (let d = 1; d <= n; d++) {
         if (!w[d - 1]) continue;
         const dt = iso(k, d);
         if (dt < dados.inicio || dt > dados.fim) continue;
-        const wd = w[d - 1];
+        const wd = w[d - 1]; dia = {}; wdia = wd; if (d <= 30) ultDia = dia;   // dia 30: o 31/12/2012 (Lei 12.774) já traz a tabela de 2013
         // cargo efetivo
         const pr = naFaixa(prog, dt).pop();
         if (!pr) { aviso(k, 'Sem progressão/enquadramento para a data'); continue; }
@@ -94,7 +96,11 @@
         const at = naFaixa(dados.ats, dt).pop();
         if (at && at.pct) { add('ATS', vb * at.pct / 100 * wd); info.ats = at.pct / 100; }
         // VPI (Lei 10.698/2003)
-        const vpi = par(ix, 'VPI_LEI_10698_2003', dt); if (vpi && dados.vpi !== false) add('VPI', vpi * wd);
+        let vpi = par(ix, 'VPI_LEI_10698_2003', dt);
+        // 01/2015 a 03/2016 o TRT-17 pagou o 13,23% no lugar da VPI. Sem ficha e sem 13,23% informado, vale a VPI
+        // (a DIPROF fez assim nas RRCs de servidores sem 13,23%)
+        if (!vpi && dados.vpiSem1323 && dt >= '2015-01-01' && dt <= '2016-03-31' && !naFaixa(dados.v1323, dt).length) vpi = par(ix, 'VPI_LEI_10698_2003', '2014-12-31');
+        if (vpi && dados.vpi !== false) add('VPI', vpi * wd);
         // GAS / GAE
         if (dados.especialidade && (!dados.espDesde || dt >= dados.espDesde)) {
           const cat = dados.especialidade === 'OFICIAL' ? 'GAE' : 'GAS';
@@ -178,8 +184,9 @@
         if (val != null) { v[cat] = (v[cat] || 0) + val; info.aq.push(a.txt); }
         if (a.aviso) aviso(k, a.aviso);
       }
+      dia = null; const vCheio = {}; for (const c in (ultDia || {})) vCheio[c] = r2(ultDia[c]);
       for (const c in v) v[c] = r2(v[c]);
-      linhas.push({ comp: k, v, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), aq: info.aq.join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
+      linhas.push({ comp: k, v, vCheio, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), aq: info.aq.join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
     }
     // incidência e contribuição
     const incide = (c, k) => {
@@ -195,6 +202,7 @@
       for (const c in l.v) if (incide(c, l.comp)) { l.inc[c] = l.v[c]; t += l.v[c]; }
       l.total = r2(t);
       l.pss = RBC.pssDevida(l.total, l.comp, regras.teto);
+      let tc = 0; for (const c in l.vCheio) if (incide(c, l.comp)) tc += l.vCheio[c]; l.totalCheio = r2(tc);
     }
     // gratificação natalina (mesma regra da calculadora)
     const gns = [];
