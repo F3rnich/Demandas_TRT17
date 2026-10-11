@@ -187,3 +187,10 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 | Folhas de URV com rubrica genérica de exercício anterior (2001.2.11, 2001.3.11, 2001.12.16, 2002.9.7, 2002.12.15) | **novo:** não são passivo (o 11,98% entra pelo ajuste mensal) |
 | Tabela de nomes de função → FC | **novo:** CTC sem código usa a tabela (Assistente Secretário FC-5 … Auxiliar Especializado FC-1) |
 - Comparação (Fase 15j): jan–out/2013 com a RBC anterior igual a nov/2012 → causa "a RBC anterior manteve os valores de 2012: a folha pagou a tabela da Lei 12.774 com atraso" (RRC de 2017, planilha "PAGO"; as RBCs de 2024–2025 usam o padrão devido).
+
+### Fase 15k (11/10/2026): mapa "Mês a mês" para conferência
+
+- Seletor de modo: **RBC anterior** (padrão quando há anterior), **Contribuição** (padrão sem anterior) e **Pago × esperado** (substitui o antigo pontinho de divergência).
+- Cada célula mostra a RBC do mês em valor inteiro (oculto em telas < 1000 px); triângulo azul no canto = mês ajustado pela calculadora (ajuste, tabela, sem ficha, borda de período).
+- Coluna do ano: resumo do modo (confere / diferença em R$ / meses iguais / 13º ≠) e Σ dos meses + 13º.
+- Dica ao passar o mouse/foco: RBC, esperada, anterior e diferença com provável causa, PSS descontada × sobre a RBC, itens pago × esperado e ajustes. Clique abre o detalhe.
