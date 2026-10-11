@@ -142,23 +142,37 @@ tr.sem td{color:var(--mute)}
 .numeros div{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
 .numeros span{display:block;font-size:13px;color:var(--mute)}
 .numeros b{font-size:20px}
-.mapa{display:grid;grid-template-columns:48px repeat(13,minmax(0,1fr)) 30px;gap:3px;font-size:12px;align-items:center}
-.mapa .cab{color:var(--mute);text-align:center;font-weight:600}
-.mapa .ano{font-weight:700;color:var(--mute)}
-.mapa .cel{height:22px;border-radius:4px;border:0;padding:0;cursor:pointer;background:var(--none)}
-.mapa .anoSt{text-align:center;font-weight:800;font-size:14px}.mapa .anoSt.ok{color:var(--ok)}.mapa .anoSt.att{color:var(--att)}
-.mapa .cel.vazio{background:transparent;cursor:default}
-.mapa .cel.ok{background:var(--ok)}
-.mapa .cel.att{background:var(--att)}
-.mapa .cel.comp{background:var(--comp)}
-.mapa .cel.nv{background:repeating-linear-gradient(135deg,var(--none) 0 4px,transparent 4px 7px)}
-.mapa .cel.gn{border-radius:11px;background:var(--navy)}
+.mapa{display:grid;grid-template-columns:52px repeat(12,minmax(0,1fr)) minmax(0,1fr) 116px;gap:3px;font-size:12px;align-items:stretch}
+.mapa .cab{color:var(--mute);text-align:center;font-weight:600;align-self:end;padding-bottom:2px}
+.mapa .ano{font-weight:700;color:var(--mute);align-self:center}
+.mapa .cel{position:relative;min-height:38px;border-radius:5px;border:1px solid transparent;padding:0 3px;cursor:pointer;background:var(--none);color:var(--ink);font:600 12px/1 inherit;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap}
+.mapa .cel .v{pointer-events:none}
+.mapa .cel:hover{border-color:var(--ink)}
+.mapa .cel.vazio{background:transparent;cursor:default;border:0}
+.mapa .cel.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.mapa .cel.att{background:color-mix(in srgb,var(--att) 34%,var(--paper));border-color:var(--att);box-shadow:inset 0 -4px 0 var(--att)}
+.mapa .cel.comp{background:color-mix(in srgb,var(--comp) 22%,var(--paper));border-color:color-mix(in srgb,var(--comp) 80%,var(--paper));border-style:dashed}
+.mapa .cel.nv{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--none) 70%,var(--paper)) 0 4px,var(--paper) 4px 8px);color:var(--mute)}
+.mapa .cel.none{background:var(--none);color:var(--mute)}
+.mapa .cel.gn{border-radius:19px;background:var(--navy-soft);border-color:var(--navy)}
+.mapa .cel.gn.ok{background:var(--ok-soft);border-color:var(--ok)}.mapa .cel.gn.att{background:var(--att-soft);border-color:var(--att)}
 .mapa .cel.parc{box-shadow:inset 0 0 0 3px var(--yellow)}
+.mapa .cel.aj::before{content:"";position:absolute;top:0;left:0;border-style:solid;border-width:9px 9px 0 0;border-color:var(--navy) transparent transparent transparent}
 .mapa .cel.sel{outline:3px solid var(--ink);outline-offset:1px}
+.mapa .anoSt{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 4px 0 8px;border-left:3px solid var(--line);font-size:11.5px;line-height:1.2;min-height:38px}
+.mapa .anoSt b{font-size:12px}.mapa .anoSt.ok{border-color:var(--ok)}.mapa .anoSt.ok b{color:var(--ok)}.mapa .anoSt.att{border-color:var(--att)}.mapa .anoSt.att b{color:var(--att)}
+.mapa .anoSt .t{color:var(--mute)}
+.modosMapa{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.modosMapa .rot{font-size:13px;font-weight:600;color:var(--mute);margin-right:4px}
+.modosMapa button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 12px;font:600 13px inherit;cursor:pointer}
+.modosMapa button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--paper)}
+.mapaTip{position:fixed;z-index:50;max-width:340px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:10px 12px;font-size:12.5px;line-height:1.4;pointer-events:none}
+.mapaTip h4{margin:0 0 6px;font-size:13.5px}.mapaTip .ln{display:flex;justify-content:space-between;gap:14px}.mapaTip .ln span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.mapaTip .cz{margin-top:6px;color:var(--mute)}.mapaTip .cz b{color:var(--ink)}
+.legenda i.aj{position:relative;background:var(--none)}.legenda i.aj::before{content:"";position:absolute;top:0;left:0;border-style:solid;border-width:8px 8px 0 0;border-color:var(--navy) transparent transparent transparent}
+@media (max-width:1000px){ .mapa{grid-template-columns:40px repeat(12,minmax(0,1fr)) minmax(0,1fr) 72px} .mapa .cel{min-height:26px} .mapa .cel .v{display:none} .mapa .anoSt .t{display:none} }
 .legenda{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 0;font-size:13px;color:var(--mute)}
 .legenda i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
-.mapa .cel.div{position:relative}
-.mapa .cel.div::after,.legenda .pt{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1.5px var(--paper)}
 .relbox{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0 0}
 .relbox[open]{background:var(--paper)}
 .relbox table.ed td{padding:4px 6px;text-align:left}
@@ -202,8 +216,8 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   .trilho .txt{display:none}
   .trilho button{justify-content:center;padding-right:0}
   .barra-in{padding-left:96px}.barra .st{display:none}
-  .mapa{grid-template-columns:34px repeat(13,minmax(0,1fr)) 18px;gap:2px}
-  .mapa .cab{font-size:9px}
+  .mapa{grid-template-columns:34px repeat(13,minmax(0,1fr)) 40px;gap:2px}
+  .mapa .cab{font-size:9px} .mapa .anoSt{padding-left:4px;font-size:10px} .mapa .anoSt b{font-size:10px}
   .veredito{grid-template-columns:1fr}
   .drop{flex-direction:column;text-align:center}
 }
@@ -285,17 +299,11 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   <div id="comparacao"></div>
   <div class="bloco">
     <h3>Mês a mês</h3>
-    <p class="muted small" style="margin:0 0 12px">Cada linha é um ano e cada quadrado, um mês; o 13º vem no fim. A conferência vale para o ano inteiro, porque atrasados são descontados no mês em que são pagos. Clique em um mês para ver a composição.</p>
+    <div class="modosMapa" id="mapaModos" role="group" aria-label="O que conferir no mapa"></div>
+    <p class="muted small" id="mapaTxt" style="margin:0 0 12px"></p>
     <div class="mapa" id="mapa"></div>
-    <div class="legenda">
-      <span><i style="background:var(--ok)"></i>Confere</span>
-      <span><i style="background:var(--comp)"></i>Diferença no mês, ano confere</span>
-      <span><i style="background:var(--att)"></i>Diferença em ano que não confere</span>
-      <span><i style="background:repeating-linear-gradient(135deg,var(--none) 0 4px,transparent 4px 7px)"></i>Não verificado</span>
-      <span><i style="background:var(--none)"></i>Sem ficha</span>
-      <span><i style="box-shadow:inset 0 0 0 3px var(--yellow)"></i>Data a confirmar</span>
-      <span id="legDiv"><i style="background:var(--none);position:relative"><b class="pt"></b></i>Pagamento diferente do esperado</span>
-    </div>
+    <div class="legenda" id="mapaLeg"></div>
+    <div class="mapaTip" id="mapaTip" hidden></div>
     <div id="detalhe" class="detalhe" hidden></div>
   </div>
   <div class="bloco">

@@ -1148,25 +1148,98 @@ function renderConferencia(C){
   if($('irPend')) $('irPend').onclick=()=>$('resolverBox').scrollIntoView({block:'start'});
   renderComparacao(C);
   }
-  const gn={}; for(const g of R.gns) gn[g.ano]=g;
+  renderMapa(C);
+  renderDetalhe(C); renderTabela(C);
+  const alt=regrasAlteradas(); $('regrasResumo').textContent = alt.length?`(${alt.length} alterada(s) em relação ao padrão)`:'(padrão DIPROF)';
+}
+// ------------------------------------------------------------ mapa mês a mês
+// Cada mês mostra o valor da RBC; a cor responde a uma pergunta por vez (modo): a RBC bate com a anterior? a contribuição
+// confere? o pago bate com o esperado? Canto azul = mês em que a calculadora ajustou o valor da ficha.
+const MODOS_MAPA=[['rbc','RBC anterior'],['contrib','Contribuição'],['esp','Pago × esperado']];
+function modosDisponiveis(){ return {rbc:S.anteriores.length>0&&!!CC, contrib:true, esp:!!S.esp&&S.recs.length>0}; }
+function modoMapa(){ const d=modosDisponiveis(); if(S.modoMapa&&d[S.modoMapa]) return S.modoMapa; return d.rbc?'rbc':'contrib'; }
+function dadosAnterior(){
+  if(!S.anteriores.length||!CC||!S.res) return null;
+  const i=Math.min(S.cmpSel||0,S.anteriores.length-1), a=S.anteriores[i], c=CC.comparar(S.res.linhas,S.res.gns,a.r);
+  const cs=causasCmp(c.dif.slice(0,400)), dif={}, gn={}; for(const d of c.dif) dif[d.k]=d; for(const g of c.gnDif) gn[g.ano]=g;
+  return {nome:a.nome, mensal:a.r.mensal||{}, gnAnt:a.r.gn||{}, dif, gn, cs};
+}
+const valMapa=v=>{ if(v==null||isNaN(v)) return ''; const a=Math.abs(v); return a>=1e6?(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:2})+' mi':Math.round(v).toLocaleString('pt-BR'); };
+function ajustadoMes(l){ return !!((l.ajustes&&l.ajustes.length)||l.daTabela||l.semFicha||l.borda); }
+function renderMapa(C){
+  const R=S.res, modo=modoMapa(), disp=modosDisponiveis(), ant=modo==='rbc'?dadosAnterior():null;
+  // seletor
+  $('mapaModos').innerHTML='<span class="rot">O que conferir:</span>'+MODOS_MAPA.filter(([m])=>disp[m]).map(([m,t])=>`<button type="button" data-m="${m}" aria-pressed="${m===modo}">${t}</button>`).join('');
+  $('mapaModos').querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.modoMapa=b.dataset.m; renderMapa(C); });
+  $('mapaTxt').textContent={
+    rbc:`Cada quadrado mostra a remuneração de contribuição do mês. Verde: igual à RBC anterior${ant?` (${ant.nome})`:''}; bege: diferente, com causa provável; laranja: diferente, sem causa identificada. Passe o mouse para ver a causa; clique para a composição.`,
+    contrib:'Cada quadrado mostra a remuneração de contribuição do mês. A cor diz se a contribuição descontada confere com a calculada sobre a RBC. A conferência vale para o ano: atrasados são descontados no mês em que são pagos.',
+    esp:'Cada quadrado mostra a remuneração de contribuição do mês. A cor diz se o que foi pago (ficha) bate com o esperado pelas tabelas e relatórios. Diferença aqui não muda a RBC: mostra onde conferir.'}[modo];
+  const gnPor={}; for(const g of R.gns) gnPor[g.ano]=g;
+  const lin={}; for(const l of R.linhas) lin[l.comp]=l;
   const anos=[...new Set(R.meses.map(k=>k.slice(0,4)))];
   const parcMes=new Set(C.parc.map(p=>p.comp));
+  const sitMes=k=>{ const l=lin[k];
+    if(modo==='contrib') return C.sit[k];
+    if(modo==='esp') return !l.fonte?'none':!S.espBy[k]?'nv':C.divMes.has(k)?'att':'ok';
+    if(ant.mensal[k]==null) return 'nv'; const d=ant.dif[k]; return !d?'ok':ant.cs[k]?'comp':'att'; };
   let m='<span></span>'+MESES.map(x=>`<span class="cab">${x}</span>`).join('')+'<span class="cab">13º</span><span class="cab">ano</span>';
   for(const y of anos){
     m+=`<span class="ano">${y}</span>`;
-    for(let i=1;i<=12;i++){ const k=y+'-'+String(i).padStart(2,'0'); const s=C.sit[k];
-      if(!s){ m+='<span class="cel vazio"></span>'; continue; }
-      const dv=C.divMes.has(k);
-      const rot=mesTxt(k)+': contribuição '+SIT_TXT[s]+(parcMes.has(k)?', data a confirmar':'')+(dv?', pagamento diferente do esperado':'');
-      m+=`<button class="cel ${s}${parcMes.has(k)?' parc':''}${dv?' div':''}${S.sel===k?' sel':''}" data-k="${k}" title="${rot}" aria-label="${rot}"></button>`; }
-    m+= gn[y]?`<button class="cel gn${S.sel==='GN'+y?' sel':''}" data-k="GN${y}" title="13º de ${y}" aria-label="13º de ${y}"></button>`:'<span class="cel vazio"></span>';
-    const ay=C.anos[y]; m+= !ay||!ay.verif?'<span class="anoSt"></span>':ay.ok?`<span class="anoSt ok" title="${y}: confere no ano">✓</span>`:`<span class="anoSt att" title="${y}: diferença de ${rs(ay.dif)}">!</span>`;
+    let soma=0, nIg=0, nTot=0, nDiv=0, nEsp=0;
+    for(let i=1;i<=12;i++){ const k=y+'-'+String(i).padStart(2,'0'), l=lin[k];
+      if(!l){ m+='<span class="cel vazio"></span>'; continue; }
+      const s=sitMes(k); soma+=l.total||0;
+      if(modo==='rbc'&&s!=='nv'){ nTot++; if(s==='ok') nIg++; }
+      if(modo==='esp'&&(s==='ok'||s==='att')){ nEsp++; if(s==='att') nDiv++; }
+      const cls=['cel',s,parcMes.has(k)?'parc':'',ajustadoMes(l)?'aj':'',S.sel===k?'sel':''].filter(Boolean).join(' ');
+      m+=`<button type="button" class="${cls}" data-k="${k}" aria-label="${esc(rotuloMes(k,s,modo,ant))}"><span class="v">${valMapa(l.total)}</span></button>`; }
+    const g=gnPor[y];
+    if(g){ let sg=''; if(modo==='rbc'&&ant){ sg=ant.gn[y]?'att':(ant.gnAnt[y]!=null?'ok':''); } soma+=g.valor||0;
+      m+=`<button type="button" class="cel gn${sg?' '+sg:''}${S.sel==='GN'+y?' sel':''}" data-k="GN${y}" aria-label="13º de ${y}: ${rs(g.valor)}"><span class="v">${valMapa(g.valor)}</span></button>`; }
+    else m+='<span class="cel vazio"></span>';
+    // resumo do ano
+    const ay=C.anos[y]; let st='', txt='';
+    if(modo==='contrib'){ if(!ay||!ay.verif){ txt='não verificado'; } else if(ay.ok){ st='ok'; txt='<b>confere</b>'; } else { st='att'; txt=`<b>${rs(ay.dif)}</b>`; } }
+    else if(modo==='esp'){ if(!nEsp) txt='sem comparação'; else if(!nDiv){ st='ok'; txt='<b>pago = esperado</b>'; } else { st='att'; txt=`<b>${nDiv} mês(es) ≠</b>`; } }
+    else { if(!nTot) txt='fora da anterior'; else if(nIg===nTot&&!(ant.gn[y])){ st='ok'; txt=`<b>${nIg}/${nTot} iguais</b>`; } else { st='att'; txt=`<b>${nIg}/${nTot} iguais${ant.gn[y]?' · 13º ≠':''}</b>`; } }
+    m+=`<span class="anoSt ${st}" title="Total do ano na RBC (meses + 13º): ${rs(soma)}">${txt}<span class="t">Σ ${valMapa(soma)}</span></span>`;
   }
   $('mapa').innerHTML=m;
-  $('legDiv').hidden=!S.cmp;
-  $('mapa').querySelectorAll('button.cel').forEach(b=>b.onclick=()=>{ S.sel=b.dataset.k; renderConferencia(C); const d=$('detalhe'); if(d.getBoundingClientRect().top>window.innerHeight-120) d.scrollIntoView({block:'nearest'}); });
-  renderDetalhe(C); renderTabela(C);
-  const alt=regrasAlteradas(); $('regrasResumo').textContent = alt.length?`(${alt.length} alterada(s) em relação ao padrão)`:'(padrão DIPROF)';
+  // legenda do modo
+  const leg={rbc:[['ok','Igual à RBC anterior'],['comp','Diferente, com causa provável'],['att','Diferente, sem causa identificada'],['nv','Fora da RBC anterior']],
+    contrib:[['ok','Confere'],['comp','Diferença no mês, ano confere'],['att','Diferença em ano que não confere'],['nv','Não verificado'],['none','Sem ficha']],
+    esp:[['ok','Pago como esperado'],['att','Pago diferente do esperado'],['nv','Sem esperada'],['none','Sem ficha']]}[modo];
+  const corLeg={ok:'background:var(--ok-soft);border:1px solid var(--ok)',comp:'background:color-mix(in srgb,var(--comp) 22%,var(--paper));border:1px dashed var(--comp)',att:'background:color-mix(in srgb,var(--att) 34%,var(--paper));border:1px solid var(--att);box-shadow:inset 0 -3px 0 var(--att)',nv:'background:repeating-linear-gradient(135deg,var(--none) 0 3px,transparent 3px 6px)',none:'background:var(--none)'};
+  $('mapaLeg').innerHTML=leg.map(([c,t])=>`<span><i style="${corLeg[c]}"></i>${t}</span>`).join('')+
+    `<span><i class="aj"></i>Valor ajustado pela calculadora (não é o bruto da ficha)</span>`+(parcMes.size?`<span><i style="box-shadow:inset 0 0 0 3px var(--yellow)"></i>Data a confirmar</span>`:'')+
+    `<span><i style="border-radius:7px;background:var(--navy-soft);border:1px solid var(--navy)"></i>13º</span>`;
+  // interação
+  const tip=$('mapaTip');
+  $('mapa').querySelectorAll('button.cel').forEach(b=>{
+    b.onclick=()=>{ S.sel=b.dataset.k; renderConferencia(C); const d=$('detalhe'); if(d.getBoundingClientRect().top>window.innerHeight-120) d.scrollIntoView({block:'nearest'}); };
+    const mostra=()=>{ tip.innerHTML=dicaMes(b.dataset.k,modo,ant); tip.hidden=false; const r=b.getBoundingClientRect(), w=tip.offsetWidth, h=tip.offsetHeight;
+      let x=Math.min(window.innerWidth-w-8,Math.max(8,r.left+r.width/2-w/2)), y=r.top-h-8; if(y<8) y=r.bottom+8; tip.style.left=x+'px'; tip.style.top=y+'px'; };
+    b.onmouseenter=mostra; b.onfocus=mostra; b.onmouseleave=b.onblur=()=>{ tip.hidden=true; };
+  });
+}
+window.addEventListener('scroll',()=>{ const t=$('mapaTip'); if(t) t.hidden=true; },{passive:true});
+function rotuloMes(k,s,modo,ant){ const l=S.res.linhas.find(x=>x.comp===k); const t={ok:'confere',comp:'diferença compensada ou com causa',att:'diferença',nv:'não verificado',none:'sem ficha'}[s]||'';
+  return `${mesTxt(k)}: RBC ${rs(l.total)}; ${MODOS_MAPA.find(x=>x[0]===modo)[1]}: ${t}`; }
+function dicaMes(k,modo,ant){
+  const R=S.res;
+  if(k.startsWith('GN')){ const y=k.slice(2), g=R.gns.find(x=>x.ano===y); if(!g) return '';
+    const ga=ant&&ant.gnAnt[y]; return `<h4>13º de ${y}</h4><div class="ln"><span>Na RBC</span><span>${rs(g.valor)}</span></div><div class="ln"><span>Base (${mesTxt(g.baseComp)}) × ${g.avos}/12</span><span>${rs(g.base)}</span></div>`+
+      (ga!=null?`<div class="ln"><span>RBC anterior</span><span>${rs(ga)}</span></div>`:'')+'<div class="cz">Clique para ver o cálculo.</div>'; }
+  const l=R.linhas.find(x=>x.comp===k), e=S.espBy[k]; if(!l) return '';
+  let h=`<h4>${mesTxt(k)}</h4><div class="ln"><span>Na RBC</span><span>${rs(l.total)}</span></div>`;
+  if(e) h+=`<div class="ln"><span>Esperada (tabelas)</span><span>${rs(e.total)}</span></div>`;
+  if(ant&&ant.mensal[k]!=null){ const d=ant.dif[k]; h+=`<div class="ln"><span>RBC anterior</span><span>${rs(ant.mensal[k])}</span></div>`+(d?`<div class="ln"><span>Diferença</span><span>${rs(d.d)}</span></div><div class="cz"><b>Provável causa:</b> ${esc(ant.cs[k]||'não identificada')}</div>`:''); }
+  if(l.fonte) h+=`<div class="ln"><span>PSS descontada / sobre a RBC</span><span>${valMapa(l.pssFicha)} / ${valMapa(l.pssCalc)}</span></div>`;
+  else h+='<div class="cz">Sem ficha: valor pela tabela de remuneração.</div>';
+  if(modo==='esp'&&S.cmp){ const c=S.cmp.find(x=>x.comp===k); if(c&&c.itens.length) h+=`<div class="cz"><b>Pago × esperado:</b> ${c.itens.slice(0,4).map(i=>esc(nome(i.cat).toLowerCase())+' '+rs(i.dif)).join('; ')}</div>`; }
+  if(l.ajustes&&l.ajustes.length) h+=`<div class="cz"><b>Ajuste da calculadora:</b> ${esc(l.ajustes.join('; '))}</div>`;
+  return h+'<div class="cz">Clique para ver a composição.</div>';
 }
 function renderDetalhe(C){
   const R=S.res, el=$('detalhe'); if(!S.sel){ el.hidden=true; return; } el.hidden=false;
