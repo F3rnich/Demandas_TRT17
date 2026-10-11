@@ -150,3 +150,14 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Substituição no mês seguinte só quando a ficha não traz competência própria (Big Grid tem "Ano/Mês" × "Ano/Mês Folha" e já põe o valor no mês do exercício).
 - Filiação "PAI e MÃE" quebrada em linhas: o " e " decide; matrícula com espaço ("308.17. 1665") mantém os pontos; exoneração sem data legível = dia seguinte ao fim do período.
 - AQ digitalizado (nome com AQ/AQP/qualificação) é ignorado com motivo, em vez de oferecer leitura como progressão.
+
+### Fase 15h (11/10/2026): dois períodos na CTC, progressão retificada, planilha da DIPROF com ficha de terceiro
+
+- **Intervalo sem contribuição:** CTC com dois períodos ("De 18/11/1999 a 27/07/2014 … De 20/12/2016 a 20/08/2024") → período do 1º início ao último fim, `lacunas` entre eles (`RBC.calcular(opts.lacunas)`, `esperada(dados.lacunas)`): meses inteiros no intervalo ficam fora; mês de borda é pro rata; 13º só com meses de 15+ dias.
+- **Padrão devido** (regra `padraoDevido`, padrão ligado): progressão ou reajuste pago com atraso — vencimento pago é valor de tabela de outro padrão ou da tabela anterior, e a progressão vem de relatório/CTC conferida — a RBC usa vencimento e GAJ do padrão devido (planilha "Progressão real" da DIPROF; confirmado ao centavo em nov/2008–2012 deste caso). Com CTC que informa prescrição/efeito financeiro ("prescritos os direitos … anterior a 11/11/2008"), só a partir dessa data; antes, a esperada usa a progressão paga (da ficha).
+- CTC: linhas "(REVOGADA)" marcadas como revogadas; duas CTCs na pasta → vale a mais recente (retificada, data ou número); VPNI "concedido judicialmente … efeitos financeiros a partir de janeiro de 2006" → judicial a partir do efeito; quintos sem tabela própria usam n/5 = 2n/10; data da certidão = última assinatura.
+- Planilha de trabalho da DIPROF ("Relação de Remuneração de Contribuição", aba "Progressão real") é RBC anterior mesmo com aba de ficha (veio com a ficha de outra servidora).
+- Ficha exportada com número redondo de linhas (3.000…) → aviso de exportação cortada.
+- Rubrica "AQ-TS Ad Quali Técnico c/ curso superior" = AQ (a regra de "CURSO" a ignorava).
+- Mês de início de período sem remuneração, pago na folha seguinte como D.E.A. com PSS → o valor (e o PSS) vão para o mês de origem. Início da opção pela FC integral (vencimento parcial, mês seguinte sem vencimento) → cargo efetivo pela tabela.
+- Conferência por ano só com meses com ficha; ano sem ficha não é verificável. VPNI de mês sem ficha não duplica a VPNI judicial da esperada.

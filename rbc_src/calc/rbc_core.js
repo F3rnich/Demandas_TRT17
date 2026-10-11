@@ -360,6 +360,7 @@
     if (/DIFEREN[CÇ]A DE URV|DIF\. URV/.test(d)) return 'IGNORAR';
     // restos a pagar: despesa do exercício anterior; o 13º segue a regra de dezembro × avos
     if (/RESTOS A PAGAR/.test(d)) return /NATAL/.test(d) ? 'GN' : 'PASSIVO';
+    if (/AQ-TS|AD\.? ?QUALI\S* T[ÉE]CNICO/.test(d)) return 'AQ';   // técnico com curso superior: antes da regra de "CURSO"
     if (/F[EÉ]RIAS|1\/3|ADIANTAMENTO|ANTECIPA/.test(d)) return 'IGNORAR';
     if (/(AUX[IÍ]LIO|AUX\.|ASSIST|ALIMENTA|SA[UÚ]DE|PR[EÉ]-ESCOLAR|NATALIDADE|TRANSPORTE|DI[AÁ]RIA|INDENIZ|PERMAN[EÊ]NCIA|UNIMED|CONSIGNA|AJUSTE|EMPR[EÉ]STIMO|SINPOJUFES|ANAJUSTRA|ANASTRA|IMPOSTO|PENS[AÃ]O|ABONO PECUNI|SAL[AÁ]RIO-FAM|SAL[AÁ]RIO FAM|GOLDEN|PLANO DE SA)/.test(d)) return 'IGNORAR';
     if (/(SERVI[CÇ]O EXTRAORD|HORA EXTRA|CURSO|CONCURSO|GECC|ADICIONAL NOTURNO|^GRU$|RESTITUI[CÇ][AÃ]O OUTROS|FUNPRESP|PREV\. SOCIAL - (INSS|FMP)|PREV\. SOCIAL-GRAT|AGEPOLJUS|ASSOJAF|AJUCLA|ANAMATRA|AMATRA|ASSOCIACAO MAGISTRADOS|FINANCIAMENTO|ALUGUEL|A B S P|DEP[OÓ]SITO EM JU[IÍ]ZO)/.test(d)) return 'IGNORAR';
@@ -390,7 +391,7 @@
     if (/SUBSTITUI/.test(d)) return 'SUBST';
     if (/(FUN[CÇ][AÃ]O COMISS|FUNC\. COMISS|F\.C\. |CARGO EM COMISS|CARGO COMISS|GRATIFICA[CÇ][AÃ]O DE GABINETE|^DAS)/.test(d)) return 'FC';
     if (/(QUALIF.*TREIN|AQ-AT|QUALIFICA[CÇ][AÃ]O - TREINAMENTO|QUALIFICA[CÇ][AÃ]O TREINAMENTO|AQ.*TREINAMENTO)/.test(d)) return 'AQ_TREIN';
-    if (/(ADIC\.? ?QUALIF|AQ-PG|ADICIONAL DE QUALIFICA|AQ - )/.test(d)) return 'AQ';
+    if (/(ADIC\.? ?QUALIF|AQ-PG|AQ-TS|AD\.? QUALI|ADICIONAL DE QUALIFICA|AQ - )/.test(d)) return 'AQ';   // AQ-TS: técnico com curso superior
     if (/(GAS\b|ATIV\.? ?SEGURAN|ATIVIDADE DE SEGURAN)/.test(d)) return /SEM PREVID/.test(d) ? 'IGNORAR' : 'GAS';
     if (/(GAE\b|ATIV\.? ?EXTERNA|ATIVIDADE EXTERNA)/.test(d)) return 'GAE';
     if (/(V\.?P\.?N\.?I|VPNI|D[EÉ]CIMOS|QUINTOS)/.test(d)) return /JUDIC/.test(d) ? 'VPNI_JUD' : 'VPNI';
@@ -459,7 +460,11 @@
     if (regras.divisorDiasDesde) DIV.desde = regras.divisorDiasDesde;
     DIV.de30 = regras.divisor30Desde || '1994-07';
     const ini = opts.inicio.slice(0, 7), fim = opts.fim.slice(0, 7);
-    const meses = []; for (let k = ini; k <= fim; k = addM(k, 1)) meses.push(k);
+    // intervalos sem contribuição dentro do período (CTC com dois períodos, ex.: vacância e recondução): datas inclusivas
+    const lac = (opts.lacunas || []).filter(x => x && x.ini && x.fim && x.ini <= x.fim);
+    const ultD = k => k + '-' + String(diasMes(k)).padStart(2, '0');
+    const lacCheia = k => lac.some(x => x.ini <= k + '-01' && x.fim >= ultD(k));
+    const meses = []; for (let k = ini; k <= fim; k = addM(k, 1)) if (!lacCheia(k)) meses.push(k);
     const catOf = r => (opts.cats && opts.cats[r.cod + '|' + r.desc]) || classify(r.cod, r.desc);
     const fontes = {};
     const cur = {}, extra = {}, supl = {}, pss = {}, passivos = [], semComp = [];
@@ -601,8 +606,8 @@
       log.push({ tipo: 'manual', cat: ma.cat, pagoEm: ma.origem, valor: r2(ma.valor), aloc });
     }
     // 4) período parcial (início/fim no meio do mês)
-    const parcial = (k, dias) => {
-      const ref = meses[meses.indexOf(k) + (k === ini ? 1 : -1)];
+    const parcial = (k, dias, inicioDoPeriodo) => {
+      const ref = meses[meses.indexOf(k) + ((inicioDoPeriodo === undefined ? k === ini : inicioDoPeriodo) ? 1 : -1)];
       for (const c of Object.keys(val[k])) {
         const cheio = ref ? g(ref, c) : g(k, c);
         if (Math.abs(g(k, c) - cheio) < 0.005 && cheio) val[k][c] = cheio * dias / divisor(k);
@@ -611,6 +616,15 @@
     const dIni = +opts.inicio.slice(8, 10), dFim = +opts.fim.slice(8, 10);
     if (dIni > 1) parcial(ini, divisor(ini) - dIni + 1);
     if (dFim < diasMes(fim)) parcial(fim, Math.min(dFim, divisor(fim)));
+    // primeiro e último dia de contribuição no mês, considerando início, fim e intervalos
+    const limites = k => { let a = k === ini ? dIni : 1, b = k === fim ? dFim : diasMes(k);
+      for (const x of lac) { if (x.ini.slice(0, 7) === k && x.ini > k + '-01') b = Math.min(b, +x.ini.slice(8, 10) - 1); if (x.fim.slice(0, 7) === k && x.fim < ultD(k)) a = Math.max(a, +x.fim.slice(8, 10) + 1); }
+      return { a, b }; };
+    for (const x of lac) {
+      const kA = x.ini.slice(0, 7), kB = x.fim.slice(0, 7);
+      if (meses.includes(kA) && x.ini > kA + '-01') parcial(kA, Math.min(+x.ini.slice(8, 10) - 1, divisor(kA)), false);   // intervalo começa no meio do mês: como um fim
+      if (meses.includes(kB) && x.fim < ultD(kB)) parcial(kB, divisor(kB) - (+x.fim.slice(8, 10) + 1) + 1, true);           // termina no meio do mês: como um início
+    }
 
     // 4b) 11,98% (conversão URV, reconhecida judicialmente) sobre parcelas de tabela até 12/2001 — opcional
     const em1198 = k => !!regras.ajuste1198Ate && k <= regras.ajuste1198Ate && k >= (regras.ajuste1198Desde || '1994-04');
@@ -656,8 +670,8 @@
     const anos = [...new Set(meses.map(k => k.slice(0, 4)))];
     for (const y of anos) {
       const ms = meses.filter(k => k.startsWith(y));
-      const avos = ms.filter(k => { const di = k === ini ? divisor(k) - dIni + 1 : divisor(k); const df = k === fim ? Math.min(dFim, divisor(k)) : divisor(k); return Math.min(di, df) >= 15 || (k !== ini && k !== fim); }).length;
-      const cheios = ms.filter(k => !(k === fim && dFim < diasMes(fim)) && !(k === ini && dIni > 1));
+      const avos = ms.filter(k => { const { a, b } = limites(k); if (a === 1 && b === diasMes(k)) return true; return Math.min(b, divisor(k)) - a + 1 >= 15; }).length;
+      const cheios = ms.filter(k => { const { a, b } = limites(k); return a === 1 && b === diasMes(k); });
       const baseK = cheios.length ? cheios[cheios.length - 1] : ms[ms.length - 1];
       // antes de gnDesde a GN não teve contribuição: fica fora da RBC, mas é calculada para a certidão complementar
       const fora = !!(regras.gnDesde && y < regras.gnDesde);

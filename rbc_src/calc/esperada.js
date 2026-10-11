@@ -67,7 +67,9 @@
     const prog = (dados.progressoes || []).filter(p => !p.revogada);
     const aqF = aqDaFicha(ix, dados.aqFicha, regras);
 
+    const lac = dados.lacunas || [], naLac = dt => lac.some(x => dt >= x.ini && dt <= x.fim);
     for (let k = ini; k <= fim; k = RBC.addM(k, 1)) {
+      if (lac.some(x => x.ini <= k + '-01' && x.fim >= k + '-' + String(diasMes(k)).padStart(2, '0'))) continue;   // mês inteiro sem contribuição
       const w = pesos(k, regras.divisorDiasDesde, regras.divisor30Desde), n = diasMes(k);
       const v = {}, info = { aq: [], ref: new Set(), refc: new Set(), funcao: new Set(), subst: new Set(), vpni: new Set(), ats: null };
       // dia: valores do último dia do mês com peso 1 (situação em 31/12 = base do 13º quando há mudança no mês)
@@ -77,7 +79,7 @@
       for (let d = 1; d <= n; d++) {
         if (!w[d - 1]) continue;
         const dt = iso(k, d);
-        if (dt < dados.inicio || dt > dados.fim) continue;
+        if (dt < dados.inicio || dt > dados.fim || naLac(dt)) continue;
         const wd = w[d - 1]; dia = {}; wdia = wd; if (d <= 30) ultDia = dia;   // dia 30: o 31/12/2012 (Lei 12.774) já traz a tabela de 2013
         // cargo efetivo
         const pr = naFaixa(prog, dt).pop();
@@ -299,7 +301,9 @@
   function valorVPNI(ix, cod, nParc, den, d) {
     if (!nParc) return 0;
     const fr = nParc + '/' + den;
-    const lst = (ix.dec.get(cod) || []).filter(x => x.fr === fr && x.g === 'DECIMOS_QUINTOS');
+    let lst = (ix.dec.get(cod) || []).filter(x => x.fr === fr && x.g === 'DECIMOS_QUINTOS');
+    // quintos sem tabela própria: n/5 = 2n/10 (os quintos foram transformados em décimos de VPNI)
+    if (!lst.length && den === 5) lst = (ix.dec.get(cod) || []).filter(x => x.fr === (2 * nParc) + '/10' && x.g === 'DECIMOS_QUINTOS');
     if (!lst.length) return null;
     let h = lst.filter(x => x.i <= d && d <= x.f);
     if (!h.length) { const ant = lst.filter(x => x.i <= d).sort((a, b) => a.i < b.i ? -1 : 1); if (!ant.length) return null; const ult = ant[ant.length - 1].i; h = ant.filter(x => x.i === ult); }

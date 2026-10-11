@@ -360,6 +360,16 @@
     if (vac) meta.vacancia = dBR(vac[2]);
     meta.inicio = meta.periodoIni || meta.exercicio || null;
     meta.fim = meta.periodoFim || null;
+    // mais de um período na mesma certidão ("De 18/11/1999 a 27/07/2014. … De 20/12/2016 a 20/08/2024."): o período vai do
+    // primeiro início ao último fim, e o que fica entre eles é intervalo sem contribuição
+    { const i0 = flat.search(/PER[ÍI]ODO DE CONTRIBUI/i);
+      if (i0 >= 0) { const tr = flat.slice(i0, i0 + 400).split(/FONTE DE INFORMA|DESTINA[ÇC][ÃA]O|FREQU[ÊE]NCIA/i)[0];
+        const ps = [...tr.matchAll(/(?:DE\s+)?(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})/gi)].map(m => ({ ini: dBR(m[1]), fim: dBR(m[2]) })).filter(p => p.ini && p.fim && p.ini <= p.fim).sort((x, y) => x.ini < y.ini ? -1 : 1);
+        if (ps.length > 1) {
+          const dia = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+          meta.periodos = ps; meta.inicio = meta.periodoIni = ps[0].ini; meta.fim = meta.periodoFim = ps[ps.length - 1].fim;
+          meta.lacunas = []; for (let i = 1; i < ps.length; i++) { const a = dia(ps[i - 1].fim, 1), b = dia(ps[i].ini, -1); if (a <= b) meta.lacunas.push({ ini: a, fim: b }); }
+        } } }
     // declaração com mais de um provimento (modelo da Portaria MPS 2.010/2025, "DADOS FUNCIONAIS 2º PROVIMENTO"):
     // a RBC vai do 1º exercício ao fim do último período; cargo e especialidade são os do último provimento.
     // Os períodos de cada provimento não servem de início (já vieram com o ano trocado, "DE 01/09/2014 A 03/04/2014")
@@ -427,7 +437,7 @@
     if (mm) meta.ctcNumero = mm[2].replace(/\s+/g, '');
     const assin = [...flat.matchAll(/assinado eletronicamente por [^,]{3,80},[^,]{0,80}?,? em (\d{2}\/\d{2}\/\d{4})/gi)].map(x => x[1]);
     const vit = [...flat.matchAll(/Vit[óo]ria(?:-ES)?,?\s*(?:em\s*)?(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/gi)].map(x => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0') + '/' + x[3]);
-    meta.ctcData = assin[0] || vit[vit.length - 1] || '';
+    meta.ctcData = assin[assin.length - 1] || vit[vit.length - 1] || '';   // última assinatura (a da Secretária completa o documento)
     meta.tipoDoc = tipoDoc;
     meta.referencia = tipoDoc === 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' ? `${tipoDoc}${meta.ctcData ? ' DATADA DE ' + meta.ctcData : ''}` : `${tipoDoc}${meta.ctcNumero ? ' Nº ' + meta.ctcNumero : ''}${meta.ctcData ? ', de ' + meta.ctcData : ''}`;
     mm = /SEI\s+(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})/.exec(flat); if (mm) meta.processo = mm[1];
@@ -447,8 +457,14 @@
       // mais de um provimento: a seção de progressão é dividida por "1º provimento", "2º provimento"; a linha leva o cargo do provimento
       let cargo;
       if (cargoProv.length > 1) { const ant = [...flat.slice(0, m.index).matchAll(/(\d+)\s*\S?\s*PROVIMENTO/gi)].pop(); const c = ant && cargoProv[+ant[1] - 1]; if (c && c !== meta.cargo) cargo = c; }
-      PROGRESSAO.push(Object.assign({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' }, cargo ? { cargo } : {}));
+      // "(REVOGADA)" depois das datas, antes da próxima linha de classe
+      const resto = flat.slice(m.index + m[0].length, m.index + m[0].length + 80).split(/CLASSE\s+[A-D]\s*,/i)[0];
+      PROGRESSAO.push(Object.assign({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' }, cargo ? { cargo } : {}, /REVOGAD/i.test(resto) ? { revogada: true } : {}));
     }
+    // progressões retificadas com prescrição ("…prescritos os direitos relacionados a período anterior a 11/11/2008, sendo gerado
+    // efeito financeiro apenas após esta data"): o padrão devido só vale na RBC a partir dessa data
+    { const m = /PRESCRIT\S*[^.]{0,120}?ANTERIOR A\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat) || /EFEITO\S* FINANCEIRO\S*[^.]{0,40}?(?:A PARTIR DE|AP[ÓO]S|DESDE)\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/i.exec(flat);
+      if (m && /PROGRESS/i.test(flat.slice(Math.max(0, m.index - 300), m.index + 200))) meta.efeitoProgDesde = dBR(m[1]); }
     // CTC antiga: "Cargo efetivo: Técnico Judiciário, Classe C, Padrão 15" (referência na data da certidão)
     const atual = /CARGO EFETIVO:?[^,]{0,60},\s*CLASSE\s+([A-D])\s*,\s*PADR[ÃA]O\s+(\w+)/i.exec(flat);
     if (atual) meta.refFinal = atual[1].toUpperCase() + '-' + atual[2];
@@ -485,7 +501,12 @@
     const tq = secao(ls, /INCORPORA[ÇC][ÃA]O DE QUINTOS|INCORPORA[ÇC][ÕO]ES/i, FIM_SEC).join(' ').replace(/\s+/g, ' ');
     for (const m of tq.matchAll(/(\d+)\s*\/\s*(5|10)\b.{0,160}?((?:FC|CJ|DAS)\s*-?\s*\d+).{0,80}?A PARTIR DE\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})(?:\s*A\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4}))?/gi)) {
       const cod = m[3].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1');
-      VPNI.push({ cod, tipo: m[2] === '5' ? 'QUINTOS' : 'DECIMOS', natureza: 'ADMINISTRATIVA', parcelas: +m[1], ini: dBR(m[4]), fim: dBR(m[5]) || '' });
+      // "concedido judicialmente … efeitos financeiros a partir de janeiro de 2006": judicial, a partir do efeito financeiro
+      const resto = tq.slice(m.index, m.index + m[0].length + 160);
+      const MES = { JANEIRO: 1, FEVEREIRO: 2, 'MARÇO': 3, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6, JULHO: 7, AGOSTO: 8, SETEMBRO: 9, OUTUBRO: 10, NOVEMBRO: 11, DEZEMBRO: 12 };
+      const ef = /EFEITOS? FINANCEIROS?[^.]{0,30}?(?:A PARTIR DE|DESDE)\s*(?:(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})|(JANEIRO|FEVEREIRO|MAR[ÇC]O|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO)\s+DE\s+(\d{4}))/i.exec(resto);
+      const iniEf = ef ? (ef[1] ? dBR(ef[1]) : ef[3] + '-' + String(MES[ef[2].toUpperCase()]).padStart(2, '0') + '-01') : null;
+      VPNI.push({ cod, tipo: m[2] === '5' ? 'QUINTOS' : 'DECIMOS', natureza: /JUDICIAL/i.test(resto) ? 'JUDICIAL' : 'ADMINISTRATIVA', parcelas: +m[1], ini: iniEf || dBR(m[4]), fim: dBR(m[5]) || '' });
     }
     // afastamentos e faltas (texto livre): só registro, a calculadora não desconta sem decisão
     const afast = [];

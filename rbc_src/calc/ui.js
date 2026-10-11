@@ -54,6 +54,8 @@ function iniEf(){ let v=$('inicio').value; if(!v && S.recs.length) v=S.recs.map(
 // 03–06/1994: valores em URV, rotulados CR$ como no modelo da DIPROF (a moeda corrente era o cruzeiro real)
 function moedaDe(k){ return k<'1986-03'?'Cr$':k<'1989-02'?'Cz$':k<'1990-04'?'NCz$':k<'1993-08'?'Cr$':k<'1994-07'?'CR$':'R$'; }
 const naMedia = k => k>='1994-07';
+// intervalos sem contribuição da CTC (dois períodos na certidão) que caem dentro do período em uso
+function lacunasEf(){ const l=(S.ctc&&S.ctc.lacunas)||[], i=iniEf(), f=fimEf(); return l.filter(x=>i&&f&&x.ini>i&&x.fim<f); }
 function fimEf(){ let v=$('fim').value; if(!v && S.recs.length){ const c=S.recs.map(r=>r.comp).sort(); v=ultimoDia(c[c.length-1]); } return v; }
 
 // ------------------------------------------------------------ PDFs
@@ -172,8 +174,24 @@ async function ocrProgressao(doc,msg){
 }
 // CTC / declaração de tempo de contribuição: preenche os dados do servidor e as tabelas (progressão, funções, anuênios,
 // quintos) que ainda não vieram de relatório do RH. Relatório do RH, quando enviado, prevalece.
+// duas CTCs na pasta (original e retificada): vale a mais recente — "retificada" no nome, data de emissão ou número maior
+function ctcMaisNova(m,nome,ant){
+  if(!ant) return true;
+  if(/RETIFIC/i.test(nome)&&!/RETIFIC/i.test(ant.arquivo||'')) return true;
+  if(/RETIFIC/i.test(ant.arquivo||'')&&!/RETIFIC/i.test(nome)) return false;
+  const iso=d=>d&&/^\d{2}\/\d{2}\/\d{4}$/.test(d)?d.split('/').reverse().join('-'):'';
+  if(iso(m.ctcData)&&iso(ant.ctcData)&&iso(m.ctcData)!==iso(ant.ctcData)) return iso(m.ctcData)>iso(ant.ctcData);
+  const num=x=>{ const k=/(\d+)\/(\d{4})/.exec(x||''); return k?+k[2]*10000+ +k[1]:0; };
+  return num(m.ctcNumero)>=num(ant.ctcNumero);
+}
 function aplicarCTC(r,info,ocr){
   const m=r.meta||{}, pre=[];
+  m.arquivo=info.nome;
+  if(S.ctc&&!ctcMaisNova(m,info.nome,S.ctc)){ info.tipo='CTC'; info.n=0; info.msgFim=`não usada: vale a CTC mais recente (${esc(S.ctc.ctcNumero||S.ctc.arquivo||'')})`; info.st='ok'; renderArqRel(); return; }
+  // substitui o que a CTC anterior tinha preenchido (o que o usuário digitou fica)
+  if(S.ctc){ const a=S.ctc; if(a.inicio&&$('inicio').value===a.inicio) $('inicio').value=''; if(a.fim&&$('fim').value===a.fim) $('fim').value='';
+    for(const t of ['PROGRESSAO','FUNCOES','SUBSTITUICOES','ATS','VPNI']) if((S.rel[t]||[]).every(x=>x.fonte==='CTC')) S.rel[t]=[];
+    const ia=S.relArqs.find(x=>x!==info&&x.tipo==='CTC'&&x.n); if(ia){ ia.msgFim=`substituída pela CTC mais recente (${esc(m.ctcNumero||info.nome)})`; ia.n=0; } }
   if(m.cargo&&!$('cargo').value){ $('cargo').value=m.cargo==='JUIZ'?'MAGISTRADO':m.cargo; pre.push('cargo'); S.cargoAuto='CTC'; }
   if(m.especialidade&&!$('especialidade').value){ $('especialidade').value=m.especialidade; $('espDesde').disabled=false; pre.push('especialidade'); }
   if(m.inicio&&!$('inicio').value){ $('inicio').value=m.inicio; pre.push('início do período'); }
@@ -306,10 +324,16 @@ function dadosServidor(){
     const antes=progDaFicha(cargo,ini,fim).filter(p=>p.ini<p0).map(p=>Object.assign({},p,{fim:(!p.fim||p.fim>=p0)?vesp:p.fim}));
     prog=antes.concat(prog);
   }
+  // progressões retificadas com prescrição (CTC: efeito financeiro só a partir de uma data): antes dela vale o que foi pago
+  if(prog.length&&S.ctc&&S.ctc.efeitoProgDesde&&S.recs.length&&S.ctc.efeitoProgDesde>ini){
+    const ef=S.ctc.efeitoProgDesde, vesp=new Date(Date.UTC(+ef.slice(0,4),+ef.slice(5,7)-1,+ef.slice(8,10)-1)).toISOString().slice(0,10);
+    const antes=progDaFicha(cargo,ini,fim).filter(p=>p.ini<ef).map(p=>Object.assign({},p,{fim:(!p.fim||p.fim>=ef)?vesp:p.fim}));
+    if(antes.length){ const cobre=prog.find(p=>p.ini<ef&&(!p.fim||p.fim>=ef));
+      prog=antes.concat(cobre?[Object.assign({},cobre,{ini:ef})]:[]).concat(prog.filter(p=>p.ini>=ef)); } }
   if(!prog.length) return null;
   const per=l=>ord(l.filter(r=>r.ini)).map(r=>Object.assign({},r,{fim:r.fim||null}));
   const atsRel=per(S.rel.ATS).filter(r=>r.pct!=null);
-  return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
+  return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim, lacunas:lacunasEf(),
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada,cargo:p.cargo&&p.cargo!==cargo?p.cargo:undefined})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
     vpni:per(S.rel.VPNI).filter(r=>r.cod), funcoesFicha:S.rel.FUNCOES.length?[]:funcoesDaFicha(), ats:atsRel.length?atsRel:atsDaFicha(), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha(), vpiSem1323:!S.recs.length };
@@ -493,7 +517,7 @@ function calc(){ ajustarCargo();
   // sem ficha, mas com progressão (CTC ou relatório): a RBC sai inteira da tabela (meses marcados "sem ficha")
   if((S.recs.length || S.rel.PROGRESSAO.length) && ini && fim && ini<=fim){
     try{ const rg=regrasCalc(); if($('cargo').value==='MAGISTRADO'||S.recs.some(r=>r.fonte==='relSGRH')) rg.gnFicha=true;   // relatório do SGRH traz a linha do 13º
-      S.res = RBC.calcular(S.recs,{inicio:ini, fim, cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); }
+      S.res = RBC.calcular(S.recs,{inicio:ini, fim, lacunas:lacunasEf(), cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); }
     catch(e){ console.error(e); S.res=null; }
   }
   if(aplicarSugestoes()) renderRelTabelas();
@@ -512,6 +536,14 @@ function calc(){ ajustarCargo();
 }
 // Antes de 07/1994 (regra tabelaAte), a RBC usa a remuneração da tabela (prática da DIPROF): com os reajustes mensais e os
 // atrasados da época, a ficha não espelha o mês de competência. Parcelas sem tabela (função, substituição, lançamentos manuais) vêm da ficha.
+function padraoDevidoAplica(k,vbPago){
+  if(S.ctc&&S.ctc.efeitoProgDesde&&k<S.ctc.efeitoProgDesde.slice(0,7)) return false;   // retificação com prescrição: antes do efeito financeiro vale o que foi pago
+  const d=k+'-15', pr=S.rel.PROGRESSAO.filter(r=>!r.revogada&&r.ini&&r.ini<=ultimoDia(k)&&(!r.fim||r.fim>=k+'-01'));
+  if(!pr.length||!pr.every(r=>r.origem==='relatorio'||r.origem==='relatorioOk')) return false;
+  const cg=pr[pr.length-1].cargo||$('cargo').value; if(!cg) return false;
+  for(let m=0;m<=18;m++){ const s=E.sugerirRef(BASE,cg,RBC.addM(k,-m)+'-15','',vbPago); if(s&&s.origem==='ficha') return true; }
+  return false;
+}
 function aplicarTabelaAntiga(){
   const ate=getRegras().tabelaAte; if(!ate||!S.esp||!S.res) return;
   for(const l of S.res.linhas){
@@ -533,7 +565,13 @@ function aplicarTabelaAntiga(){
     // (VPNI e função pela tabela só com relatório do RH: as tabelas lidas da CTC servem à conferência, não substituem a ficha)
     if(rg.vpniTabela!==false && S.rel.VPNI.some(r=>r.fonte!=='CTC') && !(l.comp>='1999-12'&&l.comp<='2005-12') && (e.v.VPNI||e.v.VPNI_JUD)){ set(['VPNI','VPNI_JUD']); aj.push('VPNI pela tabela'); }
     if(rg.fcTabela!==false && l.comp<=rg.fcAte && (e.v.FC!=null||e.v.SUBST!=null) && [...S.rel.FUNCOES,...S.rel.SUBSTITUICOES].some(r=>r.fonte!=='CTC')){ set(['FC','SUBST','REDUTOR']); aj.push('função e redutor pela tabela'); }
-    if(!(l.bruto&&l.bruto.VB>0) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push('sem vencimento na ficha: cargo efetivo pela tabela'); }
+    // mês em que começa a opção pela FC integral (vencimento pago em parte; no mês seguinte, sem vencimento): também pela tabela
+    const prox=S.res.linhas.find(x=>x.comp===RBC.addM(l.comp,1)), iniOpcao=prox&&prox.fonte&&!(prox.bruto&&prox.bruto.VB>0)&&l.bruto&&l.bruto.VB>0&&e.inc.VB>l.bruto.VB+0.01&&l.comp!==(fimEf()||'').slice(0,7);
+    if((!(l.bruto&&l.bruto.VB>0)||iniOpcao) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push(iniOpcao?'início da opção pela função integral: cargo efetivo pela tabela':'sem vencimento na ficha: cargo efetivo pela tabela'); }
+    // progressão paga com atraso: a folha pagou um valor de tabela de outro padrão (ou da tabela anterior) e o relatório/CTC
+    // dá o padrão devido. A DIPROF usa o padrão devido (planilha "Progressão real"; 2 RBCs certificadas). Só com progressão
+    // de relatório/CTC conferida, e só se o vencimento pago é valor de tabela (falta ou pro rata não disparam)
+    else if(rg.padraoDevido!==false && l.v.VB>0 && e.inc.VB>l.v.VB+0.01 && padraoDevidoAplica(l.comp,l.v.VB)){ set(['VB','GAJ','APJ','DIF2886','GEXTRA']); aj.push('vencimento e GAJ pelo padrão devido (progressão ou reajuste pago com atraso)'); }
     // VPI (Lei 10.698/2003) devida de abr/2016 a dez/2018 e não paga na folha a partir de ago/2016: as RBCs da DIPROF
     // emitidas desde 2025 incluem o valor da tabela (6 casos; as de 2024 não incluíam)
     // VPI devida até 31/12/2018 (STJ, REsp 2.085.675; absorção pela Lei 13.317/2016 só em 01/2019); em 07/2016 a folha pagou até o dia 20
@@ -559,6 +597,18 @@ function aplicarTabelaAntiga(){
       // houve contribuição sobre o valor? (sobra de PSS no mês do pagamento)
       const al=RBC.pssDevida(lp.total+valor,comp,rg.teto)-RBC.pssDevida(lp.total,comp,rg.teto);
       if(!(al>0)||Math.abs((lp.pssFicha-lp.pssCalc)-al)>al*0.15) continue;
+      // mês de início de período (ingresso ou recondução) sem remuneração na própria folha, pago na folha seguinte como
+      // exercício anterior com PSS (ex.: recondução em 20/12/2016, "D.E.A.RRA-ATIVOS" em 01/2017): o valor pago é a remuneração do mês
+      { const la=ls[idx[comp]-1], iniK=(iniEf()||'').slice(0,7), bordas=[iniK,...lacunasEf().map(x=>x.fim.slice(0,7))];
+        if(la&&bordas.includes(la.comp)&&!(la.bruto&&la.bruto.VB>0)&&la.total>0){
+          const f=valor/la.total; if(!la.vFicha) la.vFicha=la.v; la.v=Object.fromEntries(Object.entries(la.v).map(([c,x])=>[c,RBC.r2(x*f)]));
+          const dif=RBC.r2(valor-Object.values(la.v).reduce((a,b)=>a+b,0)); if(dif){ const c0=Object.keys(la.v)[0]; la.v[c0]=RBC.r2(la.v[c0]+dif); }
+          la.total=valor; (la.ajustes=la.ajustes||[]).push('remuneração do mês paga em '+mesTxt(comp)+' como exercício anterior com contribuição');
+          // a contribuição descontada sobre o valor vai junto para o mês de origem
+          lp.pssFicha=RBC.r2(lp.pssFicha-al); lp.dif=RBC.r2(lp.pssFicha-lp.pssCalc); la.pssFicha=RBC.r2((la.pssFicha||0)+al);
+          la.pssCalc=RBC.pssDevida(la.total,la.comp,rg.teto); la.dif=RBC.r2(la.pssFicha-la.pssCalc);
+          for(const p of ps) S.passivoAuto[p.id]={meses:[la.comp], pago:valor, nivel:la.comp};
+          continue; } }
       // nível novo: mês (de 1 a 3 antes do pagamento; o próprio mês pode trazer o reajuste do ano) em que as parcelas do cargo sobem em relação ao anterior
       const nivel=l=>NIV.reduce((a,c)=>a+(l.v[c]||0),0);
       let m=-1; for(let i=idx[comp]-1;i>=Math.max(1,idx[comp]-3);i--){ const a=ls[i], b=ls[i-1]; if(a.fonte&&b.fonte&&nivel(a)-nivel(b)>0.05){ m=i; break; } }
@@ -592,7 +642,7 @@ function aplicarTabelaAntiga(){
     l.v=Object.assign({},e.inc);
     // AQ e VPNI (sem tabela própria): como nos demais meses sem ficha, vêm do mês com ficha mais próximo
     const viz=vizinhoComFicha(l.comp);
-    if(viz){ const b=viz.bruto||{}; if(b.AQ>0&&b.VB>0&&l.v.VB&&!l.v.AQ) l.v.AQ=RBC.r2(l.v.VB*b.AQ/b.VB); for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]&&!l.v[c]&&e.v.VB) l.v[c]=RBC.r2(viz.v[c]*l.v.VB/(e.vCheio&&e.vCheio.VB||l.v.VB)); }
+    if(viz){ const b=viz.bruto||{}; if(b.AQ>0&&b.VB>0&&l.v.VB&&!l.v.AQ) l.v.AQ=RBC.r2(l.v.VB*b.AQ/b.VB); if(!l.v.VPNI&&!l.v.VPNI_JUD) for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]&&!l.v[c]&&e.v.VB) l.v[c]=RBC.r2(viz.v[c]*l.v.VB/(e.vCheio&&e.vCheio.VB||l.v.VB)); }
     l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.borda=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp);
   }
@@ -617,7 +667,7 @@ function aplicarSemFicha(){
     // parcelas sem tabela (AQ, VPNI): repete o mês com ficha mais próximo (AQ como percentual do vencimento)
     const viz=vizinhoComFicha(l.comp);
     if(viz){ const b=viz.bruto||{}; if(b.AQ>0&&b.VB>0&&l.v.VB&&!l.v.AQ) l.v.AQ=RBC.r2(l.v.VB*b.AQ/b.VB);
-      for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]&&!l.v[c]) l.v[c]=viz.v[c]; }
+      if(!l.v.VPNI&&!l.v.VPNI_JUD) for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]) l.v[c]=viz.v[c]; }   // a esperada já pode trazer a VPNI (judicial ou não)
     l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.semFicha=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp);
   }
@@ -648,7 +698,8 @@ function totaisConferencia(){
   const R=S.res; if(!R) return; let f=0,c=0;
   for(const l of R.linhas){ const cf=l.conferir&&l.fonte; if(cf){ f+=l.pssFicha; c+=l.pssCalc; } l.acumDif=cf?RBC.r2(f-c):null; }   // mês sem ficha não tem desconto a comparar
   R.resumo={pssFicha:RBC.r2(f),pssCalc:RBC.r2(c),dif:RBC.r2(f-c)};
-  for(const a of R.porAno||[]){ const ls=R.linhas.filter(l=>l.comp.startsWith(a.ano)); a.pssFicha=RBC.r2(ls.reduce((s,l)=>s+l.pssFicha,0)); a.pssCalc=RBC.r2(ls.reduce((s,l)=>s+l.pssCalc,0)); a.dif=RBC.r2(a.pssFicha-a.pssCalc); }
+  // ano conferido só pelos meses com ficha; ano sem nenhum mês com ficha não é verificável
+  for(const a of R.porAno||[]){ const ls=R.linhas.filter(l=>l.comp.startsWith(a.ano)&&l.conferir&&l.fonte); a.conferir=a.conferir&&ls.length>0; a.pssFicha=RBC.r2(ls.reduce((s,l)=>s+l.pssFicha,0)); a.pssCalc=RBC.r2(ls.reduce((s,l)=>s+l.pssCalc,0)); a.dif=RBC.r2(a.pssFicha-a.pssCalc); }
 }
 // ------------------------------------------------------------ certidão complementar de gratificação natalina
 // Modelo da DIPROF: "Certifico, em complementação à Relação das Remunerações de Contribuições emitida em …, que o(a)
@@ -1321,7 +1372,13 @@ async function classificar(f){
     try{
       if(/\.csv$/i.test(n)) return {tipo:'rel'};
       const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
-      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) return {tipo:'ficha'};
+      // planilha de trabalho da DIPROF ("Relação de Remuneração de Contribuição"): é RBC anterior, mesmo que outra aba
+      // traga lançamentos de ficha (já veio aba com a ficha de outro servidor, sobra de modelo)
+      { const topo=wb.SheetNames.map(sn=>XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,defval:''}).slice(0,8).flat().join(' ')).join(' ');
+        if(/RELA..O DE REMUNERA..O DE CONTRIBUI|RELA..O DAS BASES DE C.LCULO|PROGRESS.O REAL/i.test(topo)||/PROGRESS.O REAL/i.test(wb.SheetNames.join(' '))){
+          const abas=wb.SheetNames.map(sn=>({nome:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null})}));
+          const r=CC&&CC.lerRBCPlanilha(abas); if(r) return {tipo:'rbc',dados:r}; return {tipo:'ignorado',motivo:'planilha de trabalho da DIPROF sem tabela de RBC legível'}; } }
+      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) return {tipo:'ficha',linhas:rows.length};
         if(RBC.isRelRemuneracao(rows)) return {tipo:'ficha',sub:'relatório de remuneração do SGRH',rel:true}; }
       const abas=wb.SheetNames.map(sn=>({nome:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null})}));
       const r=CC&&CC.lerRBCPlanilha(abas); if(r) return {tipo:'rbc',dados:r};
@@ -1391,6 +1448,10 @@ async function lerTudo0(lista){
     if(S.ctc&&S.ctc.provimentos>1&&vc.length>1) notaCargo+=` ${S.ctc.provimentos} provimentos na declaração: ${vc.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> de ${brData(v.ini)}${v.fim?' a '+brData(v.fim):' em diante'}`).join(', ')}. A remuneração esperada usa a tabela do cargo de cada período.`;
     else if(vs.length>1) notaCargo+=` Vencimento de mais de um cargo na ficha: ${vs.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> ${v.ini.slice(5,7)}/${v.ini.slice(0,4)} a ${v.fim?v.fim.slice(5,7)+'/'+v.fim.slice(0,4):'fim'}`).join(', ')}. A remuneração esperada e os meses sem vencimento usam a tabela do cargo de cada período — confira as datas de posse.`; }
   const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
+  // ficha exportada com número redondo de linhas (3.000, 5.000, 65.535…): o sistema pode ter cortado a exportação
+  for(const c of grupos.ficha) if([1000,2000,3000,5000,10000,65535,65536].includes(c.linhas)){ const ult=S.recs.map(r=>r.comp).sort().pop();
+    notaCargo+=` <b>A ficha ${esc(c.f.name)} tem exatamente ${c.linhas.toLocaleString('pt-BR')} linhas</b>: a exportação provavelmente foi cortada${ult?` (termina em ${ult.slice(5)}/${ult.slice(0,4)})`:''}. Exporte o restante; sem ficha, os meses seguintes saem da tabela.`; }
+  if(lacunasEf().length) notaCargo+=` Intervalo sem contribuição pela CTC: ${lacunasEf().map(x=>`${brData(x.ini)} a ${brData(x.fim)}`).join(', ')} (fora da RBC).`;
   notaCargo+=notaPres; S.notasEntrada=notaCargo.trim();
   $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length+nOCR} CTC/relatório(s)${nOCR?` (${nOCR} lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
     (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler como relatório de progressão (por imagem)</button>`:'')+
