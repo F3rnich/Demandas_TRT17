@@ -112,7 +112,7 @@
     return best;
   }
   // é RBC/certidão? (para separar de CTC e ficha na entrada única)
-  const pareceRBC = texto => /RELA[ÇC][ÃA]O DAS (BASES DE C[ÁA]LCULO|REMUNERA[ÇC][ÕO]ES) DE CONTRIBUI/i.test(String(texto || '').replace(/\s+/g, ' ').slice(0, 4000));
+  const pareceRBC = texto => /RELA[ÇC][ÃA]O D[AE]S? (BASES DE C[ÁA]LCULO|REMUNERA[ÇC][ÕO]ES) DE CONTRIBUI|RELA[ÇC][ÃA]O DE CONTRIBUI[ÇC][ÕO]ES PREVIDENCI/i.test(String(texto || '').replace(/\s+/g, ' ').slice(0, 4000));
 
   // ---------------------------------------------------------------- comparação com uma RBC anterior
   function comparar(linhas, gns, ant) {

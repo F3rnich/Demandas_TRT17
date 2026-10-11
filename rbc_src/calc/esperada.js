@@ -123,7 +123,8 @@
           }
         }
         // função comissionada exercida (valor do servidor efetivo: opção)
-        for (const f of naFaixa(dados.funcoes, dt)) {
+        // funcoesFicha: função deduzida do valor pago (sem relatório); só para a esperada, não mexe na VPNI
+        for (const f of naFaixa((dados.funcoes || []).concat(dados.funcoesFicha || []), dt)) {
           info.funcao.add(f.cod + (f.nome ? ' (' + f.nome + ')' : ''));
           const val = valorFuncao(ix, f.cod, dt);
           if (val == null) aviso(k, 'Sem tabela de função para ' + f.cod);
@@ -295,7 +296,7 @@
   }
 
   // ------------------------------------------------------------------ comparação esperada × recebida
-  const GRUPO = { VPNI_JUD: 'VPNI', VPNI_JUD_SEM_PSS: 'VPNI', VPI_DED: 'VPI', ABONO: 'GAJ' };
+  const GRUPO = { FC_PREV: 'FC', VPNI_JUD: 'VPNI', VPNI_JUD_SEM_PSS: 'VPNI', VPI_DED: 'VPI', ABONO: 'GAJ' };
   const gcat = c => GRUPO[c] || c;
   function comparar(esp, rec, opts) {
     const tol = (opts && opts.tol) || 0.05;

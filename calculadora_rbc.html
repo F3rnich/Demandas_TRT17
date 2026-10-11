@@ -1254,7 +1254,8 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
           }
         }
         // função comissionada exercida (valor do servidor efetivo: opção)
-        for (const f of naFaixa(dados.funcoes, dt)) {
+        // funcoesFicha: função deduzida do valor pago (sem relatório); só para a esperada, não mexe na VPNI
+        for (const f of naFaixa((dados.funcoes || []).concat(dados.funcoesFicha || []), dt)) {
           info.funcao.add(f.cod + (f.nome ? ' (' + f.nome + ')' : ''));
           const val = valorFuncao(ix, f.cod, dt);
           if (val == null) aviso(k, 'Sem tabela de função para ' + f.cod);
@@ -1426,7 +1427,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
   }
 
   // ------------------------------------------------------------------ comparação esperada × recebida
-  const GRUPO = { VPNI_JUD: 'VPNI', VPNI_JUD_SEM_PSS: 'VPNI', VPI_DED: 'VPI', ABONO: 'GAJ' };
+  const GRUPO = { FC_PREV: 'FC', VPNI_JUD: 'VPNI', VPNI_JUD_SEM_PSS: 'VPNI', VPI_DED: 'VPI', ABONO: 'GAJ' };
   const gcat = c => GRUPO[c] || c;
   function comparar(esp, rec, opts) {
     const tol = (opts && opts.tol) || 0.05;
@@ -2076,7 +2077,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     return best;
   }
   // é RBC/certidão? (para separar de CTC e ficha na entrada única)
-  const pareceRBC = texto => /RELA[ÇC][ÃA]O DAS (BASES DE C[ÁA]LCULO|REMUNERA[ÇC][ÕO]ES) DE CONTRIBUI/i.test(String(texto || '').replace(/\s+/g, ' ').slice(0, 4000));
+  const pareceRBC = texto => /RELA[ÇC][ÃA]O D[AE]S? (BASES DE C[ÁA]LCULO|REMUNERA[ÇC][ÕO]ES) DE CONTRIBUI|RELA[ÇC][ÃA]O DE CONTRIBUI[ÇC][ÕO]ES PREVIDENCI/i.test(String(texto || '').replace(/\s+/g, ' ').slice(0, 4000));
 
   // ---------------------------------------------------------------- comparação com uma RBC anterior
   function comparar(linhas, gns, ant) {
@@ -2476,7 +2477,7 @@ function dadosServidor(){
   return { cargo, especialidade:$('especialidade').value, espDesde:$('especialidade').value&&$('espDesde').value||null, inicio:ini, fim,
     progressoes:prog.map(p=>({ini:p.ini,fim:p.fim||null,classe:p.classe,padrao:p.padrao,revogada:!!p.revogada,cargo:p.cargo&&p.cargo!==cargo?p.cargo:undefined})),
     funcoes:per(S.rel.FUNCOES).filter(r=>r.cod), substituicoes:per(S.rel.SUBSTITUICOES).filter(r=>r.cod),
-    vpni:per(S.rel.VPNI).filter(r=>r.cod), ats:atsRel.length?atsRel:atsDaFicha(), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha(), vpiSem1323:!S.recs.length };
+    vpni:per(S.rel.VPNI).filter(r=>r.cod), funcoesFicha:S.rel.FUNCOES.length?[]:funcoesDaFicha(), ats:atsRel.length?atsRel:atsDaFicha(), aq:per(S.rel.AQ).filter(r=>r.tipo), v1323:per(S.rel.V1323), aqFicha:aqDaFicha(), vpiSem1323:!S.recs.length };
 }
 // Progressão inferida da ficha: classe/padrão de cada mês pelo vencimento pago (mês cheio, folha normal). Meses sem ficha:
 // carreira da Lei 11.416/2006 (A1–A5, B6–B10, C11–C13) avança um padrão a cada 12 meses a partir da última mudança vista
@@ -2536,6 +2537,27 @@ function presumirProgressao(){
   }
   S.rel.PROGRESSAO=rows; renderRelTabelas();
   return ` Sem ficha financeira nem progressão: classe e padrão <b>presumidos</b> (A1 em ${brData(ini)} e um padrão a cada 12 meses) — confira na etapa 1.`;
+}
+// Função sem relatório: o código sai do valor pago no mês (com ou sem opção de contribuição), comparado com a tabela de FC.
+// Mês de entrada/saída (valor parcial) entra no período com o dia estimado pelo valor. Só alimenta a esperada (conferência).
+let FC_CODS=null;
+function funcoesDaFicha(){
+  if(!S.res) return [];
+  const ix=BASE.__ix||(BASE.__ix=E.indexar(BASE)); FC_CODS=FC_CODS||[...new Set((BASE.fc||[]).map(r=>r[2]))];
+  const val=(cod,k)=>E.valorFuncao(ix,cod,k+'-15');
+  const ms=[];
+  for(const l of S.res.linhas){ if(!l.fonte||!l.bruto) continue; const p=(l.bruto.FC_PREV||0)+(l.bruto.FC||0); if(p<1) continue;
+    const cod=FC_CODS.find(c=>{ const v=val(c,l.comp); return v!=null&&Math.abs(v-p)<=0.5; });
+    ms.push({k:l.comp,p,cod}); }
+  const out=[]; let cur=null;
+  for(let i=0;i<ms.length;i++){ const m=ms[i];
+    if(m.cod){ if(cur&&cur.cod===m.cod&&RBC.addM(cur.ult,1)===m.k){ cur.ult=m.k; continue; } cur={cod:m.cod,ini:m.k+'-01',ult:m.k}; out.push(cur); continue; }
+    // valor parcial: começo do próximo período ou fim do anterior
+    const nx=ms[i+1], dv=RBC.divisor(m.k);
+    if(nx&&nx.cod&&RBC.addM(m.k,1)===nx.k){ const v=val(nx.cod,m.k); if(v&&m.p<v){ const dias=Math.round(m.p/v*dv); cur={cod:nx.cod,ini:m.k+'-'+String(Math.max(1,dv-dias+1)).padStart(2,'0'),ult:m.k}; out.push(cur); continue; } }
+    if(cur&&RBC.addM(cur.ult,1)===m.k){ const v=val(cur.cod,m.k); if(v&&m.p<v){ cur.fimDia=Math.max(1,Math.round(m.p/v*dv)); cur.ult=m.k; cur.fechado=true; } }
+  }
+  return out.map((o,i)=>({cod:o.cod,ini:o.ini,fim:o.fechado?o.ult+'-'+String(o.fimDia).padStart(2,'0'):ultimoDia(o.ult),origem:'ficha'}));
 }
 // ATS sem relatório: percentual pago na ficha (ATS ÷ vencimento), por período
 function atsDaFicha(){
@@ -2646,6 +2668,7 @@ function calc(){ ajustarCargo();
   aplicarTabelaAntiga();
   aplicarSemFicha();
   aplicarTeto();
+  totaisConferencia();
   // 13º anterior a gnDesde: fora da RBC; vai para a certidão complementar de gratificação natalina
   if(S.res){ S.gnCert=S.res.gns.filter(g=>g.fora); S.res.gns=S.res.gns.filter(g=>!g.fora); } else S.gnCert=[];
   renderTudo();
@@ -2729,9 +2752,18 @@ function aplicarTabelaAntiga(){
   const ls=S.res.linhas, bordas=[ls[0],ls[ls.length-1]];
   for(const l of bordas){
     if(!l||l.fonte||l.daTabela||Math.abs(l.total)>0.005) continue; const e=S.espBy[l.comp]; if(!e) continue;
-    l.v=Object.assign({},e.inc); l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.borda=true;
+    l.v=Object.assign({},e.inc);
+    // AQ e VPNI (sem tabela própria): como nos demais meses sem ficha, vêm do mês com ficha mais próximo
+    const viz=vizinhoComFicha(l.comp);
+    if(viz){ const b=viz.bruto||{}; if(b.AQ>0&&b.VB>0&&l.v.VB&&!l.v.AQ) l.v.AQ=RBC.r2(l.v.VB*b.AQ/b.VB); for(const c of ['VPNI','VPNI_JUD']) if(viz.v[c]&&!l.v[c]&&e.v.VB) l.v[c]=RBC.r2(viz.v[c]*l.v.VB/(e.vCheio&&e.vCheio.VB||l.v.VB)); }
+    l.total=RBC.r2(Object.values(l.v).reduce((a,b)=>a+b,0)); l.daTabela=true; l.borda=true;
     l.pssCalc=RBC.pssDevida(l.total,l.comp);
   }
+  // 13º do ano do desligamento: remuneração do mês da exoneração, integral (Lei 8.112, art. 65), como faz a DIPROF
+  { const lf=ls[ls.length-1], fim=fimEf();
+    if(lf&&lf.borda&&fim&&lf.comp===fim.slice(0,7)){ const dv=RBC.divisor(lf.comp), dF=Math.min(+fim.slice(8,10),dv);
+      const g=S.res.gns.find(x=>x.ano===lf.comp.slice(0,4)&&!x.daFicha);
+      if(g&&dF>0&&dF<dv){ g.baseComp=lf.comp; g.base=RBC.r2(lf.total*dv/dF); g.valor=RBC.r2(g.base*g.avos/12); g.obs=(g.obs?g.obs+'; ':'')+'base: mês do desligamento integral'; } } }
 }
 // Meses do período sem ficha enviada: a RBC usa a remuneração esperada pela tabela (marcada na planilha). Regra editável.
 function vizinhoComFicha(k){
@@ -2772,6 +2804,14 @@ function aplicarTeto(){
     l.pssCalc=RBC.pssDevida(l.total,l.comp,true); if(l.fonte) l.dif=RBC.r2(l.pssFicha-l.pssCalc);
   }
   for(const g of S.res.gns){ if(g.depois<desde) continue; const t=tetoRGPS(g.depois); if(t==null) continue; g.tetoRGPS=t; if(g.valor>t){ g.valorSemTeto=g.valor; g.valor=t; } }
+}
+// Totais da conferência refeitos depois dos ajustes da página (teto, tabela, mês sem ficha): o resumo do núcleo é
+// calculado antes deles e ficava com a contribuição sobre a remuneração sem teto.
+function totaisConferencia(){
+  const R=S.res; if(!R) return; let f=0,c=0;
+  for(const l of R.linhas){ const cf=l.conferir&&l.fonte; if(cf){ f+=l.pssFicha; c+=l.pssCalc; } l.acumDif=cf?RBC.r2(f-c):null; }   // mês sem ficha não tem desconto a comparar
+  R.resumo={pssFicha:RBC.r2(f),pssCalc:RBC.r2(c),dif:RBC.r2(f-c)};
+  for(const a of R.porAno||[]){ const ls=R.linhas.filter(l=>l.comp.startsWith(a.ano)); a.pssFicha=RBC.r2(ls.reduce((s,l)=>s+l.pssFicha,0)); a.pssCalc=RBC.r2(ls.reduce((s,l)=>s+l.pssCalc,0)); a.dif=RBC.r2(a.pssFicha-a.pssCalc); }
 }
 // ------------------------------------------------------------ certidão complementar de gratificação natalina
 // Modelo da DIPROF: "Certifico, em complementação à Relação das Remunerações de Contribuições emitida em …, que o(a)
