@@ -3518,17 +3518,60 @@ async function lerTudo0(lista){
 }
 
 // ------------------------------------------------------------ comparação com a RBC anterior
+// Provável causa de cada diferença: testa se ela bate (sozinha ou somada a outra) com as parcelas que costumam separar
+// a RBC antiga da calculadora. Hipóteses de tabela saem de uma remuneração esperada recalculada com o item ligado.
+function causasCmp(dif){
+  const R=S.res, d0=dadosServidor(); if(!R) return {};
+  const espT=d=>{ try{ const e=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:R.aqTreinAnos||{}})); const m={}; for(const l of e.linhas) m[l.comp]=l.total; return m; }catch(e){ return null; } };
+  const base=d0&&espT(d0);
+  const delta=(d)=>{ const t=d&&base&&espT(d); return t?k=>(t[k]||0)-(base[k]||0):null; };
+  const tem=(lst,k)=>(lst||[]).some(r=>r.ini&&r.ini.slice(0,7)<=k&&(!r.fim||r.fim.slice(0,7)>=k));
+  const hip=[];   // {txt, f:k=>valor que a RBC anterior teria a mais}
+  if(d0){
+    if(!S.rel.V1323.length){ const f=delta(Object.assign({},d0,{v1323:[{ini:'2015-01-01',fim:'2016-03-31'}]})); if(f) hip.push({txt:'13,23% não informado (tabela de 13,23% da etapa 1)',f}); }
+    if(!S.rel.AQ.length) for(const [t,nm] of OPC.tipoAQ){ if(t==='GRADUACAO_TECNICO'&&!/T[ÉE]CNICO|AUXILIAR/.test(d0.cargo)) continue;
+      const f=delta(Object.assign({},d0,{aq:[{ini:d0.inicio,fim:null,tipo:t}]})); if(f) hip.push({txt:`adicional de qualificação (${nm.toLowerCase()}) não informado`,f}); }
+  }
+  const lin=k=>R.linhas.find(l=>l.comp===k);
+  hip.push({txt:'VPI: a calculadora inclui de 08/2016 a 12/2018 (regra "VPI pela tabela", decisão do STJ); a RBC anterior não', f:k=>{ const l=lin(k); return k>='2016-07'&&k<='2018-12'&&l&&l.v?-(l.v.VPI||0):0; }});
+  hip.push({txt:'função ou substituição: a RBC anterior incluiu; sem opção do servidor ficam fora (Lei 10.887/2004, art. 4º, § 1º, VIII)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.FC||0)+(l.bruto.SUBST||0):0; }});
+  hip.push({txt:'GAS: a RBC anterior incluiu; a calculadora exclui (Tema 163 do STF)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.GAS||0):0; }});
+  const ini=iniEf(), fim=fimEf(), dm=k=>new Date(+k.slice(0,4),+k.slice(5,7),0).getDate();
+  const out={};
+  for(const x of dif){ const k=x.k, falta=x.ant-x.calc, tol=Math.max(1,Math.abs(x.ant)*0.001), l=lin(k), c=[];
+    const hs=hip.map(h=>({txt:h.txt,v:h.f(k)})).filter(h=>Math.abs(h.v)>0.5);
+    const um=hs.find(h=>Math.abs(h.v-falta)<=tol);
+    if(um) c.push(um.txt);
+    else { let par=null; for(let i=0;i<hs.length&&!par;i++) for(let j=i+1;j<hs.length;j++){ if(hs[i].txt.slice(0,10)===hs[j].txt.slice(0,10)) continue; if(Math.abs(hs[i].v+hs[j].v-falta)<=tol){ par=[hs[i].txt,hs[j].txt]; break; } } if(par) c.push(...par); }
+    if(!c.length){
+      const teto=tetoRGPS(k);
+      if(teto&&getRegras().tetoDesde&&k>=getRegras().tetoDesde.slice(0,7)&&Math.abs(x.calc-teto)<=1&&x.ant>x.calc) c.push('teto do RGPS: a calculadora limita a base ao teto (Lei 12.618/2012, art. 3º); a RBC anterior não limitou');
+    }
+    if(!c.length&&!S.recs.length&&x.calc>0){   // pro rata: 30 dias (RRCs antigas) × dias do mês (prática atual da DIPROF)
+      const n=dm(k); let a=null;
+      if(ini&&k===ini.slice(0,7)&&+ini.slice(8)>1){ const dI=+ini.slice(8), cheio=x.calc*n/(n-dI+1); a=cheio*Math.max(0,31-dI)/30; }
+      if(fim&&k===fim.slice(0,7)&&+fim.slice(8)<n){ const dF=+fim.slice(8), cheio=x.calc*n/dF; a=cheio*Math.min(dF,30)/30; }
+      if(a!=null&&Math.abs(a-x.ant)<=tol) c.push('pro rata do mês de ingresso/desligamento: a RBC anterior dividiu por 30; a calculadora usa os dias do mês (prática da DIPROF desde 2018)');
+    }
+    if(!c.length&&Math.abs(falta)<5) c.push('arredondamento ou dia da mudança no mês (progressão, pro rata)');
+    if(!c.length&&k==='2012-12') c.push('enquadramento da Lei 12.774 em 31/12/2012: a DIPROF tratou dezembro/2012 de forma própria');
+    out[k]=c.length?c.join(' + '):'';
+  }
+  return out;
+}
 function renderCmpAnterior(){
   const box=$('cmpBox'); if(!box) return;
   if(!S.res||!S.anteriores.length||!CC){ box.hidden=true; return; }
   box.hidden=false;
   const i=Math.min(S.cmpSel||0,S.anteriores.length-1), a=S.anteriores[i];
   const c=CC.comparar(S.res.linhas,S.res.gns,a.r);
+  const cs=causasCmp(c.dif.slice(0,120)), resumo=Object.entries(c.dif.reduce((m,d)=>{ for(const t of (cs[d.k]||'').split(' + ').filter(Boolean)) m[t]=(m[t]||0)+1; return m; },{})).sort((x,y)=>y[1]-x[1]);
   const sel=S.anteriores.length>1?`<label class="small">Comparar com <select id="cmpSel">${S.anteriores.map((x,j)=>`<option value="${j}"${j===i?' selected':''}>${esc(x.nome)}</option>`).join('')}</select></label>`:`<p class="muted small" style="margin:0">Arquivo: ${esc(a.nome)}${a.r.fonte==='planilha'?' (planilha de trabalho)':''}</p>`;
   const ok=!c.dif.length&&!c.gnDif.length;
   $('cmpRes').innerHTML=sel+`<div class="aviso ${ok?'ok':'info'}" style="margin:10px 0"><span class="ic">${ok?'✓':'i'}</span><div>${c.iguais} de ${c.total} meses iguais${c.dif.length?`; ${c.dif.length} diferente(s)`:''}${c.gnDif.length?`; 13º diferente em ${c.gnDif.length} ano(s)`:''}.</div></div>`+
-    (c.dif.length?`<div class="tw"><table><thead><tr><th class="l">Mês</th><th>RBC anterior</th><th>Calculadora</th><th>Diferença</th></tr></thead><tbody>${c.dif.slice(0,120).map(d=>`<tr><td class="l">${mesTxt(d.k)}</td><td>${f2(d.ant)}</td><td>${f2(d.calc)}</td><td>${f2(d.d)}</td></tr>`).join('')}</tbody></table></div>`:'')+
-    (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>`${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)})`).join('; ')}</p>`:'');
+    (c.dif.length?`<div class="tw"><table><thead><tr><th class="l">Mês</th><th>RBC anterior</th><th>Calculadora</th><th>Diferença</th><th class="l">Provável causa</th></tr></thead><tbody>${c.dif.slice(0,120).map(d=>`<tr><td class="l">${mesTxt(d.k)}</td><td>${f2(d.ant)}</td><td>${f2(d.calc)}</td><td>${f2(d.d)}</td><td class="l wrap small">${cs[d.k]?esc(cs[d.k]):'<span class="tag att">sem causa identificada — confira o mês no mapa</span>'}</td></tr>`).join('')}</tbody></table></div>`:'')+
+    (resumo.length?`<p class="small" style="margin:10px 0 0"><b>Resumo das causas:</b> ${resumo.map(([t,n])=>`${esc(t)} (${n} mês(es))`).join('; ')}.</p>`:'')+
+    (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>{ const dz=cs[g.ano+'-12']; return `${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)}${dz?' — provavelmente a mesma causa de dez/'+g.ano:''})`; }).join('; ')}</p>`:'');
   if($('cmpSel')) $('cmpSel').onchange=e=>{ S.cmpSel=+e.target.value; renderCmpAnterior(); };
 }
 
