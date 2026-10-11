@@ -146,18 +146,25 @@ function carregarScript(src){ return new Promise((ok,err)=>{ const s=document.cr
 async function ocrProgressao(doc,msg){
   if(!window.Tesseract){ msg('Carregando o leitor de imagem…'); await carregarScript(TESS+'tesseract.min.js'); }
   msg('Preparando o leitor de imagem…');
-  const w=await Tesseract.createWorker('por',1,{workerPath:TESS+'worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int'});
+  msg('Baixando o leitor de imagem (cerca de 15 MB na primeira vez)…');
+  const w=await Promise.race([Tesseract.createWorker('por',1,{workerPath:TESS+'worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int'}),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('o leitor de imagem não carregou em 3 minutos (rede bloqueando cdn.jsdelivr.net?)')),180000))]);
   const listas=[];
   try{
     for(let n=1;n<=doc.numPages;n++){
       const pg=await doc.getPage(n);
       // duas resoluções: cada leitura pode perder uma linha que a outra pega
       for(const [j,dpi] of [[1,300],[2,200]]){
-        msg(`Lendo a imagem (página ${n} de ${doc.numPages}, leitura ${j} de 2)…`);
-        const vp=pg.getViewport({scale:dpi/72}); const cv=document.createElement('canvas'); cv.width=Math.ceil(vp.width); cv.height=Math.ceil(vp.height);
+        if(j===2&&ocrProgressao.soUma) continue;
+        msg(`Lendo a imagem (página ${n} de ${doc.numPages}${ocrProgressao.soUma?'':', leitura '+j+' de 2'})…`);
+        // limita o tamanho: digitalização com página "gigante" (escaneada a 72 dpi) geraria imagem enorme e lenta
+        const v1=pg.getViewport({scale:1}), larg=Math.max(v1.width,v1.height);
+        const vp=pg.getViewport({scale:Math.min(dpi/72,(j===1?3500:2400)/larg)}); const cv=document.createElement('canvas'); cv.width=Math.ceil(vp.width); cv.height=Math.ceil(vp.height);
         const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
         await pg.render({canvasContext:ctx,viewport:vp}).promise;
         const {data}=await w.recognize(cv); listas.push(RR.parseProgressaoTexto(data.text)); if(j===1) (ocrProgressao.textos=ocrProgressao.textos||[]).push(data.text);
+        // CTC: uma leitura basta (a dupla leitura é para as tabelas de progressão)
+        if(n===1&&j===1&&/TEMPO\s+DE\s+(CONTRIBUI|SERVI)/i.test(data.text)) ocrProgressao.soUma=true;
       }
     }
   } finally { await w.terminate(); }
@@ -206,8 +213,8 @@ async function lerRelatorios(list){
       const {doc,pages}=await pdfDoc(await f.arrayBuffer());
       const chars=pages.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.str.trim().length,0),0);
       if(chars<30){
-        tipo='PROGRESSAO'; info.ocr=true; ocrProgressao.textos=[];
-        rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel();})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
+        tipo='PROGRESSAO'; info.ocr=true; ocrProgressao.textos=[]; ocrProgressao.soUma=false;
+        rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel(); if(S.lendoImg) $('tudoSt').textContent=`Lendo por imagem ${f.name}: ${m} Pode levar alguns minutos.`;})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
         const txt=(ocrProgressao.textos||[]).join('\n');
         // CTC digitalizada: lida pelo mesmo reconhecimento de texto; o que vier é conferido pela ficha e pelo usuário
         if(/TEMPO\s+DE\s+(CONTRIBUI|SERVI)/i.test(txt) && !/RELA..O\s+DAS\s+BASES/i.test(txt)){ aplicarCTC(RR.parseCTC(txt),info,true); continue; }
@@ -1270,7 +1277,10 @@ async function lerTudo0(lista){
   // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
   // ou não há CTC em texto nem ficha: a CTC digitalizada é a fonte do período e do ingresso
   const soImg=grupos.img.length&&!grupos.ficha.length&&!grupos.rel.some(c=>c.sub==='CTC');
-  let nOCR=0; if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…'; await lerRelatorios(grupos.img.map(c=>c.f)); nOCR=grupos.img.length; grupos.img=[]; }
+  let nOCR=0, errOCR=''; if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
+    S.lendoImg=true; try{ await lerRelatorios(grupos.img.map(c=>c.f)); } finally { S.lendoImg=false; }
+    errOCR=S.relArqs.filter(a=>a.ocr&&a.erro).map(a=>a.nome+': '+a.erro).join('; ');
+    nOCR=grupos.img.length; grupos.img=[]; }
   if(grupos.rel.length) await lerRelatorios(grupos.rel.map(c=>c.f));
   if(grupos.ficha.length) await lerArquivos(grupos.ficha.map(c=>c.f));
   for(const c of grupos.rbc) S.anteriores.push({nome:c.f.name,r:c.dados});
@@ -1300,7 +1310,7 @@ async function lerTudo0(lista){
   notaCargo+=notaPres; S.notasEntrada=notaCargo.trim();
   $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s)${nOCR?` (+${nOCR} digitalizado(s) lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
     (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler por imagem</button>`:'')+
-    notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
+    (errOCR?` <b>Leitura por imagem falhou</b> (${esc(errOCR)}).`:'')+notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
   if($('lerImg')) $('lerImg').onclick=async()=>{ const l=S.digitalizados.splice(0); await lerRelatorios(l); };
   if(S.res) irPara(2);
 }
