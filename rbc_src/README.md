@@ -133,3 +133,10 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - VPI: a regra "VPI pela tabela" também completa o mês pago só em parte (07/2016, absorção indevida a partir de 21/07); devida até 31/12/2018 (STJ, AgInt no REsp 2.085.675, trânsito em 17/06/2024). VPI sem mês nesses meses fica em "Resolvidos pela calculadora".
 - CTC da SEINFO (2019): nome e matrícula na linha abaixo de "SERVIDOR: SEXO: MATRÍCULA:"; número "N 21/2019" sem o "º".
 - Certidão: chefe da DIPROF e secretária de Gestão de Pessoas preenchidos por padrão (o que o usuário digitar fica lembrado no navegador).
+
+### Fase 15f (11/10/2026): declaração intrarregime de 2025 digitalizada pelo SEI
+
+- PDF digitalizado com o carimbo de rodapé do SEI ("<título> SEI … / pg. N") conta como imagem (`charsTexto`); se o carimbo ou o nome do arquivo indica CTC/DTC, é lido por imagem **automaticamente mesmo com ficha**, quando não há CTC em texto (dados da certidão, funções, substituições e progressão).
+- Modelo da Portaria MPS 2.010/2025 ("DADOS FUNCIONAIS 1º/2º PROVIMENTO"): início = 1º exercício; fim = fim do último período; cargo e especialidade do último provimento; progressão com o cargo de cada provimento; exoneração da certidão = "data de encerramento/afastamento" do último provimento.
+- Funções na seção "N - FUNÇÕES" (ou, sem o título, linhas "NOME FC-04 (em substituição) dd/mm/aaaa a dd/mm/aaaa"); "(em substituição)" vai para Substituições.
+- Esperada: substituição de quem é titular de função = diferença para a função substituída (Lei 8.112, art. 38, §1º); depois de `fcAte`, a substituição esperada vai para o mês seguinte (a folha paga após a frequência).

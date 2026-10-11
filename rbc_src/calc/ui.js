@@ -180,7 +180,7 @@ function aplicarCTC(r,info,ocr){
   if(m.fim&&!$('fim').value){ $('fim').value=m.fim; pre.push('fim do período'); }
   S.ctc=m;
   const usados=[];
-  const por={PROGRESSAO:r.PROGRESSAO, FUNCOES:r.FUNCOES, ATS:r.ATS, VPNI:[].concat(...(r.VPNI||[]).map(v=>Array.from({length:v.parcelas||1},()=>({cod:v.cod,tipo:v.tipo,natureza:v.natureza,ini:v.ini,fim:v.fim||''}))))};
+  const por={PROGRESSAO:r.PROGRESSAO, FUNCOES:r.FUNCOES, SUBSTITUICOES:(r.SUBSTITUICOES||[]).map(o=>({cod:o.cod,ini:o.ini,fim:o.fim})), ATS:r.ATS, VPNI:[].concat(...(r.VPNI||[]).map(v=>Array.from({length:v.parcelas||1},()=>({cod:v.cod,tipo:v.tipo,natureza:v.natureza,ini:v.ini,fim:v.fim||''}))))};
   for(const [t,rows] of Object.entries(por)){
     if(!rows||!rows.length) continue;
     const doRH=S.relArqs.some(a=>a.tipo===t&&a!==info);
@@ -188,12 +188,18 @@ function aplicarCTC(r,info,ocr){
     S.rel[t]=rows.map(o=>Object.assign({},o,{fim:o.fim||'',fonte:'CTC'},t==='PROGRESSAO'?{origem:ocr?'incerta':'relatorio'}:{})); usados.push(t);
   }
   info.tipo='CTC'; info.n=usados.reduce((a,t)=>a+S.rel[t].length,0);
-  const nomes={PROGRESSAO:'progressão',FUNCOES:'funções',ATS:'anuênios',VPNI:'quintos/décimos'};
+  const nomes={PROGRESSAO:'progressão',FUNCOES:'funções',SUBSTITUICOES:'substituições',ATS:'anuênios',VPNI:'quintos/décimos'};
   const tt=m.teto==='sim'?'contribuição limitada ao teto do RGPS':m.teto==='migrou'?'migrou para a previdência complementar'+(m.tetoDesde?' em '+m.tetoDesde.split('-').reverse().join('/'):''):m.teto==='nao'?'sem limitação ao teto':'';
   info.msgFim=[usados.length?'tabelas: '+usados.map(t=>nomes[t]).join(', '):'nenhuma tabela legível', pre.length?'preenchido: '+pre.join(', '):'', tt, ocr?'lida por imagem — confira':''].filter(Boolean).join(' · ');
   if(r.frequencia&&r.frequencia.some(f=>f.faltas>0)) info.msgFim+=' · faltas na CTC: '+r.frequencia.filter(f=>f.faltas>0).map(f=>f.ano+' ('+f.faltas+')').join(', ');
   info.st='ok'; renderArqRel();
 }
+// PDF digitalizado pelo SEI traz só o carimbo de rodapé como texto ("<título> SEI 0000000-00.0000.0.00.0000 / pg. N"):
+// página com o carimbo e quase nada além dele conta como imagem; o título do carimbo diz o tipo do documento
+const CARIMBO_SEI=/SEI\s*\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\s*\/\s*pg\.\s*\d+/;
+function charsTexto(pages){ return pages.reduce((s,p)=>{ const t=p.items.map(i=>i.str).join('').replace(/\s/g,''); return s+(CARIMBO_SEI.test(p.items.map(i=>i.str).join(' '))&&t.length<250?0:t.length); },0); }
+function pareceCTCImg(pages,nome){ const t=pages.map(p=>p.items.map(i=>i.str).join('')).join(' ');
+  return /TEMPO\s*(DE\s*)?CONTRIBUI|CERTID[ÃA]O\s*DE\s*TEMPO/i.test(t)||/(^|[^A-Z])(CTC|DTC)([^A-Z]|$)|tempo.{0,4}(de.{0,4})?contribui/i.test(nome||''); }
 async function lerRelatorios(list){
   const fila=[...list]; if(!fila.length) return;
   for(const f of fila){
@@ -211,7 +217,7 @@ async function lerRelatorios(list){
       } else {
       if(!/\.pdf$/i.test(f.name)) throw new Error('Formato não aceito. Envie PDF, CSV, XLS ou XLSX.');
       const {doc,pages}=await pdfDoc(await f.arrayBuffer());
-      const chars=pages.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.str.trim().length,0),0);
+      const chars=charsTexto(pages);
       if(chars<30){
         tipo='PROGRESSAO'; info.ocr=true; ocrProgressao.textos=[]; ocrProgressao.soUma=false;
         rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel(); if(S.lendoImg) $('tudoSt').textContent=`Lendo por imagem ${f.name}: ${m} Pode levar alguns minutos.`;})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
@@ -1288,8 +1294,8 @@ async function classificar(f){
   }
   if(/\.pdf$/i.test(n)){
     let pg; try{ pg=(await pdfDoc(await f.arrayBuffer())).pages; }catch(e){ return {tipo:'ignorado',motivo:'PDF ilegível'}; }
-    const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=txt.replace(/\s/g,'').length;
-    if(chars<30) return {tipo:'img',motivo:'digitalizado (imagem)'};
+    const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=charsTexto(pg);
+    if(chars<30) return pareceCTCImg(pg,n)?{tipo:'img',sub:'CTC',motivo:'CTC digitalizada (imagem)'}:{tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
     if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
     if(/^\s*(De|From):|Assunto:|Subject:|Enviado em|outlook\.(office|live)|mail\.google|\bPara:\s|\d+\s+anexos?\s*\(/im.test(txt.slice(0,1500))&&!/CERTIFICO|PER[ÍI]ODO DE CONTRIBUI/i.test(txt)) return {tipo:'ignorado',motivo:'e-mail'};
@@ -1330,11 +1336,14 @@ async function lerTudo0(lista){
   ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
   // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
   // ou não há CTC em texto nem ficha: a CTC digitalizada é a fonte do período e do ingresso
-  const soImg=grupos.img.length&&!grupos.ficha.length&&!grupos.rel.some(c=>c.sub==='CTC');
-  let nOCR=0, errOCR=''; if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
-    S.lendoImg=true; try{ await lerRelatorios(grupos.img.map(c=>c.f)); } finally { S.lendoImg=false; }
+  // ou há CTC digitalizada e nenhuma CTC em texto: ela traz os dados da certidão (nome, CPF, mãe…), funções, substituições e progressão
+  const semCTCtexto=!grupos.rel.some(c=>c.sub==='CTC');
+  const soImg=grupos.img.length&&!grupos.ficha.length&&semCTCtexto;
+  const lerImg=soImg?grupos.img:semCTCtexto?grupos.img.filter(c=>c.sub==='CTC'):[];
+  let nOCR=0, errOCR=''; if(lerImg.length){ $('tudoSt').textContent='Lendo '+lerImg.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
+    S.lendoImg=true; try{ await lerRelatorios(lerImg.map(c=>c.f)); } finally { S.lendoImg=false; }
     errOCR=S.relArqs.filter(a=>a.ocr&&a.erro).map(a=>a.nome+': '+a.erro).join('; ');
-    nOCR=grupos.img.length; grupos.img=[]; }
+    nOCR=lerImg.length; grupos.img=grupos.img.filter(c=>!lerImg.includes(c)); }
   if(grupos.rel.length) await lerRelatorios(grupos.rel.map(c=>c.f));
   if(grupos.ficha.length) await lerArquivos(grupos.ficha.map(c=>c.f));
   for(const c of grupos.rbc) S.anteriores.push({nome:c.f.name,r:c.dados});
@@ -1453,7 +1462,7 @@ function brData(iso){ return iso&&/^\d{4}-\d{2}-\d{2}$/.test(iso)?iso.split('-')
 function preencherCert(){
   const ct=S.ctc||{}, fi=S.fichaInfo||{}, an=(S.anteriores[0]&&S.anteriores[0].r.cab)||{};
   const pre={c_nome:$('nome').value||ct.nome||fi.nome||an.nome, c_matricula:ct.matricula||fi.matricula, c_nascimento:ct.nascimento, c_mae:ct.mae, c_pis:ct.pis, c_cpf:ct.cpf,
-    c_inicio:brData(iniEf()), c_fim:brData($('fim').value||''), c_referencia:ct.referencia&&/N[º°]|DATADA|, de/.test(ct.referencia)?ct.referencia:'', c_data:CC?CC.dataExtenso(new Date()):''};
+    c_inicio:brData(iniEf()), c_fim:brData(ct.exoneracao&&ct.fim&&$('fim').value===ct.fim&&ct.exoneracao>ct.fim?ct.exoneracao:($('fim').value||'')), c_referencia:ct.referencia&&/N[º°]|DATADA|, de/.test(ct.referencia)?ct.referencia:'', c_data:CC?CC.dataExtenso(new Date()):''};
   for(const [id,v] of Object.entries(pre)){ const el=$(id); if(el&&!el.dataset.editado&&v) el.value=v; }
   const op=$('c_maeOp'); if(op&&ct.filiacao) op.innerHTML=ct.filiacao.map(n=>`<option value="${esc(n)}">`).join('');
   if($('c_maeDica')) $('c_maeDica').textContent=ct.filiacao&&ct.filiacao.length>1?'A CTC traz pai e mãe na filiação: confira qual é a mãe':'';

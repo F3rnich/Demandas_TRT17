@@ -124,16 +124,18 @@
         }
         // função comissionada exercida (valor do servidor efetivo: opção)
         // funcoesFicha: função deduzida do valor pago (sem relatório); só para a esperada, não mexe na VPNI
+        let fcTit = 0;
         for (const f of naFaixa((dados.funcoes || []).concat(dados.funcoesFicha || []), dt)) {
           info.funcao.add(f.cod + (f.nome ? ' (' + f.nome + ')' : ''));
           const val = valorFuncao(ix, f.cod, dt);
           if (val == null) aviso(k, 'Sem tabela de função para ' + f.cod);
-          else add('FC', val * wd);
+          else { add('FC', val * wd); fcTit += val; }
         }
+        // substituição: titular de função recebe só a diferença para a função substituída (Lei 8.112, art. 38; prática da folha)
         for (const s of naFaixa(dados.substituicoes, dt)) {
           info.subst.add(s.cod);
           const val = valorFuncao(ix, s.cod, dt);
-          if (val == null) aviso(k, 'Sem tabela de função para substituição ' + s.cod); else add('SUBST', val * wd);
+          if (val == null) aviso(k, 'Sem tabela de função para substituição ' + s.cod); else { const dif = Math.max(0, val - fcTit); if (dif) add('SUBST', dif * wd); fcTit = Math.max(fcTit, val); }
         }
         // VPNI (quintos/décimos incorporados)
         const vp = naFaixa(dados.vpni, dt);
@@ -188,6 +190,16 @@
       dia = null; const vCheio = {}; for (const c in (ultDia || {})) vCheio[c] = r2(ultDia[c]);
       for (const c in v) v[c] = r2(v[c]);
       linhas.push({ comp: k, v, vCheio, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), aq: info.aq.join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
+    }
+    // substituição: a folha paga no mês seguinte ao exercício (lançada depois da frequência); a do último mês entra na rescisão.
+    // Só depois de fcAte: até lá a função integra a RBC pela competência (regra "função pela tabela")
+    if (regras.substMesSeguinte !== false) {
+      for (let i = linhas.length - 2; i >= 0; i--) {
+        const a = linhas[i], b = linhas[i + 1];
+        if (a.comp <= regras.fcAte) break;
+        if (a.v.SUBST) { b.v.SUBST = r2((b.v.SUBST || 0) + a.v.SUBST); delete a.v.SUBST; }
+        b.subst = i === linhas.length - 2 ? [...new Set([a.subst, b.subst].filter(Boolean))].join(' / ') : a.subst; a.subst = '';
+      }
     }
     // incidência e contribuição
     const incide = (c, k) => {

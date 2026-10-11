@@ -1255,16 +1255,18 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
         }
         // função comissionada exercida (valor do servidor efetivo: opção)
         // funcoesFicha: função deduzida do valor pago (sem relatório); só para a esperada, não mexe na VPNI
+        let fcTit = 0;
         for (const f of naFaixa((dados.funcoes || []).concat(dados.funcoesFicha || []), dt)) {
           info.funcao.add(f.cod + (f.nome ? ' (' + f.nome + ')' : ''));
           const val = valorFuncao(ix, f.cod, dt);
           if (val == null) aviso(k, 'Sem tabela de função para ' + f.cod);
-          else add('FC', val * wd);
+          else { add('FC', val * wd); fcTit += val; }
         }
+        // substituição: titular de função recebe só a diferença para a função substituída (Lei 8.112, art. 38; prática da folha)
         for (const s of naFaixa(dados.substituicoes, dt)) {
           info.subst.add(s.cod);
           const val = valorFuncao(ix, s.cod, dt);
-          if (val == null) aviso(k, 'Sem tabela de função para substituição ' + s.cod); else add('SUBST', val * wd);
+          if (val == null) aviso(k, 'Sem tabela de função para substituição ' + s.cod); else { const dif = Math.max(0, val - fcTit); if (dif) add('SUBST', dif * wd); fcTit = Math.max(fcTit, val); }
         }
         // VPNI (quintos/décimos incorporados)
         const vp = naFaixa(dados.vpni, dt);
@@ -1319,6 +1321,16 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       dia = null; const vCheio = {}; for (const c in (ultDia || {})) vCheio[c] = r2(ultDia[c]);
       for (const c in v) v[c] = r2(v[c]);
       linhas.push({ comp: k, v, vCheio, ref: [...info.ref].join(' / '), refCurta: [...info.refc].join('/'), funcao: [...info.funcao].join(' / '), subst: [...info.subst].join(' / '), aq: info.aq.join(' / '), vpni: [...info.vpni].join(' / '), atsPct: info.ats, fontes: [...fontes] });
+    }
+    // substituição: a folha paga no mês seguinte ao exercício (lançada depois da frequência); a do último mês entra na rescisão.
+    // Só depois de fcAte: até lá a função integra a RBC pela competência (regra "função pela tabela")
+    if (regras.substMesSeguinte !== false) {
+      for (let i = linhas.length - 2; i >= 0; i--) {
+        const a = linhas[i], b = linhas[i + 1];
+        if (a.comp <= regras.fcAte) break;
+        if (a.v.SUBST) { b.v.SUBST = r2((b.v.SUBST || 0) + a.v.SUBST); delete a.v.SUBST; }
+        b.subst = i === linhas.length - 2 ? [...new Set([a.subst, b.subst].filter(Boolean))].join(' / ') : a.subst; a.subst = '';
+      }
     }
     // incidência e contribuição
     const incide = (c, k) => {
@@ -1858,6 +1870,27 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     if (vac) meta.vacancia = dBR(vac[2]);
     meta.inicio = meta.periodoIni || meta.exercicio || null;
     meta.fim = meta.periodoFim || null;
+    // declaração com mais de um provimento (modelo da Portaria MPS 2.010/2025, "DADOS FUNCIONAIS 2º PROVIMENTO"):
+    // a RBC vai do 1º exercício ao fim do último período; cargo e especialidade são os do último provimento.
+    // Os períodos de cada provimento não servem de início (já vieram com o ano trocado, "DE 01/09/2014 A 03/04/2014")
+    const provs = [...flat.matchAll(/DADOS FUNCIONAIS\s*\d+\s*\S?\s*PROVIMENTO/gi)];
+    const cargoProv = [];
+    if (provs.length > 1) {
+      for (let i = 0; i < provs.length; i++) { const b = flat.slice(provs[i].index, i + 1 < provs.length ? provs[i + 1].index : undefined).toUpperCase();
+        const mb = /CARGO EFETIVO(?: EXERCIDO)?:?\s*(.{0,60})/.exec(b); const c = mb ? mb[1] : '';
+        cargoProv.push(/ANALISTA/.test(c) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(c) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(c) ? 'AUXILIAR JUDICIÁRIO' : ''); }
+      const ult = flat.slice(provs[provs.length - 1].index);
+      const mc2 = /CARGO EFETIVO(?: EXERCIDO)?:?\s*(.{0,160})/i.exec(ult);
+      if (mc2) { const c = mc2[1].replace(/\s*(REGIME JUR\S*:?\s*ESTATUT\S*\s*(LEI\s*)?8\.?112)/i, ' ').replace(/\s*(ÓRG[ÃA]O DE LOTA|ATO DE NOMEA).*$/i, '').replace(/[|\[\]]/g, ' ').replace(/\s+/g, ' ').trim(), cu = c.toUpperCase();
+        meta.cargo = /ANALISTA/.test(cu) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(cu) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(cu) ? 'AUXILIAR JUDICIÁRIO' : meta.cargo;
+        meta.cargoTexto = c; meta.especialidade = /OFICIAL DE JUSTI|ESP(\.|ECIALIDADE)?:?\s*OFICIAL/.test(cu) ? 'OFICIAL' : /SEGURAN|POL[ÍI]CIA|AGENTE DE/.test(cu) ? 'SEGURANCA' : ''; }
+      const fins = [...flat.matchAll(/PER[ÍI]ODO DE CONTRIBUI\S*[^:]*:?\s*(?:DE\s+)?\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})/gi)].map(m => dBR(m[1])).filter(Boolean).sort();
+      if (meta.exercicio) meta.inicio = meta.periodoIni = meta.exercicio;
+      if (fins.length) meta.fim = meta.periodoFim = fins[fins.length - 1];
+      meta.provimentos = provs.length;
+    }
+    // modelo de 2025: "DATA DE ENCERRAMENTO / AFASTAMENTO" do último provimento = data da exoneração na certidão de RBC
+    { const enc = [...flat.matchAll(/ENCERRAMENTO\s*\/?\s*AFASTAMENTO:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/gi)].pop(); if (enc) meta.exoneracao = dBR(enc[1]); }
     // dados para o cabeçalho da RBC (ficam só no navegador)
     const tiraSexo = n => n && n.replace(/\s+(MASCULINO|FEMININO|[MF])$/, '').trim();
     let mm = /SERVIDOR(?:\(A\))?:?\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|CI\b|$)/.exec(flat) || /NOME(?: DO SERVIDOR)?:\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|$)/.exec(flat);
@@ -1874,8 +1907,8 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       if (i >= 0) {
         const partes = [];
         for (let j = i; j < Math.min(ls.length, i + 6); j++) {
-          if (j > i && /ENDERE|CARGO|^RG\b|^CI\b|ADMISS|SEXO|LOTA|^\d+ ?-/i.test(ls[j])) break;
-          const t = ls[j].replace(/FILIA[ÇC][ÃA]O:?|DATA DE NASCIMENTO:?|NASCIMENTO:?|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/gi, ' ').replace(/\s+/g, ' ').trim();
+          if (j > i && /ENDERE|CARGO|^RG\b|^CI\b|ADMISS|SEXO|LOTA|DADOS FUNCIONAIS|PROVIMENTO|^\d+ ?-/i.test(ls[j])) break;
+          const t = ls[j].replace(/.*FILIA[ÇC][ÃA]O:?/i, ' ').replace(/DATA DE NASCIMENTO:?|NASCIMENTO:?|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/gi, ' ').replace(/[|\[\]{}_]/g, ' ').replace(/\s+/g, ' ').trim();
           if (t && /^[A-Za-zÀ-ú .']+$/.test(t)) partes.push(t);
         }
         const tudo = partes.join(' ').trim();
@@ -1918,21 +1951,29 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       let classe = m[1].toUpperCase(), padrao = m[2].toUpperCase().replace(/\s+/g, '');
       const nv = /^(N[AIS])-?(\d+)$/.exec(padrao); if (nv) { classe = nv[1]; padrao = String(+nv[2]); }
       else if (/^\d+$/.test(padrao)) padrao = String(+padrao);
-      PROGRESSAO.push({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' });
+      // mais de um provimento: a seção de progressão é dividida por "1º provimento", "2º provimento"; a linha leva o cargo do provimento
+      let cargo;
+      if (cargoProv.length > 1) { const ant = [...flat.slice(0, m.index).matchAll(/(\d+)\s*\S?\s*PROVIMENTO/gi)].pop(); const c = ant && cargoProv[+ant[1] - 1]; if (c && c !== meta.cargo) cargo = c; }
+      PROGRESSAO.push(Object.assign({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' }, cargo ? { cargo } : {}));
     }
     // CTC antiga: "Cargo efetivo: Técnico Judiciário, Classe C, Padrão 15" (referência na data da certidão)
     const atual = /CARGO EFETIVO:?[^,]{0,60},\s*CLASSE\s+([A-D])\s*,\s*PADR[ÃA]O\s+(\w+)/i.exec(flat);
     if (atual) meta.refFinal = atual[1].toUpperCase() + '-' + atual[2];
     // funções comissionadas
-    const FUNCOES = [];
+    const FUNCOES = [], SUBSTITUICOES = [];
     let ult = null;
-    for (const l of secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS/i, FIM_SEC)) {
+    let lsF = secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS|^\s*(\d+ ?- ?)?FUN[ÇC][ÕO]ES:?\s*$/i, FIM_SEC);
+    const RXFL = /^[A-ZÀ-Ú][A-ZÀ-Ú .\-]{2,80}?\s(?:FC|CJ|DAS)\s*-?\s*\d{1,2}\b(?:\s*\(em substitui\S*\))?\s+\d{1,2}\/\d{1,2}\/\d{4}\s+a\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/i;
+    if (!lsF.some(l => /\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l))) lsF = ls.filter(l => RXFL.test(l));
+    for (const l of lsF) {
       const mc = /\b((?:FC|CJ|DAS)\s*-?\s*0?(\d+))\b/i.exec(l);
       const ds = [...l.matchAll(RXD)].map(x => dBR(x[1]));
       if (mc) ult = { cod: mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1'), nome: l.slice(0, mc.index).replace(/[-–]\s*$/, '').trim() };
       if (!ult || !ds.length) continue;
       // "1 a 13-6-1991" (CTC antiga): mesmo mês
-      for (let i = 0; i < ds.length; i += 2) FUNCOES.push({ cod: ult.cod, nome: ult.nome, ini: ds[i], fim: ds[i + 1] || null });
+      // "(em substituição)": substituição, não titularidade
+      const dest = /\(?\s*em substitui/i.test(l) ? SUBSTITUICOES : FUNCOES;
+      for (let i = 0; i < ds.length; i += 2) dest.push({ cod: ult.cod, nome: ult.nome.replace(/\s*\(?\s*em substitui\S*\)?/i, '').trim(), ini: ds[i], fim: ds[i + 1] || null });
     }
     // anuênios: "1% a partir de 01/10/1995"
     const ATS = [];
@@ -1956,7 +1997,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       const nums = m[3].split(/\s+/).map(x => x === '-' ? 0 : +x).filter(x => !isNaN(x));
       freq.push({ ano: m[1], bruto: +m[2], liquido: nums.length ? nums[nums.length - 1] : +m[2], faltas: nums.length > 1 ? nums[0] : 0 });
     }
-    return { meta, PROGRESSAO, FUNCOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
+    return { meta, PROGRESSAO, FUNCOES, SUBSTITUICOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
   }
 
   const api = { decodificarFonte, parseCTC, dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
@@ -2358,7 +2399,7 @@ function aplicarCTC(r,info,ocr){
   if(m.fim&&!$('fim').value){ $('fim').value=m.fim; pre.push('fim do período'); }
   S.ctc=m;
   const usados=[];
-  const por={PROGRESSAO:r.PROGRESSAO, FUNCOES:r.FUNCOES, ATS:r.ATS, VPNI:[].concat(...(r.VPNI||[]).map(v=>Array.from({length:v.parcelas||1},()=>({cod:v.cod,tipo:v.tipo,natureza:v.natureza,ini:v.ini,fim:v.fim||''}))))};
+  const por={PROGRESSAO:r.PROGRESSAO, FUNCOES:r.FUNCOES, SUBSTITUICOES:(r.SUBSTITUICOES||[]).map(o=>({cod:o.cod,ini:o.ini,fim:o.fim})), ATS:r.ATS, VPNI:[].concat(...(r.VPNI||[]).map(v=>Array.from({length:v.parcelas||1},()=>({cod:v.cod,tipo:v.tipo,natureza:v.natureza,ini:v.ini,fim:v.fim||''}))))};
   for(const [t,rows] of Object.entries(por)){
     if(!rows||!rows.length) continue;
     const doRH=S.relArqs.some(a=>a.tipo===t&&a!==info);
@@ -2366,12 +2407,18 @@ function aplicarCTC(r,info,ocr){
     S.rel[t]=rows.map(o=>Object.assign({},o,{fim:o.fim||'',fonte:'CTC'},t==='PROGRESSAO'?{origem:ocr?'incerta':'relatorio'}:{})); usados.push(t);
   }
   info.tipo='CTC'; info.n=usados.reduce((a,t)=>a+S.rel[t].length,0);
-  const nomes={PROGRESSAO:'progressão',FUNCOES:'funções',ATS:'anuênios',VPNI:'quintos/décimos'};
+  const nomes={PROGRESSAO:'progressão',FUNCOES:'funções',SUBSTITUICOES:'substituições',ATS:'anuênios',VPNI:'quintos/décimos'};
   const tt=m.teto==='sim'?'contribuição limitada ao teto do RGPS':m.teto==='migrou'?'migrou para a previdência complementar'+(m.tetoDesde?' em '+m.tetoDesde.split('-').reverse().join('/'):''):m.teto==='nao'?'sem limitação ao teto':'';
   info.msgFim=[usados.length?'tabelas: '+usados.map(t=>nomes[t]).join(', '):'nenhuma tabela legível', pre.length?'preenchido: '+pre.join(', '):'', tt, ocr?'lida por imagem — confira':''].filter(Boolean).join(' · ');
   if(r.frequencia&&r.frequencia.some(f=>f.faltas>0)) info.msgFim+=' · faltas na CTC: '+r.frequencia.filter(f=>f.faltas>0).map(f=>f.ano+' ('+f.faltas+')').join(', ');
   info.st='ok'; renderArqRel();
 }
+// PDF digitalizado pelo SEI traz só o carimbo de rodapé como texto ("<título> SEI 0000000-00.0000.0.00.0000 / pg. N"):
+// página com o carimbo e quase nada além dele conta como imagem; o título do carimbo diz o tipo do documento
+const CARIMBO_SEI=/SEI\s*\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\s*\/\s*pg\.\s*\d+/;
+function charsTexto(pages){ return pages.reduce((s,p)=>{ const t=p.items.map(i=>i.str).join('').replace(/\s/g,''); return s+(CARIMBO_SEI.test(p.items.map(i=>i.str).join(' '))&&t.length<250?0:t.length); },0); }
+function pareceCTCImg(pages,nome){ const t=pages.map(p=>p.items.map(i=>i.str).join('')).join(' ');
+  return /TEMPO\s*(DE\s*)?CONTRIBUI|CERTID[ÃA]O\s*DE\s*TEMPO/i.test(t)||/(^|[^A-Z])(CTC|DTC)([^A-Z]|$)|tempo.{0,4}(de.{0,4})?contribui/i.test(nome||''); }
 async function lerRelatorios(list){
   const fila=[...list]; if(!fila.length) return;
   for(const f of fila){
@@ -2389,7 +2436,7 @@ async function lerRelatorios(list){
       } else {
       if(!/\.pdf$/i.test(f.name)) throw new Error('Formato não aceito. Envie PDF, CSV, XLS ou XLSX.');
       const {doc,pages}=await pdfDoc(await f.arrayBuffer());
-      const chars=pages.reduce((s,p)=>s+p.items.reduce((a,i)=>a+i.str.trim().length,0),0);
+      const chars=charsTexto(pages);
       if(chars<30){
         tipo='PROGRESSAO'; info.ocr=true; ocrProgressao.textos=[]; ocrProgressao.soUma=false;
         rows=(await ocrProgressao(doc,m=>{info.msg=m;renderArqRel(); if(S.lendoImg) $('tudoSt').textContent=`Lendo por imagem ${f.name}: ${m} Pode levar alguns minutos.`;})).map(r=>({ini:r.ini,fim:r.fim||'',classe:'',padrao:'',revogada:r.revogada,dica:r.dica,origem:'incerta',ocr:true}));
@@ -3466,8 +3513,8 @@ async function classificar(f){
   }
   if(/\.pdf$/i.test(n)){
     let pg; try{ pg=(await pdfDoc(await f.arrayBuffer())).pages; }catch(e){ return {tipo:'ignorado',motivo:'PDF ilegível'}; }
-    const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=txt.replace(/\s/g,'').length;
-    if(chars<30) return {tipo:'img',motivo:'digitalizado (imagem)'};
+    const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=charsTexto(pg);
+    if(chars<30) return pareceCTCImg(pg,n)?{tipo:'img',sub:'CTC',motivo:'CTC digitalizada (imagem)'}:{tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
     if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
     if(/^\s*(De|From):|Assunto:|Subject:|Enviado em|outlook\.(office|live)|mail\.google|\bPara:\s|\d+\s+anexos?\s*\(/im.test(txt.slice(0,1500))&&!/CERTIFICO|PER[ÍI]ODO DE CONTRIBUI/i.test(txt)) return {tipo:'ignorado',motivo:'e-mail'};
@@ -3508,11 +3555,14 @@ async function lerTudo0(lista){
   ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
   // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
   // ou não há CTC em texto nem ficha: a CTC digitalizada é a fonte do período e do ingresso
-  const soImg=grupos.img.length&&!grupos.ficha.length&&!grupos.rel.some(c=>c.sub==='CTC');
-  let nOCR=0, errOCR=''; if(soImg){ $('tudoSt').textContent='Lendo '+grupos.img.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
-    S.lendoImg=true; try{ await lerRelatorios(grupos.img.map(c=>c.f)); } finally { S.lendoImg=false; }
+  // ou há CTC digitalizada e nenhuma CTC em texto: ela traz os dados da certidão (nome, CPF, mãe…), funções, substituições e progressão
+  const semCTCtexto=!grupos.rel.some(c=>c.sub==='CTC');
+  const soImg=grupos.img.length&&!grupos.ficha.length&&semCTCtexto;
+  const lerImg=soImg?grupos.img:semCTCtexto?grupos.img.filter(c=>c.sub==='CTC'):[];
+  let nOCR=0, errOCR=''; if(lerImg.length){ $('tudoSt').textContent='Lendo '+lerImg.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
+    S.lendoImg=true; try{ await lerRelatorios(lerImg.map(c=>c.f)); } finally { S.lendoImg=false; }
     errOCR=S.relArqs.filter(a=>a.ocr&&a.erro).map(a=>a.nome+': '+a.erro).join('; ');
-    nOCR=grupos.img.length; grupos.img=[]; }
+    nOCR=lerImg.length; grupos.img=grupos.img.filter(c=>!lerImg.includes(c)); }
   if(grupos.rel.length) await lerRelatorios(grupos.rel.map(c=>c.f));
   if(grupos.ficha.length) await lerArquivos(grupos.ficha.map(c=>c.f));
   for(const c of grupos.rbc) S.anteriores.push({nome:c.f.name,r:c.dados});
@@ -3631,7 +3681,7 @@ function brData(iso){ return iso&&/^\d{4}-\d{2}-\d{2}$/.test(iso)?iso.split('-')
 function preencherCert(){
   const ct=S.ctc||{}, fi=S.fichaInfo||{}, an=(S.anteriores[0]&&S.anteriores[0].r.cab)||{};
   const pre={c_nome:$('nome').value||ct.nome||fi.nome||an.nome, c_matricula:ct.matricula||fi.matricula, c_nascimento:ct.nascimento, c_mae:ct.mae, c_pis:ct.pis, c_cpf:ct.cpf,
-    c_inicio:brData(iniEf()), c_fim:brData($('fim').value||''), c_referencia:ct.referencia&&/N[º°]|DATADA|, de/.test(ct.referencia)?ct.referencia:'', c_data:CC?CC.dataExtenso(new Date()):''};
+    c_inicio:brData(iniEf()), c_fim:brData(ct.exoneracao&&ct.fim&&$('fim').value===ct.fim&&ct.exoneracao>ct.fim?ct.exoneracao:($('fim').value||'')), c_referencia:ct.referencia&&/N[º°]|DATADA|, de/.test(ct.referencia)?ct.referencia:'', c_data:CC?CC.dataExtenso(new Date()):''};
   for(const [id,v] of Object.entries(pre)){ const el=$(id); if(el&&!el.dataset.editado&&v) el.value=v; }
   const op=$('c_maeOp'); if(op&&ct.filiacao) op.innerHTML=ct.filiacao.map(n=>`<option value="${esc(n)}">`).join('');
   if($('c_maeDica')) $('c_maeDica').textContent=ct.filiacao&&ct.filiacao.length>1?'A CTC traz pai e mãe na filiação: confira qual é a mãe':'';

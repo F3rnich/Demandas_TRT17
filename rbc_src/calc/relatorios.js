@@ -360,6 +360,27 @@
     if (vac) meta.vacancia = dBR(vac[2]);
     meta.inicio = meta.periodoIni || meta.exercicio || null;
     meta.fim = meta.periodoFim || null;
+    // declaração com mais de um provimento (modelo da Portaria MPS 2.010/2025, "DADOS FUNCIONAIS 2º PROVIMENTO"):
+    // a RBC vai do 1º exercício ao fim do último período; cargo e especialidade são os do último provimento.
+    // Os períodos de cada provimento não servem de início (já vieram com o ano trocado, "DE 01/09/2014 A 03/04/2014")
+    const provs = [...flat.matchAll(/DADOS FUNCIONAIS\s*\d+\s*\S?\s*PROVIMENTO/gi)];
+    const cargoProv = [];
+    if (provs.length > 1) {
+      for (let i = 0; i < provs.length; i++) { const b = flat.slice(provs[i].index, i + 1 < provs.length ? provs[i + 1].index : undefined).toUpperCase();
+        const mb = /CARGO EFETIVO(?: EXERCIDO)?:?\s*(.{0,60})/.exec(b); const c = mb ? mb[1] : '';
+        cargoProv.push(/ANALISTA/.test(c) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(c) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(c) ? 'AUXILIAR JUDICIÁRIO' : ''); }
+      const ult = flat.slice(provs[provs.length - 1].index);
+      const mc2 = /CARGO EFETIVO(?: EXERCIDO)?:?\s*(.{0,160})/i.exec(ult);
+      if (mc2) { const c = mc2[1].replace(/\s*(REGIME JUR\S*:?\s*ESTATUT\S*\s*(LEI\s*)?8\.?112)/i, ' ').replace(/\s*(ÓRG[ÃA]O DE LOTA|ATO DE NOMEA).*$/i, '').replace(/[|\[\]]/g, ' ').replace(/\s+/g, ' ').trim(), cu = c.toUpperCase();
+        meta.cargo = /ANALISTA/.test(cu) ? 'ANALISTA JUDICIÁRIO' : /T[ÉE]CNICO/.test(cu) ? 'TÉCNICO JUDICIÁRIO' : /AUXILIAR/.test(cu) ? 'AUXILIAR JUDICIÁRIO' : meta.cargo;
+        meta.cargoTexto = c; meta.especialidade = /OFICIAL DE JUSTI|ESP(\.|ECIALIDADE)?:?\s*OFICIAL/.test(cu) ? 'OFICIAL' : /SEGURAN|POL[ÍI]CIA|AGENTE DE/.test(cu) ? 'SEGURANCA' : ''; }
+      const fins = [...flat.matchAll(/PER[ÍI]ODO DE CONTRIBUI\S*[^:]*:?\s*(?:DE\s+)?\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}\s*(?:A|ATÉ|ATE)\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4})/gi)].map(m => dBR(m[1])).filter(Boolean).sort();
+      if (meta.exercicio) meta.inicio = meta.periodoIni = meta.exercicio;
+      if (fins.length) meta.fim = meta.periodoFim = fins[fins.length - 1];
+      meta.provimentos = provs.length;
+    }
+    // modelo de 2025: "DATA DE ENCERRAMENTO / AFASTAMENTO" do último provimento = data da exoneração na certidão de RBC
+    { const enc = [...flat.matchAll(/ENCERRAMENTO\s*\/?\s*AFASTAMENTO:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/gi)].pop(); if (enc) meta.exoneracao = dBR(enc[1]); }
     // dados para o cabeçalho da RBC (ficam só no navegador)
     const tiraSexo = n => n && n.replace(/\s+(MASCULINO|FEMININO|[MF])$/, '').trim();
     let mm = /SERVIDOR(?:\(A\))?:?\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|CI\b|$)/.exec(flat) || /NOME(?: DO SERVIDOR)?:\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|$)/.exec(flat);
@@ -376,8 +397,8 @@
       if (i >= 0) {
         const partes = [];
         for (let j = i; j < Math.min(ls.length, i + 6); j++) {
-          if (j > i && /ENDERE|CARGO|^RG\b|^CI\b|ADMISS|SEXO|LOTA|^\d+ ?-/i.test(ls[j])) break;
-          const t = ls[j].replace(/FILIA[ÇC][ÃA]O:?|DATA DE NASCIMENTO:?|NASCIMENTO:?|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/gi, ' ').replace(/\s+/g, ' ').trim();
+          if (j > i && /ENDERE|CARGO|^RG\b|^CI\b|ADMISS|SEXO|LOTA|DADOS FUNCIONAIS|PROVIMENTO|^\d+ ?-/i.test(ls[j])) break;
+          const t = ls[j].replace(/.*FILIA[ÇC][ÃA]O:?/i, ' ').replace(/DATA DE NASCIMENTO:?|NASCIMENTO:?|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/gi, ' ').replace(/[|\[\]{}_]/g, ' ').replace(/\s+/g, ' ').trim();
           if (t && /^[A-Za-zÀ-ú .']+$/.test(t)) partes.push(t);
         }
         const tudo = partes.join(' ').trim();
@@ -420,21 +441,29 @@
       let classe = m[1].toUpperCase(), padrao = m[2].toUpperCase().replace(/\s+/g, '');
       const nv = /^(N[AIS])-?(\d+)$/.exec(padrao); if (nv) { classe = nv[1]; padrao = String(+nv[2]); }
       else if (/^\d+$/.test(padrao)) padrao = String(+padrao);
-      PROGRESSAO.push({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' });
+      // mais de um provimento: a seção de progressão é dividida por "1º provimento", "2º provimento"; a linha leva o cargo do provimento
+      let cargo;
+      if (cargoProv.length > 1) { const ant = [...flat.slice(0, m.index).matchAll(/(\d+)\s*\S?\s*PROVIMENTO/gi)].pop(); const c = ant && cargoProv[+ant[1] - 1]; if (c && c !== meta.cargo) cargo = c; }
+      PROGRESSAO.push(Object.assign({ ini: dBR(m[3]), fim: dBR(m[4]) || '', classe, padrao, origem: 'relatorio', fonte: 'CTC' }, cargo ? { cargo } : {}));
     }
     // CTC antiga: "Cargo efetivo: Técnico Judiciário, Classe C, Padrão 15" (referência na data da certidão)
     const atual = /CARGO EFETIVO:?[^,]{0,60},\s*CLASSE\s+([A-D])\s*,\s*PADR[ÃA]O\s+(\w+)/i.exec(flat);
     if (atual) meta.refFinal = atual[1].toUpperCase() + '-' + atual[2];
     // funções comissionadas
-    const FUNCOES = [];
+    const FUNCOES = [], SUBSTITUICOES = [];
     let ult = null;
-    for (const l of secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS/i, FIM_SEC)) {
+    let lsF = secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS|^\s*(\d+ ?- ?)?FUN[ÇC][ÕO]ES:?\s*$/i, FIM_SEC);
+    const RXFL = /^[A-ZÀ-Ú][A-ZÀ-Ú .\-]{2,80}?\s(?:FC|CJ|DAS)\s*-?\s*\d{1,2}\b(?:\s*\(em substitui\S*\))?\s+\d{1,2}\/\d{1,2}\/\d{4}\s+a\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/i;
+    if (!lsF.some(l => /\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l))) lsF = ls.filter(l => RXFL.test(l));
+    for (const l of lsF) {
       const mc = /\b((?:FC|CJ|DAS)\s*-?\s*0?(\d+))\b/i.exec(l);
       const ds = [...l.matchAll(RXD)].map(x => dBR(x[1]));
       if (mc) ult = { cod: mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1'), nome: l.slice(0, mc.index).replace(/[-–]\s*$/, '').trim() };
       if (!ult || !ds.length) continue;
       // "1 a 13-6-1991" (CTC antiga): mesmo mês
-      for (let i = 0; i < ds.length; i += 2) FUNCOES.push({ cod: ult.cod, nome: ult.nome, ini: ds[i], fim: ds[i + 1] || null });
+      // "(em substituição)": substituição, não titularidade
+      const dest = /\(?\s*em substitui/i.test(l) ? SUBSTITUICOES : FUNCOES;
+      for (let i = 0; i < ds.length; i += 2) dest.push({ cod: ult.cod, nome: ult.nome.replace(/\s*\(?\s*em substitui\S*\)?/i, '').trim(), ini: ds[i], fim: ds[i + 1] || null });
     }
     // anuênios: "1% a partir de 01/10/1995"
     const ATS = [];
@@ -458,7 +487,7 @@
       const nums = m[3].split(/\s+/).map(x => x === '-' ? 0 : +x).filter(x => !isNaN(x));
       freq.push({ ano: m[1], bruto: +m[2], liquido: nums.length ? nums[nums.length - 1] : +m[2], faltas: nums.length > 1 ? nums[0] : 0 });
     }
-    return { meta, PROGRESSAO, FUNCOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
+    return { meta, PROGRESSAO, FUNCOES, SUBSTITUICOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
   }
 
   const api = { decodificarFonte, parseCTC, dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
