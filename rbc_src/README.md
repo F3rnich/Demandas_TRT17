@@ -200,3 +200,23 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Causas: VPI tirada pelas RRCs antigas desde 21/07/2016 (absorvida pela Lei 13.317; jul/2016 com 20/30); mudança de tabela em 21/07/2016 dividida por 30 na RRC (sem ficha); pro rata do desligamento combinado com outra causa; 13º aponta o último mês cheio com causa.
 - `lerRBCPlanilha` lê a coluna CLASSE/PADRÃO (`refs` por mês; "A-1 até 01/A-2" traz as duas).
 - `confAnterior`: sem ficha, linha de progressão da CTC lida por imagem fica "confere com a planilha da DIPROF" (origem `anterior`) quando os meses inteiros do período trazem só aquela referência; senão continua incerta.
+
+### Fase 15m (11/10/2026): regressão completa depois das Fases 15d–15l
+
+Corpus remontado (3 pastas do processo SEI 0000775-34.2024: 76 casos com gabarito, 75 com cálculo; as pastas `RBC/` e `RRC/` da Fase 15 não vieram). Base: página de `ac367ce` (Fase 15, última regressão completa), mesma bateria.
+
+| Rodada | Meses iguais | Certidão, com ficha | Certidão, sem ficha | 13º |
+|---|---|---|---|---|
+| `ac367ce` (base) | 3.410/5.209 | 2.621/3.543 (74,0%) | 368/638 (57,7%) | 237/377 |
+| antes das correções abaixo | 3.589/5.209 | — | — | 260/377 |
+| Fase 15m | **3.633/5.209** | **2.775/3.543 (78,3%)** | **423/638 (66,3%)** | **260/377** |
+
+Entrada única (`--tudo`) = campos manuais nas duas versões. Itens para o usuário: valores sem mês 116 → 109; meses com pago ≠ esperado 3.913 → 2.830.
+
+Correções de regressões (60 meses que batiam na base e deixaram de bater → 5):
+- **Modo tabela (`aplicarTabelaAntiga`):** função/substituição/VPNI da ficha só saem quando a CTC/relatório registra a função ou VPNI naquele mês **e** a tabela tem o valor; senão fica a da ficha (casos de 1991–1994 sem tabela de FC).
+- **`limitarRetroativos`:** não limita o retroativo que o motor distribuiu como diferença de nível (`fonteNivel`, progressão paga com atraso) quando o vencimento final fica acima da tabela do mês.
+- **Exercício anterior com contribuição × padrão devido:** meses já postos no padrão devido não recebem de novo o vencimento/GAJ; a distribuição para no primeiro mês antes deles.
+- **GAE antes de 12/2008 (`gaeIncidenciaFicha`):** entra quando a contribuição descontada no ano mostra PSS sobre ela (oficial com PSS sobre a GAE desde 02/2008); nota nas regras.
+
+Regressões que ficam (5 meses, explicadas): pro rata com divisor 30 em RRC antiga sem ficha (2000-02, 2003-02; a calculadora usa os dias do mês — pergunta aberta à DIPROF); fim de período em 07/2012 com a DIPROF usando 22/31; 03/2009 com retroativo que a DIPROF manteve; 07/2016 com VPI 20/30 (os outros 6 casos do corpus usam a VPI cheia).
