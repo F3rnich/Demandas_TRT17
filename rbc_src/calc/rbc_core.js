@@ -17,6 +17,35 @@
 
   // ------------------------------------------------------------------ LEITURA DE FICHAS
   /** Planilha longa do sistema antigo (Ano, Mês, Tipo, Código Rubrica, Descrição Rubrica, Tipo Rubrica, Sequencial Rubrica, Valor Rubrica) */
+  /** Relatório de remuneração de contribuição do SGRH em planilha (uma linha por mês: Mês, Cargo, Classe, Vencimento,
+   *  Função, Substituição de Função, GAJ - Valor, PSS Sobre função - Valor, VPI - Valor, AQ - Valor…, Remuneração; com o
+   *  "Detalhamento" de cada parcela). O mês repetido sem classe é o 13º. Lido como ficha: cada coluna de valor vira uma
+   *  rubrica da competência; serve quando a ficha financeira não veio. */
+  function isRelRemuneracao(rows) { return !!(rows && rows.length && 'Mês' in rows[0] && 'Vencimento - Detalhamento' in rows[0] && 'Remuneração' in rows[0]); }
+  function parseRelRemuneracao(rows) {
+    const recs = [], info = {};
+    const NOME = { 'Vencimento': 'VENCIMENTO', 'Função': 'FUNÇÃO COMISSIONADA', 'Substituição de Função': 'SUBSTITUIÇÃO DE FUNÇÃO', 'GAJ - Valor': 'GAJ',
+      'PSS Sobre função - Valor': 'FUNÇÃO C/ PREVIDÊNCIA', 'VPI - Valor': 'VPI', 'AQ - Valor': 'ADICIONAL DE QUALIFICAÇÃO' };
+    const FORA = /Detalhamento|^Mês$|^Cargo$|^Classe$|Remunera|Índice|atualiza|^Teto$/i;
+    const mesDe = v => { if (typeof v === 'number' && v > 20000 && v < 80000) { const d = new Date(Date.UTC(1899, 11, 30) + v * 864e5); return [d.getUTCFullYear(), d.getUTCMonth() + 1]; }
+      const m = /^(\d{1,2})\/(\d{4})$/.exec(String(v || '').trim()) || /^\d{1,2}\/(\d{1,2})\/(\d{4})/.exec(String(v || '').trim()); return m ? [+m[2], +m[1]] : null; };
+    let ult = null;
+    for (const r of rows) {
+      const ym2 = mesDe(r['Mês']); if (!ym2) continue; const [ano, mes] = ym2, comp = ym(ano, mes);
+      if (!info.cargo && r['Cargo']) info.cargo = String(r['Cargo']).trim();
+      const gn = comp === ult && !String(r['Classe'] || '').trim(); ult = comp;
+      // 13º: soma das parcelas da linha, sem função e substituição (fora da base depois de 11/1998)
+      if (gn) { let v = 0; for (const [k, x] of Object.entries(r)) if (!FORA.test(k) && !/^__EMPTY/.test(k) && typeof x === 'number' && !/^(Função|Substituição de Função)$/.test(k)) v += x;
+        if (v > 0) recs.push({ ano, mes, comp, fonte: 'relSGRH', folha: 'G', tipoFolha: 13, cod: 'GN', desc: 'GRATIFICAÇÃO NATALINA', seq: 0, v: r2(v) }); continue; }
+      for (const [k, x] of Object.entries(r)) {
+        if (FORA.test(k) || /^__EMPTY/.test(k) || typeof x !== 'number' || !x) continue;
+        const desc = NOME[k] || k.replace(/\s*-\s*Valor$/i, '').toUpperCase();
+        recs.push({ ano, mes, comp, fonte: 'relSGRH', folha: 'N', tipoFolha: 0, cod: k.replace(/\s*-\s*Valor$/i, ''), desc, seq: 0, v: r2(x) });
+      }
+    }
+    return { recs, info };
+  }
+
   /** Exportação direta do banco do sistema antigo ("SQL Results": ANO_PAG, MES_PAG, COD_TIPO_PAG, COD_RUBRICA,
    *  IND_TIP_RUBRICA, NUM_SEQ_RUBRICA, VAL_RUBRICA), sem a descrição: vem da tabela de códigos (codRef: {cod: [[anoIni, anoFim, desc]]}). */
   function isLongDB(rows) { return !!(rows && rows.length && 'COD_RUBRICA' in rows[0] && 'VAL_RUBRICA' in rows[0] && 'ANO_PAG' in rows[0]); }
@@ -697,6 +726,6 @@
     return u.length === 1 ? u[0] + ' (inferido)' : '';
   }
 
-  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, isLongDB, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, parseFichaAntigaPDF, isFichaAntigaPDF, parseFichaSGRH, isFichaSGRH, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
+  const api = { MES, CAT, REMUN, REGRAS_PADRAO, parseLongRows, isLongDB, isRelRemuneracao, parseRelRemuneracao, parseFolhaWebPages, parseBigGrid, isBigGrid, parseFolhaWebPorFolha, isFolhaWebPorFolha, parseFichaAntigaPDF, isFichaAntigaPDF, parseFichaSGRH, isFichaSGRH, classify, inventario, calcular, detectarTeto, FUNPRESP_JUD, pssDevida, addM, divisor, r2, DIV };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBC = api;
 })(typeof self !== 'undefined' ? self : this);

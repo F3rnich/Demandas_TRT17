@@ -101,7 +101,9 @@
         const mensal = {}, gn = {}; let ult = null;
         for (const r of rows.slice(i + 1)) {
           if (!r) continue; const k = mes(r[0]), v = r[j];
-          if (k) { ult = k; if (typeof v === 'number' && v > 0) mensal[k] = Math.round(v * 100 + 1e-6) / 100; }
+          // o mesmo mês repetido (sem classe) é a linha do 13º: dezembro ou o proporcional do mês de saída (relatório do SGRH e RRC)
+          if (k && k === ult && mensal[k] != null) { if (typeof v === 'number' && v > 0) gn[k.slice(0, 4)] = Math.round(((gn[k.slice(0, 4)] || 0) + v) * 100 + 1e-6) / 100; }
+          else if (k) { ult = k; if (typeof v === 'number' && v > 0) mensal[k] = Math.round(v * 100 + 1e-6) / 100; }
           else if (ult && /GN|13|NATAL/i.test(String(r[0] || '')) && typeof v === 'number' && v > 0) gn[ult.slice(0, 4)] = Math.round(v * 100 + 1e-6) / 100;
         }
         if (Object.keys(mensal).length && (!best || Object.keys(mensal).length > Object.keys(best.mensal).length)) best = { mensal, gn, moeda: {}, aba: a.nome, fonte: 'planilha' };
@@ -163,7 +165,7 @@
     const fmtV = (k, v) => v == null ? 'X' : (moedaMes(k) + ' ' + fmt(v));
     const cab = [
       cel(txt([{ t: 'ÓRGÃO EXPEDIDOR: ', b: true }, 'TRIBUNAL REGIONAL DO TRABALHO DA 17ª REGIÃO']), W - 2600, { span: 1 }) + cel(txt([{ t: 'CNPJ: ', b: true }, '02.488.507/0001-61']), 2600),
-      cel(txt([{ t: 'NOME DO SERVIDOR: ', b: true }, d.nome || '']), W - 2600) + cel(txt([{ t: 'MATRÍCULA: ', b: true }, d.matricula || '']), 2600),
+      cel(txt([{ t: d.magistrado ? 'NOME DO(A) MAGISTRADO(A): ' : 'NOME DO SERVIDOR: ', b: true }, d.nome || '']), W - 2600) + cel(txt([{ t: 'MATRÍCULA: ', b: true }, d.matricula || '']), 2600),
       cel(txt([{ t: 'NOME DA MÃE: ', b: true }, d.mae || '']), W - 2600) + cel(txt([{ t: 'DATA DE NASCIMENTO: ', b: true }, d.nascimento || '']), 2600),
       cel(txt([{ t: 'DATA DE INÍCIO DA CONTRIBUIÇÃO/ADMISSÃO: ', b: true }, d.inicio || '']), Math.floor((W - 2600) / 2)) + cel(txt([{ t: 'DATA DA EXONERAÇÃO: ', b: true }, d.fim || '']), Math.ceil((W - 2600) / 2)) + cel(txt([{ t: 'PIS/PASEP: ', b: true }, d.pis || '']) + txt([{ t: 'CPF: ', b: true }, d.cpf || '']), 2600),
     ];

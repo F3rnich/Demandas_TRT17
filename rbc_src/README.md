@@ -122,3 +122,11 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - **Exercício anterior com contribuição** (regra `passivoTabela`, padrão ligado): "D.E.A.RRA-ATIVOS"/"DESPESA EXERCICIO ANTERIOR" sem qualificador, quando a contribuição do mês do pagamento mostra PSS sobre o valor, é distribuído nos meses de origem pela diferença para o nível pago depois (até 3 meses antes do pagamento).
 - **Fichas:** SGRH anual em PDF ("FICHA FINANCEIRA - AAAA", Telerik), CSJT "por folha" com ponto decimal (Jasper), exportação do banco antigo ("SQL Results", descrição pela tabela `rubricas_cod.json`); linhas de anotação no meio da planilha longa são ignoradas.
 - Regressão (corpus remontado, 110 casos com cálculo): 4.761/7.624 → 4.841/7.657 meses iguais; 85 ganhos, 5 regressões explicadas no documento da fase (ficha nova lida onde a tabela acertava por acaso). Entrada única = campos manuais.
+
+### Fase 15b (11/10/2026): teste com processo novo (RRC de 2019)
+
+- CTC do SEI/SGP com fonte sem tabela de caracteres (texto "deslocado": `6(59,'25` = SERVIDOR; dígitos como caracteres de controle; tabela de funções em Calibri por número de glifo): `relatorios.js` → `decodificarFonte(pages)`, chamado ao abrir qualquer PDF (só age quando ≥ 10% dos trechos têm caracteres de controle).
+- Relatório de remuneração de contribuição do SGRH (planilha .xlt: Mês, Classe, Vencimento, Função, GAJ, VPI, AQ, Remuneração, com o mês repetido = 13º) lido como ficha (`parseRelRemuneracao`), depois das fichas de verdade; o 13º vem da própria linha do relatório.
+- Aceita .xlt, .xltx e .xlsm. RBC anterior em planilha: mês repetido = linha do 13º.
+- Textos: servidor ou magistrado; magistrado desativa a especialidade; certidão de RBC com "NOME DO(A) MAGISTRADO(A)".
+- Sem regressão completa (corpus apagado do computador de trabalho); as mudanças só agem nos formatos novos.

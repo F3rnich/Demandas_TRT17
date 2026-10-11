@@ -215,7 +215,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   <h1>Calculadora de RBC</h1>
   <p>Monta a relação das remunerações de contribuição da CTC a partir da ficha financeira, da própria CTC (ou declaração) e, quando houver, dos relatórios do RH; compara o que foi pago com o que era devido pela tabela. Os arquivos são lidos neste computador e não saem dele.</p>
   <ol class="trilho" id="trilho">
-    <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Arquivos e servidor<span class="sub">Pasta do processo e dados</span></span></button></li>
+    <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Arquivos e dados<span class="sub">Pasta do processo; servidor ou magistrado</span></span></button></li>
     <li data-e="2"><button type="button"><span class="num">2</span><span class="txt">Conferência e emissão<span class="sub">Resolver, conferir e baixar</span></span></button></li>
   </ol>
 </div></div>
@@ -226,7 +226,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   <p class="intro">Basta a ficha financeira; com a CTC ou declaração, saem também cargo, período, progressão, funções, anuênios, quintos e o teto do RGPS. Relatórios do RH, se houver, prevalecem sobre a CTC. Sem nenhum deles, a classe e o padrão vêm do vencimento pago. A RBC cobre todo o período; antes de 07/1994, na moeda da época (a média da aposentadoria só usa de 07/1994 em diante).</p>
   <div class="bloco destaque" id="tudoBox">
     <h3>Pasta do processo</h3>
-    <p class="muted small" style="margin:0 0 12px">Arraste a pasta inteira do servidor (ou um .zip, ou os arquivos soltos). A calculadora separa a ficha financeira, a CTC ou declaração, os relatórios do RH e uma RBC já emitida (para comparar), preenche os dados, calcula e abre a conferência. E-mails e documentos sem uso são ignorados; documento digitalizado é lido por reconhecimento de texto.</p>
+    <p class="muted small" style="margin:0 0 12px">Arraste a pasta inteira do servidor ou magistrado (ou um .zip, ou os arquivos soltos). A calculadora separa a ficha financeira, a CTC ou declaração, os relatórios do RH e uma RBC já emitida (para comparar), preenche os dados, calcula e abre a conferência. E-mails e documentos sem uso são ignorados; documento digitalizado é lido por reconhecimento de texto.</p>
     <div class="drop" id="dropTudo" role="button" tabindex="0" aria-label="Escolher os arquivos do processo">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M5 12a3 3 0 0 1 3-3h9l4 4h15a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 30V18m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div><b>Arraste a pasta, o .zip ou os arquivos</b><span class="muted">ficha (planilha ou PDF), CTC/declaração, relatórios do RH, RBC anterior — em qualquer ordem</span></div>
@@ -237,7 +237,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     <p class="muted small" id="tudoSt" role="status" style="margin:8px 0 0"></p>
   </div>
   <div class="bloco">
-    <h3>Servidor</h3>
+    <h3>Servidor ou magistrado</h3>
     <p class="muted small" style="margin:0 0 12px">Preenchido a partir dos arquivos (CTC, ficha e vencimento pago). Confira; o que você alterar prevalece.</p>
     <div class="campos4">
       <label class="l2">Nome<input type="text" id="nome" autocomplete="off"></label>
@@ -259,14 +259,14 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     <div class="drop" id="dropRel" role="button" tabindex="0" aria-label="Escolher relatórios do RH">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div><b>Arraste a CTC e os relatórios para cá</b><span class="muted">CTC ou declaração de tempo de contribuição; progressão, funções, substituições, VPNI e ATS — em PDF, CSV ou planilha</span></div>
-      <input type="file" id="fileRel" multiple accept=".pdf,.csv,.txt,.xls,.xlsx,.ods" hidden>
+      <input type="file" id="fileRel" multiple accept=".pdf,.csv,.txt,.xls,.xlsx,.xlt,.xltx,.xlsm,.ods" hidden>
     </div>
     <ul class="arqs" id="filesRel"></ul>
     <h3 style="margin:18px 0 8px;font-size:16px">Ficha financeira</h3>
     <div class="drop" id="drop" role="button" tabindex="0" aria-label="Escolher arquivos da ficha financeira">
       <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="34" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M22 30V15m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div><b>Arraste a ficha para cá</b><span class="muted">ou clique para escolher no computador</span></div>
-      <input type="file" id="file" multiple accept=".xls,.xlsx,.pdf" hidden>
+      <input type="file" id="file" multiple accept=".xls,.xlsx,.xlt,.xltx,.xlsm,.pdf" hidden>
     </div>
     <ul class="arqs" id="files"></ul>
   </details>
@@ -316,7 +316,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     <h3>Certidão para assinatura (Word)</h3>
     <p class="muted small" style="margin:0 0 12px">Relação das bases de cálculo de contribuição no modelo da DIPROF, com os valores da RBC acima. Os campos vêm da CTC e da ficha; confira antes de baixar. Os dados ficam só neste computador.</p>
     <div class="campos4" id="certCampos">
-      <label class="l2">Nome do servidor<input type="text" id="c_nome"></label>
+      <label class="l2">Nome<input type="text" id="c_nome"></label>
       <label>Matrícula<input type="text" id="c_matricula"></label>
       <label>Data de nascimento<input type="text" id="c_nascimento" placeholder="dd/mm/aaaa"></label>
       <label class="l2">Nome da mãe<input type="text" id="c_mae" list="c_maeOp"><datalist id="c_maeOp"></datalist><span class="ajuda" id="c_maeDica"></span></label>

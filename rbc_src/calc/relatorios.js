@@ -7,6 +7,35 @@
   const isoBR = s => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null; };
   const datas = s => [...s.matchAll(DT)].map(m => `${m[3]}-${m[2]}-${m[1]}`).filter(d => d > '1902');
 
+  // PDFs do SEI/SGP com fonte embutida sem tabela de caracteres: o texto sai com os códigos deslocados (código + 29 = letra:
+  // "6(59,'25" = "SERVIDOR"; dígitos e espaço viram caracteres de controle). Há ainda uma segunda fonte (Calibri, por número
+  // de glifo, acima de U+0100) nas tabelas de funções. Cada trecho só é traduzido quando a tradução fica mais legível
+  // (mais vogais) ou quando traz caracteres de controle, que nunca aparecem em texto normal.
+  const ACC = { '®': 'Ã', 'd': 'Ç', 'Ð': 'Ó', 'Ì': 'Í', 'É': 'Á', 'È': 'Ê', '¯': 'Õ', 'm': 'ã', 'p': 'é', '}': 'õ', 'i': 'á', 't': 'í', 'y': 'ó', 'k': 'â', 'o': 'ç', 'r': 'ê', '²': '–', 'j': 'à', '~': 'ú', 'u': 'ô' };
+  const GLI = { 0x102: 'a', 0x104: 'á', 0x106: 'ã', 0x10F: 'b', 0x110: 'c', 0x11A: 'd', 0x11E: 'e', 0x128: 'f', 0x15A: 'h', 0x15D: 'i', 0x16F: 'l', 0x176: 'n', 0x17D: 'o', 0x18C: 'r', 0x190: 's', 0x19A: 't', 0x1B5: 'u', 0x1C0: 'v', 0x36C: '/', 0x372: '-' };
+  const GLI_ASC = { '\u0004': 'A', '\u0012': 'C', '\u0018': 'D', '^': 'S', 'd': 'T', ':': 'J', '&': 'F' };
+  const vog = s => (s.match(/[aeiouáéíóúãõâêôçAEIOUÁÉÍÓÚÃÕÂÊÔÇ]/g) || []).length;
+  const calibri = s => [...s].map(c => { const k = c.codePointAt(0); if (k >= 0x3EC && k <= 0x3F5) return String(k - 0x3EC); if (k === 3) return ' '; if (GLI[k]) return GLI[k]; return GLI_ASC[c] || c; }).join('');
+  function traduzirTrecho(s) {
+    if (/[\u0100-\u03ff]/.test(s)) return calibri(s);
+    const ctl = /[\u0003-\u001f]/.test(s);
+    const d = [...s].map(c => { if (ACC[c]) return ACC[c]; const k = c.charCodeAt(0); return k >= 3 && k <= 0x61 && k !== 0x20 ? String.fromCharCode(k + 29) : c; }).join('');
+    return ctl || vog(d) >= vog(s) + Math.max(2, Math.ceil(s.replace(/\s/g, '').length * 0.25)) ? d : s;
+  }
+  // traduz as páginas em lugar, só quando o documento tem o padrão (muitos trechos com caracteres de controle)
+  function decodificarFonte(pages) {
+    const its = pages.flatMap(p => p.items || []);
+    const n = its.filter(i => /[\u0003-\u001f]/.test(i.str || '')).length;
+    if (n < 5 || n < its.length * 0.1) return false;
+    // linha com algum trecho da segunda fonte: a linha inteira está nela (inclusive maiúsculas soltas como "!" = A)
+    for (const pg of pages) {
+      const ls = [];
+      for (const it of (pg.items || []).filter(i => i.str).sort((a, b) => a.y - b.y)) { const l = ls[ls.length - 1]; if (l && Math.abs(l.y - it.y) <= 2.5) l.push(it); else ls.push([it]); }
+      for (const l of ls) { const cal = l.some(i => /[\u0100-\u03ff]/.test(i.str)); for (const i of l) i.str = cal ? calibri(i.str) : traduzirTrecho(i.str); }
+    }
+    return true;
+  }
+
   function linhas(pages) {
     const out = [];
     for (const pg of pages) {
@@ -416,6 +445,6 @@
     return { meta, PROGRESSAO, FUNCOES, ATS, VPNI, afastamentos: afast, frequencia: freq };
   }
 
-  const api = { parseCTC, dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
+  const api = { decodificarFonte, parseCTC, dadosServidor, tabelaRelatorio, lerCSV, dataCel, parseAQ, juntarProgressoes, parseProgressaoTexto, linhas, tipoRelatorio, parseFuncoes, parseVPNI, parseATS, parseProgressao, isoBR };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.RBCRelatorios = api;
 })(typeof self !== 'undefined' ? self : this);

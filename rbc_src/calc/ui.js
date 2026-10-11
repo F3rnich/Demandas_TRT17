@@ -39,6 +39,9 @@ function regrasAlteradas(){ const a=Object.assign(getRegras(),{tetoDesde:$('r_te
 setRegras(RBC.REGRAS_PADRAO);
 $('r_reset').onclick=e=>{ e.preventDefault(); setRegras(RBC.REGRAS_PADRAO); calc(); };
 for (const k of REGRA_IDS) $('r_'+k).addEventListener('change', calc);
+// magistrado não tem gratificação de especialidade (GAE/GAS): o campo fica desativado
+function ajustarCargo(){ const mg=$('cargo').value==='MAGISTRADO'; $('especialidade').disabled=mg; if(mg&&$('especialidade').value){ $('especialidade').value=''; $('espDesde').value=''; $('espDesde').disabled=true; } }
+$('cargo').addEventListener('change', ajustarCargo);
 for (const id of ['inicio','fim','cargo','espDesde']) $(id).addEventListener('change', calc);
 $('especialidade').addEventListener('change',()=>{ calc(); });
 
@@ -57,6 +60,7 @@ async function pdfDoc(buf){
     const p=await doc.getPage(n); const vp=p.getViewport({scale:1}); const tc=await p.getTextContent();
     pages.push({items:tc.items.map(it=>{const t=pdfjsLib.Util.transform(vp.transform,it.transform);return {str:it.str,x:t[4],y:t[5],w:it.width};})});
   }
+  RR.decodificarFonte(pages);   // CTCs do SEI/SGP com fonte sem tabela de caracteres
   return {doc,pages};
 }
 function ligarDrop(dropId,fileId,fn){
@@ -186,7 +190,7 @@ async function lerRelatorios(list){
     const info={nome:f.name,tipo:null,n:0,erro:'',st:'lendo',msg:'Lendo…'}; S.relArqs.push(info); renderArqRel();
     try{
       let tipo, rows;
-      if(/\.(csv|txt|xlsx?|ods)$/i.test(f.name)){
+      if(/\.(csv|txt|xlsx?|xlt[xm]?|xlsm|ods)$/i.test(f.name)){
         // planilha ou CSV exportado do sistema de RH: colunas reconhecidas pelo cabeçalho
         const buf=await f.arrayBuffer(); let m2;
         if(/\.(csv|txt)$/i.test(f.name)){ let t=new TextDecoder('utf-8').decode(buf); if(t.includes('\uFFFD')) t=new TextDecoder('windows-1252').decode(buf); m2=RR.lerCSV(t); }
@@ -392,11 +396,12 @@ async function lerArquivos(list){
     try{
       const buf=await f.arrayBuffer(); let recs=[], refs={};
       if (/\.pdf$/i.test(f.name)){ const pg=(await pdfDoc(buf)).pages; const r=RBC.isFichaSGRH(pg)?RBC.parseFichaSGRH(pg):RBC.isFichaAntigaPDF(pg)?RBC.parseFichaAntigaPDF(pg):RBC.isFolhaWebPorFolha(pg)?RBC.parseFolhaWebPorFolha(pg):RBC.parseFolhaWebPages(pg); recs=r.recs; refs=(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg))?{}:(r.refs||{}); if(r.info) infoFicha(r.info); }
-      else if (/\.xlsx?$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'});
+      else if (/\.(xlsx?|xlt[xm]?|xlsm)$/i.test(f.name)){ const wb=XLSX.read(buf,{type:'array'});
         // sistema antigo (planilha longa) ou FolhaWeb exportado em planilha (Big Grid). Usa a primeira aba reconhecida: as
         // seguintes costumam ser cópias de trabalho (conferências, ajustes) e duplicariam lançamentos
         for(const n of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[n]); let r=null;
           if(RBC.isBigGrid(rows)){ const b=RBC.parseBigGrid(rows); r=b.recs; if(r.length){ Object.assign(S.basePSO,b.basePSO); infoFicha(b.info); } }
+          else if(RBC.isRelRemuneracao(rows)){ const b=RBC.parseRelRemuneracao(rows); r=b.recs; if(r.length) infoFicha(b.info); }
           else if(rows.length&&(('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) r=RBC.parseLongRows(rows,typeof RUBCOD!=='undefined'?RUBCOD:null);
           if(r&&r.length){ recs=r; break; } } }
       else info.erro='Formato não aceito. Envie .xls, .xlsx ou .pdf.';
@@ -417,7 +422,7 @@ async function lerArquivos(list){
 
 // ------------------------------------------------------------ cálculo
 function ignMap(){ const o={}; for(const k in S.ignorar) o[k]=true; return o; }
-function calc(){
+function calc(){ ajustarCargo();
   const ini=iniEf(), fim=fimEf();
   S.res=null;
   S.tetoAuto=RBC.detectarTeto(S.recs, ini);
@@ -427,7 +432,7 @@ function calc(){
   { const t=S.tetoAuto, el=$('tetoDica'); if(el) el.textContent = t&&t.desde ? `Detectado: desde ${t.desde.slice(5,7)}/${t.desde.slice(0,4)} (${t.motivo})` : t ? t.motivo : 'Sem contribuição ao Funpresp na ficha'; }
   // sem ficha, mas com progressão (CTC ou relatório): a RBC sai inteira da tabela (meses marcados "sem ficha")
   if((S.recs.length || S.rel.PROGRESSAO.length) && ini && fim && ini<=fim){
-    try{ const rg=getRegras(); if($('cargo').value==='MAGISTRADO') rg.gnFicha=true;
+    try{ const rg=getRegras(); if($('cargo').value==='MAGISTRADO'||S.recs.some(r=>r.fonte==='relSGRH')) rg.gnFicha=true;   // relatório do SGRH traz a linha do 13º
       S.res = RBC.calcular(S.recs,{inicio:ini, fim, cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); }
     catch(e){ console.error(e); S.res=null; }
   }
@@ -586,11 +591,11 @@ const moedaAno = y => moedaDe(y+'-12');
 function textoCertidaoGN(){
   const g=(S.gnCert||[]).filter(x=>x.valor>0); if(!g.length) return '';
   const cv=id=>{ const el=$(id); return el?el.value.trim():''; };
-  const nome=cv('c_nome')||$('nome').value.trim()||'[nome do servidor]';
+  const nome=cv('c_nome')||$('nome').value.trim()||'[nome]';
   const num=(S.ctc&&S.ctc.ctcNumero)||'[número]', cpf=cv('c_cpf')||(S.ctc&&S.ctc.cpf)||'[CPF]', data=cv('c_data')||'[data]';
   const itens=g.map(x=>{ const m=moedaAno(x.ano); return `${m} ${fmt.format(x.valor)} (${porExtenso(x.valor,m)}) em ${x.ano}`; });
   const lista=itens.length>1?itens.slice(0,-1).join('; ')+' e '+itens[itens.length-1]:itens[0];
-  return `Certifico, em complementação à Relação das Remunerações de Contribuições emitida em ${data}, referente à Certidão de Tempo de Contribuição nº ${num}, que o(a) servidor(a) ${nome}, CPF ${cpf}, recebeu por este Tribunal Regional do Trabalho, a título de Gratificação Natalina (considerando-se apenas as parcelas que compunham a base do recolhimento previdenciário mensal), os seguintes valores: ${lista}. Certifico ainda que não houve recolhimento de contribuição previdenciária sobre esses valores. Nada mais.`;
+  return `Certifico, em complementação à Relação das Remunerações de Contribuições emitida em ${data}, referente à Certidão de Tempo de Contribuição nº ${num}, que o(a) ${$('cargo').value==='MAGISTRADO'?'magistrado(a)':'servidor(a)'} ${nome}, CPF ${cpf}, recebeu por este Tribunal Regional do Trabalho, a título de Gratificação Natalina (considerando-se apenas as parcelas que compunham a base do recolhimento previdenciário mensal), os seguintes valores: ${lista}. Certifico ainda que não houve recolhimento de contribuição previdenciária sobre esses valores. Nada mais.`;
 }
 // ------------------------------------------------------------ benefício especial (Lei 12.618/2012, art. 3º, § 2º)
 // Base = remuneração que serviu de base a contribuição efetivamente mantida, desde 07/1994. Períodos com contribuição
@@ -635,7 +640,7 @@ function anosConf(R){
     const sy=soma[y]||{};
     if(sy.GAS>0.005) a.causas.push(`houve contribuição sobre ${rs(sy.GAS)} de GAS, que a regra atual deixa fora da RBC (cerca de ${rs(sy.GAS*0.11)} de contribuição)`);
     if(sy.AQ_TREIN>0.005) a.causas.push(`houve ${rs(sy.AQ_TREIN)} de AQ-Treinamento, fora da RBC pela regra atual`);
-    if(sy.REST) a.causas.push(`houve devolução de ${rs(sy.REST)} de contribuição ao servidor (${[...rest[y]].join(', ')})`);
+    if(sy.REST) a.causas.push(`houve devolução de ${rs(sy.REST)} de contribuição (${[...rest[y]].join(', ')})`);
     if(sy.CLASSIFICAR) a.causas.push(`há ${rs(sy.CLASSIFICAR)} em rubricas não reconhecidas`);
     const pas=R.passivos.filter(p=>p.comp.startsWith(y) && !/ISEN/i.test(p.desc));
     if(pas.length){ const t=pas.reduce((s,p)=>s+p.valor,0); a.causas.push(`houve ${rs(t)} em passivos/exercícios anteriores sem isenção de PSS (${[...new Set(pas.map(p=>mesTxt(p.comp)))].join(', ')}), cuja contribuição não corresponde a meses da RBC`); }
@@ -684,7 +689,7 @@ $('avancar').onclick=()=>{ if(S.etapa<2) irPara(2); else $('x_rbc').click(); };
 
 function etapa1Status(){
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
-  if(!$('cargo').value) return 'Escolha o cargo do servidor.';
+  if(!$('cargo').value) return 'Escolha o cargo (servidor) ou magistrado.';
   if(!S.recs.length&&!S.rel.PROGRESSAO.length) return 'Envie a pasta do processo (ou ao menos a ficha financeira).';
   if(!S.esp) return 'Remuneração esperada não calculada: confira o cargo e a progressão (a CTC pode ser de outro cargo). A RBC sai da ficha mesmo assim.';
   if(nInc) return `${nInc} linha(s) da progressão com classe/padrão a conferir${S.res?'':' (a ficha ajuda a confirmar)'}.`;
@@ -864,7 +869,7 @@ function htmlPend(C){
   h+=`<details class="res-item"${Object.keys(S.abertos).some(k=>k[0]==='q')?' open':''}><summary>Passivos e exercícios anteriores (${pas.length})</summary><p class="muted small">Pagamentos judiciais e de exercícios anteriores. Em geral não entram na RBC porque não tiveram contribuição. Distribua só se a DIPROF decidir incluir; desconsidere para registrar a exclusão.</p>`+
     pas.map(({p,i})=>{ const key='q'+i, au=(S.passivoAuto||{})[p.id]; return `<div class="item${au?' feito':''}"><div class="item-top"><span class="t">${esc(p.desc)}</span><span class="muted small">pago em ${mesTxt(p.comp)}</span><span class="v">${rs(p.valor)}</span>${au?'':abrir(key)}${desc(key)}</div>${au?`<p class="d">Teve contribuição: distribuído em ${faixas(au.meses)} pela diferença para o nível pago desde ${mesTxt(au.nivel)} (regra "Exercício anterior com contribuição"). Desconsidere para tirar da RBC.</p>`:''}${S.abertos[key]?formDist(key,{cat:'VB',valor:p.valor}):''}</div>`; }).join('')+`</details>`;
   const dvFalta=S.devol.filter(p=>p.aplicar!==false&&!(p.ini&&p.fim)).length;
-  const dv=`<section class="res-item"><h4>${dvFalta?dvFalta+' devolução(ões) de contribuição sem período':'Contribuição devolvida ao servidor'}</h4><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
+  const dv=`<section class="res-item"><h4>${dvFalta?dvFalta+' devolução(ões) de contribuição sem período':'Contribuição devolvida'}</h4><p class="muted small" style="margin:0 0 10px">Períodos em que a contribuição foi restituída. Continuam na RBC e na média, mas ficam fora da base do benefício especial (coluna própria na planilha). A calculadora preenche o que a ficha informa.</p>`+
     (S.devol.length?`<div class="tw" style="max-height:none"><table class="ed"><thead><tr><th class="l">Fora do benefício especial</th><th class="l">De</th><th class="l">Até</th><th class="l">Origem</th><th></th></tr></thead><tbody>${S.devol.map((p,i)=>`<tr><td><input type="checkbox" data-dvap="${i}"${p.aplicar!==false?' checked':''} aria-label="Excluir do benefício especial"></td><td><input type="date" data-dv="${i}" data-c="ini" value="${esc(p.ini)}" aria-label="Início"></td><td><input type="date" data-dv="${i}" data-c="fim" value="${esc(p.fim)}" aria-label="Fim"></td><td class="l wrap small">${p.semPeriodo&&!(p.ini&&p.fim)&&p.aplicar!==false?'<span class="tag att">informe o período</span> ':''}${p.origem==='ficha'&&p.aplicar===false?'<span class="tag info">pode ser devolução parcial: marque se foi integral</span> ':''}${esc(p.obs||'informado por você')}</td><td><button class="btn link" data-dvrm="${i}">Remover</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted small" style="margin:0 0 8px">Nenhuma devolução encontrada na ficha.</p>')+
     `<button class="btn sec peq" id="dvAdd" style="margin-top:10px">Adicionar período</button></section>`;
   if(dvFalta) r+=dv; else h+=dv;
@@ -926,7 +931,7 @@ function resolverItens(C){
   return it;
 }
 function renderEtapa2Extras(C){
-  const sv=[$('nome').value||'Servidor sem nome', $('cargo').value?$('cargo').value.toLowerCase():'<b>cargo não informado</b>', {OFICIAL:'oficial de justiça',SEGURANCA:'segurança'}[$('especialidade').value], brData(iniEf())+' a '+brData(fimEf()), $('processo').value&&'SEI '+$('processo').value].filter(Boolean);
+  const sv=[$('nome').value||'Sem nome', $('cargo').value?$('cargo').value.toLowerCase():'<b>cargo não informado</b>', {OFICIAL:'oficial de justiça',SEGURANCA:'segurança'}[$('especialidade').value], brData(iniEf())+' a '+brData(fimEf()), $('processo').value&&'SEI '+$('processo').value].filter(Boolean);
   $('servResumo').innerHTML=sv.map(x=>x.startsWith('<b>')?x:esc(x)).join(' · ')+` <button class="btn link" id="editServ">alterar</button>`;
   $('editServ').onclick=()=>irPara(1);
   if(S.notasEntrada) $('servResumo').insertAdjacentHTML('beforeend',`<div class="aviso info" style="margin:10px 0 0"><span class="ic">i</span><div>Deduzido dos arquivos: ${S.notasEntrada}</div></div>`);
@@ -1152,7 +1157,7 @@ $('x_rbc').onclick=async()=>{
     wr.getRow(1).font={bold:true}; wr.getColumn(6).numFmt='#,##0.00';
 
     const buf=await wb.xlsx.writeBuffer();
-    baixar(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'RBC_'+(nm?nm.split(/\s+/)[0]:'servidor')+'_'+iniEf().slice(0,4)+'-'+fimEf().slice(0,4)+'.xlsx');
+    baixar(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'RBC_'+(nm?nm.split(/\s+/)[0]:'sem_nome')+'_'+iniEf().slice(0,4)+'-'+fimEf().slice(0,4)+'.xlsx');
     $('x_msg').textContent='Planilha gerada. Confira as abas "Conferência PSS" e "Esperada x paga" antes de juntar ao processo.';
   }catch(e){ console.error(e); $('x_msg').textContent='Não foi possível gerar a planilha: '+e.message; }
   btn.disabled=false; btn.textContent='Baixar RBC em Excel';
@@ -1202,11 +1207,12 @@ async function classificar(f){
     const tp=RR.tipoRelatorio(pg); if(tp&&tp!=='AQ') return {tipo:'rel',sub:tp};
     return {tipo:'ignorado',motivo:'PDF não reconhecido'};
   }
-  if(/\.(xlsx?|ods|csv)$/i.test(n)){
+  if(/\.(xlsx?|xlt[xm]?|xlsm|ods|csv)$/i.test(n)){
     try{
       if(/\.csv$/i.test(n)) return {tipo:'rel'};
       const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
-      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) return {tipo:'ficha'}; }
+      for(const sn of wb.SheetNames){ const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn]); if(rows.length&&(RBC.isBigGrid(rows)||('Código Rubrica' in rows[0])||RBC.isLongDB(rows))) return {tipo:'ficha'};
+        if(RBC.isRelRemuneracao(rows)) return {tipo:'ficha',sub:'relatório de remuneração do SGRH',rel:true}; }
       const abas=wb.SheetNames.map(sn=>({nome:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null})}));
       const r=CC&&CC.lerRBCPlanilha(abas); if(r) return {tipo:'rbc',dados:r};
       const m2=[].concat(...wb.SheetNames.map(sn=>XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,dateNF:'dd/mm/yyyy',defval:''})));
@@ -1229,7 +1235,7 @@ async function lerTudo0(lista){
   const grupos={ficha:[],rel:[],rbc:[],img:[],ignorado:[]};
   for(let i=0;i<fs.length;i++){ $('tudoSt').textContent=`Lendo ${i+1} de ${fs.length}: ${fs[i].name}`; const c=await classificar(fs[i]); c.f=fs[i]; grupos[c.tipo].push(c); }
   // cópias de trabalho por último: a leitura da ficha descarta meses já lidos
-  grupos.ficha.sort((a,b)=>(COPIA.test(a.f.name)?1:0)-(COPIA.test(b.f.name)?1:0)||a.f.name.localeCompare(b.f.name));
+  grupos.ficha.sort((a,b)=>(a.rel?1:0)-(b.rel?1:0)||(COPIA.test(a.f.name)?1:0)-(COPIA.test(b.f.name)?1:0)||a.f.name.localeCompare(b.f.name));   // relatório do SGRH só completa o que a ficha não tem
   grupos.rel.sort((a,b)=>(a.sub==='CTC'?0:1)-(b.sub==='CTC'?0:1)||a.f.name.localeCompare(b.f.name));
   const ROT={ficha:'Ficha financeira',rel:'CTC / relatório',rbc:'RBC já emitida (comparação)',img:'Digitalizado',ignorado:'Ignorado'};
   ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
@@ -1312,15 +1318,15 @@ async function baixarCert(){
   try{
     if(!S.res||!CC||!window.JSZip) throw new Error('calcule a RBC antes (e confira a conexão: o gerador usa a biblioteca JSZip)');
     const v=id=>$(id).value.trim();
-    const blob=await CC.gerarCertidaoDocx(JSZip,{nome:v('c_nome'),matricula:v('c_matricula'),nascimento:v('c_nascimento'),mae:v('c_mae'),pis:v('c_pis'),cpf:v('c_cpf'),inicio:v('c_inicio'),fim:v('c_fim'),
+    const blob=await CC.gerarCertidaoDocx(JSZip,{magistrado:$('cargo').value==='MAGISTRADO',nome:v('c_nome'),matricula:v('c_matricula'),nascimento:v('c_nascimento'),mae:v('c_mae'),pis:v('c_pis'),cpf:v('c_cpf'),inicio:v('c_inicio'),fim:v('c_fim'),
       referencia:v('c_referencia'),dataEmissao:v('c_data'),chefe:v('c_chefe'),secretario:v('c_secretario'),linhas:S.res.linhas.map(l=>({comp:l.comp,total:l.total})),gns:S.res.gns.map(g=>({ano:g.ano,valor:g.valor}))});
-    baixar(blob,'RBC_'+(v('c_nome')||'servidor').split(/\s+/)[0]+'_'+iniEf().slice(0,4)+'-'+fimEf().slice(0,4)+'.docx');
+    baixar(blob,'RBC_'+(v('c_nome')||'sem_nome').split(/\s+/)[0]+'_'+iniEf().slice(0,4)+'-'+fimEf().slice(0,4)+'.docx');
     $('certMsg').textContent='Certidão gerada. Confira os campos entre colchetes e os valores antes de assinar.';
   }catch(e){ console.error(e); $('certMsg').textContent='Não foi possível gerar: '+e.message; }
 }
 async function baixarCertGN(){
   try{ const blob=await CC.gerarCertidaoGNDocx(JSZip,{texto:$('gnCertTxt').value||textoCertidaoGN(),dataEmissao:$('c_data').value,assinante:$('c_chefe').value,cargoAssinante:'Chefe da Divisão de Processamento de Folha de Pagamento'});
-    baixar(blob,'Certidao_GN_'+($('c_nome').value||'servidor').split(/\s+/)[0]+'.docx'); }catch(e){ $('certMsg').textContent='Não foi possível gerar: '+e.message; }
+    baixar(blob,'Certidao_GN_'+($('c_nome').value||'sem_nome').split(/\s+/)[0]+'.docx'); }catch(e){ $('certMsg').textContent='Não foi possível gerar: '+e.message; }
 }
 $('x_cert').onclick=baixarCert; $('x_certGN').onclick=baixarCertGN;
 
