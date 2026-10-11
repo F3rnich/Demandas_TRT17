@@ -186,3 +186,4 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 | 10) AQ por VR desde 01/2026 | esperada usa VR desde 2026 |
 | Folhas de URV com rubrica genérica de exercício anterior (2001.2.11, 2001.3.11, 2001.12.16, 2002.9.7, 2002.12.15) | **novo:** não são passivo (o 11,98% entra pelo ajuste mensal) |
 | Tabela de nomes de função → FC | **novo:** CTC sem código usa a tabela (Assistente Secretário FC-5 … Auxiliar Especializado FC-1) |
+- Comparação (Fase 15j): jan–out/2013 com a RBC anterior igual a nov/2012 → causa "a RBC anterior manteve os valores de 2012: a folha pagou a tabela da Lei 12.774 com atraso" (RRC de 2017, planilha "PAGO"; as RBCs de 2024–2025 usam o padrão devido).

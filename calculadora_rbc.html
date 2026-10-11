@@ -3838,6 +3838,9 @@ function causasCmp(dif){
         if((dep&&Math.abs(h.f(dep.k)-(dep.ant-dep.calc))<=Math.max(1,dep.ant*0.001))||(ant&&Math.abs(h.f(ant.k)-(ant.ant-ant.calc))<=Math.max(1,ant.ant*0.001))){ c.push(h.txt+' — mês em que começa ou termina (proporcional a '+Math.round(r*30)+'/30)'); break; } } } }
     if(!c.length&&Math.abs(falta)<Math.max(5,Math.abs(x.ant)*0.001)) c.push('arredondamento ou dia da mudança no mês (progressão, pro rata)');
     if(!c.length&&k==='2012-12') c.push('enquadramento da Lei 12.774 em 31/12/2012: a DIPROF tratou dezembro/2012 de forma própria');
+    // 2013: a folha pagou a tabela da Lei 12.774 com atraso; RBC anterior com os valores de 2012 (mesmo total de nov/2012)
+    if(!c.length&&k>='2013-01'&&k<='2013-10'){ const ref=dif.find(y=>y.k==='2012-11'), antNov=ref?ref.ant:(S.anteriores[0]&&S.anteriores[0].r.mensal['2012-11']);
+      if(antNov&&Math.abs(antNov-x.ant)<=tol&&x.calc>x.ant) c.push('a RBC anterior manteve os valores de 2012: a folha pagou a tabela da Lei 12.774 com atraso. A calculadora usa a tabela devida (sem ficha) ou o valor pago e o padrão devido (com ficha)'); }
     // a RBC anterior é a remuneração pela tabela (cargo efetivo, função e VPNI), não a paga: prática da DIPROF em RBCs antigas
     if(!c.length&&k<='2001-12'){ const e=S.espBy[k]; if(e&&Math.abs(e.total-x.ant)<=tol&&Math.abs(e.total-x.calc)>tol) c.push('a RBC anterior usou a tabela de remuneração (cargo, função e VPNI), não o valor pago: ajuste a regra "Tabela até" em Regras de cálculo'); }
     out[k]=c.length?c.join(' + '):'';
