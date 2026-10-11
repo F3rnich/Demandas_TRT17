@@ -465,7 +465,7 @@ function calc(){ ajustarCargo();
   if(aplicarSugestoes()) renderRelTabelas();
   S.esp=null; S.cmp=null; S.espBy={};
   const d=dadosServidor();
-  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res) S.cmp=E.comparar(S.esp,S.res); }catch(e){ console.error(e); S.esp=null; } }
+  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res&&S.recs.length) S.cmp=E.comparar(S.esp,S.res); /* sem ficha não há pago para comparar */ }catch(e){ console.error(e); S.esp=null; } }
   aplicarTabelaAntiga();
   aplicarSemFicha();
   aplicarTeto();
@@ -706,7 +706,7 @@ function contagens(){
   const cmp=S.cmp||[]; const divMes=new Set(cmp.filter(m=>m.itens.length).map(m=>m.comp));
   return { naoRec:inv.filter(e=>e.cat==='CLASSIFICAR'), inv, pend:R.pend.filter(p=>!S.ack[p.id]&&vale(p.comp)&&!pendAutoMotivo(p)), pendAuto:R.pend.filter(p=>!S.ack[p.id]&&pendAutoMotivo(p)).map(p=>({...p,auto:pendAutoMotivo(p)})), pendTodos:R.pend, parc, sit, anos, divMes,
     anosVerif:lv.length, anosOk:lv.filter(a=>a.ok).length, anosAtt:lv.filter(a=>!a.ok),
-    none:Object.values(sit).filter(x=>x==='none').length, nv:Object.values(sit).filter(x=>x==='nv').length, att:lv.filter(a=>!a.ok).length };
+    none:R.linhas.filter(l=>sit[l.comp]==='none'&&!l.daTabela).length, nv:Object.values(sit).filter(x=>x==='nv').length, att:lv.filter(a=>!a.ok).length };
 }
 
 // ------------------------------------------------------------ navegação
@@ -755,6 +755,7 @@ function renderTudo(){
   let st='';
   if(S.etapa===1) st=etapa1Status();
   else if(!S.recs.length&&!S.res) st='Envie a ficha financeira.';
+  else if(!S.recs.length) st=(nRes?`${nRes} item(ns) a resolver. `:'')+'RBC calculada pela tabela, sem ficha: confira classe, padrão, AQ e 13,23%.';
   else if(!S.res) st='Confira as datas de ingresso e desligamento na etapa 1.';
   else st=(nRes?`${nRes} item(ns) a resolver. `:'')+(C.att?`${C.att} ano(s) com diferença na contribuição. `:'Contribuição conferida. ')+(S.cmp?`${C.divMes.size} mês(es) com pagamento diferente do esperado.`:'');
   $('barraSt').textContent=st;
@@ -787,7 +788,8 @@ function renderCobertura(){
   const sem=ls.filter(l=>!l.fonte&&!l.daTabela&&!(ehBorda(l)&&Math.abs(l.total)>0.005)).map(l=>l.comp);
   const tab=ls.filter(l=>!l.fonte&&l.daTabela&&!l.borda).map(l=>l.comp), borda=ls.filter(l=>!l.fonte&&(l.borda||(ehBorda(l)&&!l.daTabela&&Math.abs(l.total)>0.005)));
   const semBorda=sem.filter(k=>ehBorda(ls.find(l=>l.comp===k))), semMeio=sem.filter(k=>!semBorda.includes(k));
-  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês no mapa mês a mês.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração, como nos demais meses anteriores a 07/1994. Função e substituição sem tabela precisam ser lançadas em "Ajustes da RBC" (lançar outro valor).</div></div>`:'') + (semMeio.length
+  if(!S.recs.length){ el.innerHTML=`<div class="aviso info"><span class="ic">i</span><div>Sem ficha financeira: toda a RBC, de ${mesTxt(ls[0].comp)} a ${mesTxt(ls[ls.length-1].comp)}, sai da tabela de remuneração, pela classe e padrão da etapa 1, com pro rata pelos dias de exercício no ${ls.length>1?'primeiro e no último mês':'mês'}. Função e substituição só entram com opção pela contribuição: lance em "Ajustes da RBC" se for o caso.</div></div>`; return; }
+  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês no mapa mês a mês.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração (classe e padrão da etapa 1). Função e substituição sem tabela precisam ser lançadas em "Ajustes da RBC" (lançar outro valor).</div></div>`:'') + (semMeio.length
     ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${semMeio.length} mês(es): <b>${faixas(semMeio)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
     : (tab.length||borda.length||semBorda.length)?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
 }
@@ -987,6 +989,18 @@ function renderConferencia(C){
   renderEtapa2Extras(C);
   const R=S.res; if(!R) return;
   const pend=[]; const nRes=resolverItens(C).length; if(nRes) pend.push(`${nRes} item(ns) no quadro "A resolver"`); if(C.none) pend.push(`${C.none} mês(es) sem ficha`);
+  if(!S.recs.length){   // sem ficha: nada a conferir contra o pago; o que importa é a entrada (progressão, AQ, 13,23%)
+    const pres=S.rel.PROGRESSAO.some(r=>r.origem==='presumida'&&!r.revogada), semAQ=!S.rel.AQ.length, sem1323=!S.rel.V1323.length&&R.meses.some(k=>k>='2015-01'&&k<='2016-03');
+    const conf=[pres&&'a progressão é <b>presumida</b> (A1 no exercício e um padrão por ano): confirme no assentamento funcional', semAQ&&'nenhum adicional de qualificação informado: se havia, lance na tabela de AQ da etapa 1', sem1323&&'o período inclui 01/2015 a 03/2016: se o 13,23% foi pago, informe na tabela de 13,23%', getRegras().tetoDesde&&`os valores estão limitados ao teto do RGPS desde ${mesTxt(getRegras().tetoDesde.slice(0,7))} (${esc((S.tetoAuto&&S.tetoAuto.motivo)||'regra de teto')}); desligue em Regras se não for o caso`].filter(Boolean);
+    $('veredito').innerHTML=`<div class="veredito ${nRes?'att':'ok'}"><div class="selo" aria-hidden="true">${nRes?'!':'i'}</div><div>
+      <h3>${nRes?'Há pendências antes de gerar':'RBC calculada pela tabela (sem ficha financeira)'}</h3>
+      <p>Sem ficha, a contribuição descontada e o pagamento não podem ser conferidos: a RBC depende só dos dados da etapa 1.${nRes?` ${nRes} item(ns) no quadro "A resolver". <button class="btn link" id="irPend">Ver</button>`:''}</p>
+      ${conf.length?`<p>Antes de emitir, confira: ${conf.join('; ')}. <button class="btn link" id="irE1v">Ir para a etapa 1</button></p>`:''}
+    </div></div>`;
+    if($('irPend')) $('irPend').onclick=()=>$('resolverBox').scrollIntoView({block:'start'});
+    if($('irE1v')) $('irE1v').onclick=()=>{ irPara(1); $('tabelasBox').open=true; $('tabelasBox').scrollIntoView({block:'start'}); };
+    $('comparacao').innerHTML='';
+  } else {
   const ok=!C.att && !pend.length;
   const titulo = ok ? 'A RBC está consistente com a ficha' : C.att ? `A contribuição não confere em ${C.att} ano(s)` : 'Há pendências antes de gerar';
   const lista = C.anosAtt.map(a=>`<li><b>${a.ano}</b>: diferença de ${rs(a.dif)} ${a.dif>0?'(descontado a mais do que a RBC explica)':'(descontado a menos do que a RBC exige)'}${a.causas.length?'. Provável causa: '+esc(a.causas.join('; ')):'. Sem causa identificada: confira a composição dos meses em laranja'}.</li>`).join('');
@@ -999,6 +1013,7 @@ function renderConferencia(C){
   <div class="numeros"><div><span>Contribuição descontada na ficha</span><b>${rs(R.resumo.pssFicha)}</b></div><div><span>Contribuição esperada pela RBC</span><b>${rs(R.resumo.pssCalc)}</b></div><div><span>Diferença no período</span><b style="color:${Math.abs(R.resumo.dif)>1?'var(--att)':'var(--ok)'}">${rs(R.resumo.dif)}</b></div></div>`;
   if($('irPend')) $('irPend').onclick=()=>$('resolverBox').scrollIntoView({block:'start'});
   renderComparacao(C);
+  }
   const gn={}; for(const g of R.gns) gn[g.ano]=g;
   const anos=[...new Set(R.meses.map(k=>k.slice(0,4)))];
   const parcMes=new Set(C.parc.map(p=>p.comp));
@@ -1337,7 +1352,7 @@ function renderCmpAnterior(){
   $('cmpRes').innerHTML=sel+`<div class="aviso ${ok?'ok':'info'}" style="margin:10px 0"><span class="ic">${ok?'✓':'i'}</span><div>${c.iguais} de ${c.total} meses iguais${c.dif.length?`; ${c.dif.length} diferente(s)`:''}${c.gnDif.length?`; 13º diferente em ${c.gnDif.length} ano(s)`:''}.</div></div>`+
     (c.dif.length?`<div class="tw"><table><thead><tr><th class="l">Mês</th><th>RBC anterior</th><th>Calculadora</th><th>Diferença</th></tr></thead><tbody>${c.dif.slice(0,120).map(d=>`<tr><td class="l">${mesTxt(d.k)}</td><td>${f2(d.ant)}</td><td>${f2(d.calc)}</td><td>${f2(d.d)}</td></tr>`).join('')}</tbody></table></div>`:'')+
     (c.gnDif.length?`<p class="small" style="margin:10px 0 0">13º: ${c.gnDif.map(g=>`${g.ano} (anterior ${f2(g.ant)}, calculadora ${g.calc==null?'—':f2(g.calc)})`).join('; ')}</p>`:'');
-  if($('cmpSel')) $('cmpSel').onchange=e=>{ S.cmpSel=+e.target.value; renderComparacao(); };
+  if($('cmpSel')) $('cmpSel').onchange=e=>{ S.cmpSel=+e.target.value; renderCmpAnterior(); };
 }
 
 // ------------------------------------------------------------ certidão para assinatura (.docx)
