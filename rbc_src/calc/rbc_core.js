@@ -12,7 +12,7 @@
   const diasMes = k => new Date(+k.slice(0, 4), +k.slice(5, 7), 0).getDate();
   // divisor do pro rata: mês comercial de 30 dias até a competência anterior a DIV.desde; depois, dias do mês
   // antes de 07/1994 a DIPROF usa os dias do mês (prática da RBC de servidor com período em Cr$); de 07/1994 a 11/2017, 30 dias
-  const DIV = { desde: '2017-12', de30: '1994-07' };
+  const DIV = { desde: '2018-01', de30: '1994-07' };   // anotação 7 da DIPROF: dias do mês a partir de jan/2018
   const divisor = k => (k >= DIV.desde || k < DIV.de30 ? diasMes(k) : 30);
 
   // ------------------------------------------------------------------ LEITURA DE FICHAS
@@ -453,7 +453,7 @@
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI', 'REDUTOR'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
   const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false, passivoTabela: true };
+    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2018-01', gaeDesde: '2008-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false, passivoTabela: true };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -465,7 +465,11 @@
     const ultD = k => k + '-' + String(diasMes(k)).padStart(2, '0');
     const lacCheia = k => lac.some(x => x.ini <= k + '-01' && x.fim >= ultD(k));
     const meses = []; for (let k = ini; k <= fim; k = addM(k, 1)) if (!lacCheia(k)) meses.push(k);
-    const catOf = r => (opts.cats && opts.cats[r.cod + '|' + r.desc]) || classify(r.cod, r.desc);
+    // anotação da DIPROF: folhas de URV (11,98%) pagas com rubricas genéricas de exercício anterior (ano.mês.tipo da folha).
+    // O 11,98% já entra pelo ajuste mensal; esses pagamentos não são passivo a distribuir
+    const FOLHAS_URV = new Set(['2001.2.11', '2001.3.11', '2001.12.16', '2002.9.7', '2002.12.15']);
+    const ehFolhaURV = r => r.tipoFolha != null && FOLHAS_URV.has(r.ano + '.' + r.mes + '.' + r.tipoFolha);
+    const catOf = r => { const c = (opts.cats && opts.cats[r.cod + '|' + r.desc]) || classify(r.cod, r.desc); return c === 'PASSIVO' && ehFolhaURV(r) ? 'IGNORAR' : c; };
     const fontes = {};
     const cur = {}, extra = {}, supl = {}, pss = {}, passivos = [], semComp = [];
     for (const k of meses) { cur[k] = {}; extra[k] = {}; pss[k] = 0; }
@@ -637,6 +641,7 @@
       if (c === 'ATS' || c === 'V1323_ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? 'ficha' : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
+      if (c === 'GAE') return !regras.gaeDesde || k >= regras.gaeDesde;   // anotação 8 da DIPROF: PSS sobre a GAE a partir de 1º/12/2008
       if (c === 'FALTAS') return regras.descontarFaltas !== false;
       if (c === 'V1198') return !em1198(k);
       return REMUN.includes(c);

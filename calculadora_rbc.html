@@ -359,7 +359,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label>13º sem VPI até o ano<input type="number" id="r_gnSemVPIAte" min="1994" max="2100"></label>
       <label><span>RBC pela tabela, e não pela ficha, até <span class="dica">(prática da DIPROF para o período em cruzeiros; em branco = sempre pela ficha)</span></span><input type="month" id="r_tabelaAte"></label>
       <label><span>Mês de 30 dias a partir de <span class="dica">(antes, dias do mês)</span></span><input type="month" id="r_divisor30Desde"></label>
-      <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(Res. CSJT 211/2017, DEJT 30/11/2017; antes, mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
+      <label><span>Pro rata pelos dias do mês a partir de <span class="dica">(DIPROF: a partir de 01/2018, Res. CSJT 211/2017; antes, mês de 30 dias)</span></span><input type="month" id="r_divisorDiasDesde"></label>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:14px;align-items:center">
       <label class="chk"><input type="checkbox" id="r_vpniTabela"> VPNI pela tabela (fora de dez/1999–dez/2005)</label>
@@ -406,7 +406,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   const diasMes = k => new Date(+k.slice(0, 4), +k.slice(5, 7), 0).getDate();
   // divisor do pro rata: mês comercial de 30 dias até a competência anterior a DIV.desde; depois, dias do mês
   // antes de 07/1994 a DIPROF usa os dias do mês (prática da RBC de servidor com período em Cr$); de 07/1994 a 11/2017, 30 dias
-  const DIV = { desde: '2017-12', de30: '1994-07' };
+  const DIV = { desde: '2018-01', de30: '1994-07' };   // anotação 7 da DIPROF: dias do mês a partir de jan/2018
   const divisor = k => (k >= DIV.desde || k < DIV.de30 ? diasMes(k) : 30);
 
   // ------------------------------------------------------------------ LEITURA DE FICHAS
@@ -847,7 +847,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   const AJ1198 = ['VB', 'GAJ', 'GEXTRA', 'DIF2886', 'APJ', 'FC', 'VPNI', 'REDUTOR'];
   // Padrões = prática observada da DIPROF nas RBCs analisadas (cada item é decisão a confirmar)
   const REGRAS_PADRAO = { fcAte: '1998-11', atsDesde: '2002-04', gas: false, aqTrein: false, conferirDesde: '2002-01', teto: false,
-    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2017-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false, passivoTabela: true };
+    ajuste1198Desde: '1994-04', ajuste1198Ate: '2001-01', descontarFaltas: false, gnDesde: '2003', gnSemVPIAte: '2007', divisorDiasDesde: '2018-01', gaeDesde: '2008-12', divisor30Desde: '1994-07', tabelaAte: '1994-06', vpniTabela: true, fcTabela: true, tetoDesde: '', tetoAuto: true, semFichaTabela: true, gasAte: '', vpiTabela: true, gnFicha: false, passivoTabela: true };
   const TABCAT = ['VB', 'GAJ', 'ATS', 'GEXTRA', 'DIF2886', 'APJ'];
   function calcular(recs, opts) {
     const regras = Object.assign({}, REGRAS_PADRAO, opts.regras || {});
@@ -859,7 +859,11 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
     const ultD = k => k + '-' + String(diasMes(k)).padStart(2, '0');
     const lacCheia = k => lac.some(x => x.ini <= k + '-01' && x.fim >= ultD(k));
     const meses = []; for (let k = ini; k <= fim; k = addM(k, 1)) if (!lacCheia(k)) meses.push(k);
-    const catOf = r => (opts.cats && opts.cats[r.cod + '|' + r.desc]) || classify(r.cod, r.desc);
+    // anotação da DIPROF: folhas de URV (11,98%) pagas com rubricas genéricas de exercício anterior (ano.mês.tipo da folha).
+    // O 11,98% já entra pelo ajuste mensal; esses pagamentos não são passivo a distribuir
+    const FOLHAS_URV = new Set(['2001.2.11', '2001.3.11', '2001.12.16', '2002.9.7', '2002.12.15']);
+    const ehFolhaURV = r => r.tipoFolha != null && FOLHAS_URV.has(r.ano + '.' + r.mes + '.' + r.tipoFolha);
+    const catOf = r => { const c = (opts.cats && opts.cats[r.cod + '|' + r.desc]) || classify(r.cod, r.desc); return c === 'PASSIVO' && ehFolhaURV(r) ? 'IGNORAR' : c; };
     const fontes = {};
     const cur = {}, extra = {}, supl = {}, pss = {}, passivos = [], semComp = [];
     for (const k of meses) { cur[k] = {}; extra[k] = {}; pss[k] = 0; }
@@ -1031,6 +1035,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       if (c === 'ATS' || c === 'V1323_ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? 'ficha' : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
+      if (c === 'GAE') return !regras.gaeDesde || k >= regras.gaeDesde;   // anotação 8 da DIPROF: PSS sobre a GAE a partir de 1º/12/2008
       if (c === 'FALTAS') return regras.descontarFaltas !== false;
       if (c === 'V1198') return !em1198(k);
       return REMUN.includes(c);
@@ -1192,7 +1197,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
   // peso de cada dia: a partir de 2018 = 1/dias do mês; antes, mês comercial de 30 dias, como na folha:
   // o dia 31 não conta e, em fevereiro, o último dia completa os 30 (quem muda em 21/07 fica 10/30 na situação nova).
   function pesos(k, desde, de30) {
-    desde = desde || '2017-12'; de30 = de30 || '1994-07';
+    desde = desde || '2018-01'; de30 = de30 || '1994-07';
     const n = diasMes(k), w = [];
     for (let d = 1; d <= n; d++) w.push(k >= desde || k < de30 ? 1 / n : d < n ? (d <= 30 ? 1 / 30 : 0) : n === 31 ? 0 : (30 - (n - 1)) / 30);
     return w;
@@ -1359,6 +1364,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       if (c === 'ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? !!(regras.aqTreinAnos && regras.aqTreinAnos[k.slice(0, 4)]) : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
+      if (c === 'GAE') return !regras.gaeDesde || k >= regras.gaeDesde;
       if (c === 'VPNI_JUD_SEM_PSS') return false;
       return true;
     };
@@ -1424,7 +1430,7 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
         const prev = info[kp] && info[kp].limpo && regime(kp) === regime(k) ? info[kp].best : null;
         const next = info[kn] && info[kn].limpo && regime(kn) === regime(k) ? info[kn].best : null;
         const xp = prev ? prev.x : 0, xn = next ? next.x : (prev ? prev.x : I.best.x);
-        const div = k >= (regras.divisorDiasDesde || '2017-12') || k < (regras.divisor30Desde || '1994-07') ? diasMes(k) : 30;
+        const div = k >= (regras.divisorDiasDesde || '2018-01') || k < (regras.divisor30Desde || '1994-07') ? diasMes(k) : 30;
         if ((I.x - xp) * (xn - I.x) > 0 && Math.abs(xn - xp) > 1e-9) {
           const dias = Math.max(1, Math.min(div - 1, Math.round((I.x - xp) / (xn - xp) * div)));
           const fr = dias / div, ini = div - dias + 1;
@@ -2007,6 +2013,12 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
     const FUNCOES = [], SUBSTITUICOES = [];
     let ult = null;
     let lsF = secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS|^\s*(\d+ ?- ?)?FUN[ÇC][ÕO]ES:?\s*$/i, FIM_SEC);
+    // tabela da DIPROF: nome de função antiga sem o código na CTC → nível FC
+    const NOME_FC = [[/ASSISTENTE SECRET[ÁA]RIO/i, 'FC-05'], [/ASSISTENTE[\s-]+CHEFE/i, 'FC-04'], [/ASSISTENTE DE DIRETOR/i, 'FC-04'], [/ASSISTENTE DE JUIZ/i, 'FC-04'],
+      [/CHEFE DE SERVI[ÇC]O/i, 'FC-04'], [/ENCARREGADO DE C[ÁA]LCULOS/i, 'FC-04'], [/ASSISTENTE ADMINISTRATIVO/i, 'FC-03'], [/SECRET[ÁA]RIO DE AUDI[ÊE]NCIA/i, 'FC-03'],
+      [/ENCARREGADO DE PROTOCOLO/i, 'FC-02'], [/SECRET[ÁA]RIO ESPECIALIZADO/i, 'FC-02'], [/AUXILIAR ESPECIALIZADO/i, 'FC-01']];
+    lsF = lsF.map(l => { if (/\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l)) return l; const n = NOME_FC.find(([rx]) => rx.test(l.replace(RXD, ' ')));
+      if (!n) return l; const m = n[0].exec(l); return l.slice(0, m.index + m[0].length) + ' ' + n[1] + l.slice(m.index + m[0].length); });
     const RXFL = /^[A-ZÀ-Ú][A-ZÀ-Ú .\-]{2,80}?\s(?:FC|CJ|DAS)\s*-?\s*\d{1,2}\b(?:\s*\(em substitui\S*\))?\s+\d{1,2}\/\d{1,2}\/\d{4}\s+a\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/i;
     if (!lsF.some(l => /\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l))) lsF = ls.filter(l => RXFL.test(l));
     // rótulo da função centralizado na lista de datas (CTC da SEINFO de 2025: "FC-05 CHEFE DE SEÇÃO em Substituição" no meio
@@ -3077,12 +3089,12 @@ function anosConf(R){
     if(!l.fonte){ a.semFicha++; continue; } if(!l.conferir) continue; a.nConf++; a.dif+=l.dif; a.calc+=l.pssCalc; a.ficha+=l.pssFicha; }
   const soma={}, rest={}; const add=(y,k,v)=>{ (soma[y]=soma[y]||{})[k]=((soma[y]||{})[k]||0)+v; };
   for(const r of S.recs){ if(r.folha==='G') continue; const c=catOf(r); const y=String(r.ano); if(!out[y]) continue;
-    if(c==='GAS' && !R.regras.gas) add(y,'GAS',r.v); if(c==='AQ_TREIN' && (R.regras.aqTrein===false || (R.regras.aqTrein==='ficha' && !(R.aqTreinAnos||{})[y]))) add(y,'AQ_TREIN',r.v); if(c==='CLASSIFICAR') add(y,'CLASSIFICAR',r.v); if(c==='PSS' && r.v>0.005){ add(y,'REST',r.v); (rest[y]=rest[y]||new Set()).add(mesTxt(r.comp)); } }
+    if(c==='GAS' && !R.regras.gas && r.comp>='2008-12' && r.comp<='2019-10') add(y,'GAS',r.v);   /* PSS sobre a GAS só até 30/10/2019 (anotação 9 da DIPROF) */ if(c==='GAS') add('_','GAS_ALGUM',1); if(c==='AQ_TREIN' && (R.regras.aqTrein===false || (R.regras.aqTrein==='ficha' && !(R.aqTreinAnos||{})[y]))) add(y,'AQ_TREIN',r.v); if(c==='CLASSIFICAR') add(y,'CLASSIFICAR',r.v); if(c==='PSS' && r.v>0.005){ add(y,'REST',r.v); (rest[y]=rest[y]||new Set()).add(mesTxt(r.comp)); } }
   for(const y in out){ const a=out[y]; a.dif=RBC.r2(a.dif); a.verif=a.nConf>0; a.ok=!a.verif || Math.abs(a.dif)<=Math.max(5,0.01*a.calc);
     const sy=soma[y]||{};
     if(sy.GAS>0.005) a.causas.push(`houve contribuição sobre ${rs(sy.GAS)} de GAS, que a regra atual deixa fora da RBC (cerca de ${rs(sy.GAS*0.11)} de contribuição)`);
     if(sy.AQ_TREIN>0.005) a.causas.push(`houve ${rs(sy.AQ_TREIN)} de AQ-Treinamento, fora da RBC pela regra atual`);
-    if(sy.REST) a.causas.push(`houve devolução de ${rs(sy.REST)} de contribuição (${[...rest[y]].join(', ')})`);
+    if(sy.REST) a.causas.push(`houve devolução de ${rs(sy.REST)} de contribuição (${[...rest[y]].join(', ')})${y>'2019'&&(soma._||{}).GAS_ALGUM?' — provável restituição do PSS sobre a GAS de 16/04/2014 a 30/10/2019 (anotação 9 da DIPROF)':''}`);
     if(sy.CLASSIFICAR) a.causas.push(`há ${rs(sy.CLASSIFICAR)} em rubricas não reconhecidas`);
     const pas=R.passivos.filter(p=>p.comp.startsWith(y) && !/ISEN/i.test(p.desc));
     if(pas.length){ const t=pas.reduce((s,p)=>s+p.valor,0); a.causas.push(`houve ${rs(t)} em passivos/exercícios anteriores sem isenção de PSS (${[...new Set(pas.map(p=>mesTxt(p.comp)))].join(', ')}), cuja contribuição não corresponde a meses da RBC`); }
@@ -3557,7 +3569,7 @@ $('x_rbc').onclick=async()=>{
     const notas=[];
     if($('processo').value.trim()) notas.push('Processo: '+$('processo').value.trim());
     const rg=getRegras();
-    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':rg.gasAte?'incide até '+rg.gasAte:'não incide'}; AQ-Treinamento ${rg.aqTrein==='ficha'?'conforme a ficha (entra no ano em que houve contribuição sobre ele'+(Object.keys(R.aqTreinAnos||{}).length?': '+(Object.entries(R.aqTreinAnos).filter(e=>e[1]).map(e=>e[0]).join(', ')||'nenhum ano'):'')+')':rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); AQ e AQ-Treinamento conferidos pela ficha: direito presumido quando pagos, valor devido pela tabela da carreira.`);
+    notas.push(`Regras: 11,98% de ${rg.ajuste1198Desde} a ${rg.ajuste1198Ate||'—'}; FC/substituição até ${rg.fcAte}; ATS a partir de ${rg.atsDesde}; GAS ${rg.gas?'incide':rg.gasAte?'incide até '+rg.gasAte:'não incide'}; AQ-Treinamento ${rg.aqTrein==='ficha'?'conforme a ficha (entra no ano em que houve contribuição sobre ele'+(Object.keys(R.aqTreinAnos||{}).length?': '+(Object.entries(R.aqTreinAnos).filter(e=>e[1]).map(e=>e[0]).join(', ')||'nenhum ano'):'')+')':rg.aqTrein?'incide':'não incide'}; faltas ${rg.descontarFaltas?'descontadas':'não descontadas'}; GN a partir de ${rg.gnDesde||'—'}${rg.gnSemVPIAte?', sem VPI até '+rg.gnSemVPIAte:''}; pro rata pelos dias do mês a partir de ${rg.divisorDiasDesde} (Res. CSJT 211/2017; antes, mês de 30 dias); GAE a partir de ${rg.gaeDesde||'2008-12'}; AQ e AQ-Treinamento conferidos pela ficha: direito presumido quando pagos, valor devido pela tabela da carreira.`);
     if(R.linhas.some(l=>l.daTabela)) notas.push(`Até ${mesTxt(rg.tabelaAte)}, valores pelas tabelas de remuneração da época (prática da DIPROF), com pro rata pelos dias do mês; função, substituição e lançamentos sem tabela conforme a ficha ou informados.`);
     { const comBE=R.linhas.filter(l=>{const b=baseBE(l); return b!=null&&b>0;}).length, dv=S.devol.filter(p=>p.aplicar!==false&&p.ini&&p.fim);
       notas.push(`Base p/ benefício especial (Lei 12.618/2012, art. 3º, § 2º): remuneração das competências a partir de 07/1994 com contribuição mantida; ${dv.length?'excluídos os períodos de contribuição devolvida: '+dv.map(p=>fd(p.ini)+' a '+fd(p.fim)).join('; ')+' (pro rata pelos dias do mês)':'sem períodos de contribuição devolvida informados'}. Competências com base positiva: ${comBE} (13º não incluído).`); }
@@ -3755,6 +3767,8 @@ async function lerTudo0(lista){
   // ficha exportada com número redondo de linhas (3.000, 5.000, 65.535…): o sistema pode ter cortado a exportação
   for(const c of grupos.ficha) if([1000,2000,3000,5000,10000,65535,65536].includes(c.linhas)){ const ult=S.recs.map(r=>r.comp).sort().pop();
     notaCargo+=` <b>A ficha ${esc(c.f.name)} tem exatamente ${c.linhas.toLocaleString('pt-BR')} linhas</b>: a exportação provavelmente foi cortada${ult?` (termina em ${ult.slice(5)}/${ult.slice(0,4)})`:''}. Exporte o restante; sem ficha, os meses seguintes saem da tabela.`; }
+  // anotação 6 da DIPROF: VPNI judicial (ação do SINPOJUFES) de período anterior a 15/12/1999 depende do processo específico
+  if(S.rel.VPNI.some(v=>/JUDIC/i.test(v.natureza||'')&&v.ini&&v.ini<'1999-12-15')) notaCargo+=' <b>VPNI judicial com efeitos antes de 15/12/1999</b> (ação do SINPOJUFES, período anterior à prescrição): solicite a informação do processo específico antes de emitir.';
   if(lacunasEf().length) notaCargo+=` Intervalo sem contribuição pela CTC: ${lacunasEf().map(x=>`${brData(x.ini)} a ${brData(x.fim)}`).join(', ')} (fora da RBC).`;
   notaCargo+=notaPres; S.notasEntrada=notaCargo.trim();
   $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length+nOCR} CTC/relatório(s)${nOCR?` (${nOCR} lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+

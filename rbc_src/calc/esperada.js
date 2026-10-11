@@ -42,7 +42,7 @@
   // peso de cada dia: a partir de 2018 = 1/dias do mês; antes, mês comercial de 30 dias, como na folha:
   // o dia 31 não conta e, em fevereiro, o último dia completa os 30 (quem muda em 21/07 fica 10/30 na situação nova).
   function pesos(k, desde, de30) {
-    desde = desde || '2017-12'; de30 = de30 || '1994-07';
+    desde = desde || '2018-01'; de30 = de30 || '1994-07';
     const n = diasMes(k), w = [];
     for (let d = 1; d <= n; d++) w.push(k >= desde || k < de30 ? 1 / n : d < n ? (d <= 30 ? 1 / 30 : 0) : n === 31 ? 0 : (30 - (n - 1)) / 30);
     return w;
@@ -209,6 +209,7 @@
       if (c === 'ATS') return k >= regras.atsDesde;
       if (c === 'AQ_TREIN') return regras.aqTrein === 'ficha' ? !!(regras.aqTreinAnos && regras.aqTreinAnos[k.slice(0, 4)]) : !!regras.aqTrein;
       if (c === 'GAS') return !!regras.gas || (!!regras.gasAte && k <= regras.gasAte);
+      if (c === 'GAE') return !regras.gaeDesde || k >= regras.gaeDesde;
       if (c === 'VPNI_JUD_SEM_PSS') return false;
       return true;
     };
@@ -274,7 +275,7 @@
         const prev = info[kp] && info[kp].limpo && regime(kp) === regime(k) ? info[kp].best : null;
         const next = info[kn] && info[kn].limpo && regime(kn) === regime(k) ? info[kn].best : null;
         const xp = prev ? prev.x : 0, xn = next ? next.x : (prev ? prev.x : I.best.x);
-        const div = k >= (regras.divisorDiasDesde || '2017-12') || k < (regras.divisor30Desde || '1994-07') ? diasMes(k) : 30;
+        const div = k >= (regras.divisorDiasDesde || '2018-01') || k < (regras.divisor30Desde || '1994-07') ? diasMes(k) : 30;
         if ((I.x - xp) * (xn - I.x) > 0 && Math.abs(xn - xp) > 1e-9) {
           const dias = Math.max(1, Math.min(div - 1, Math.round((I.x - xp) / (xn - xp) * div)));
           const fr = dias / div, ini = div - dias + 1;

@@ -472,6 +472,12 @@
     const FUNCOES = [], SUBSTITUICOES = [];
     let ult = null;
     let lsF = secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS|^\s*(\d+ ?- ?)?FUN[ÇC][ÕO]ES:?\s*$/i, FIM_SEC);
+    // tabela da DIPROF: nome de função antiga sem o código na CTC → nível FC
+    const NOME_FC = [[/ASSISTENTE SECRET[ÁA]RIO/i, 'FC-05'], [/ASSISTENTE[\s-]+CHEFE/i, 'FC-04'], [/ASSISTENTE DE DIRETOR/i, 'FC-04'], [/ASSISTENTE DE JUIZ/i, 'FC-04'],
+      [/CHEFE DE SERVI[ÇC]O/i, 'FC-04'], [/ENCARREGADO DE C[ÁA]LCULOS/i, 'FC-04'], [/ASSISTENTE ADMINISTRATIVO/i, 'FC-03'], [/SECRET[ÁA]RIO DE AUDI[ÊE]NCIA/i, 'FC-03'],
+      [/ENCARREGADO DE PROTOCOLO/i, 'FC-02'], [/SECRET[ÁA]RIO ESPECIALIZADO/i, 'FC-02'], [/AUXILIAR ESPECIALIZADO/i, 'FC-01']];
+    lsF = lsF.map(l => { if (/\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l)) return l; const n = NOME_FC.find(([rx]) => rx.test(l.replace(RXD, ' ')));
+      if (!n) return l; const m = n[0].exec(l); return l.slice(0, m.index + m[0].length) + ' ' + n[1] + l.slice(m.index + m[0].length); });
     const RXFL = /^[A-ZÀ-Ú][A-ZÀ-Ú .\-]{2,80}?\s(?:FC|CJ|DAS)\s*-?\s*\d{1,2}\b(?:\s*\(em substitui\S*\))?\s+\d{1,2}\/\d{1,2}\/\d{4}\s+a\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/i;
     if (!lsF.some(l => /\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l))) lsF = ls.filter(l => RXFL.test(l));
     // rótulo da função centralizado na lista de datas (CTC da SEINFO de 2025: "FC-05 CHEFE DE SEÇÃO em Substituição" no meio

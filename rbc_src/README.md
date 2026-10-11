@@ -169,3 +169,20 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - `limitarRetroativos`: retroativo distribuído que deixa as parcelas de tabela do cargo efetivo (VB, GAJ, APJ, DIF2886, GEXTRA, ATS) acima da tabela devida no mês volta à tabela, quando o padrão está confirmado (vencimento original ou final = tabela). Casos: GAJ de 07/2004 paga por 12 meses; reestruturação da Lei 10.475 (06/2002) com a estrutura antiga somada à nova.
 - Modo tabela (`tabelaAte`): cargo efetivo, função, substituição e VPNI vêm só da tabela; parcelas antigas que só existem na ficha (gratificação extraordinária, representação, substituição paga no mês seguinte) não se somam.
 - Comparação: mês até 2001 em que a RBC anterior é a remuneração pela tabela → causa "ajuste a regra Tabela até". No caso testado, "Tabela até" = 11/1999 reproduz 338/348 (padrão 06/1994: 301/348).
+
+### Fase 15j (11/10/2026): anotações da DIPROF conferidas
+
+| Anotação | Situação na calculadora |
+|---|---|
+| 1) PSS sobre função/substituição até 11/1998 | `fcAte` = 1998-11 |
+| 2) PSS sobre anuênio/GATS desde 04/2002 | `atsDesde` = 2002-04 |
+| 3) PSS sobre 13º desde 2003 | `gnDesde` = 2003 (antes: certidão complementar) |
+| 4) VPI 59,87: 05/2003–12/2014 (a anotação diz 03/2003; a planilha da DIPROF começa em 05/2003, Lei 10.698); 01/2015–03/2016 sem VPI (13,23% e dedução 1330/1331); 04/2016–12/2018 pela tabela (passivo de 10/2024 fora); no 13º desde 2008 | base + `vpiTabela` + `gnSemVPIAte` = 2007; dedução positiva entra como redução |
+| 5) VPNI Anajustra 15/12/1999–31/12/2005 sem PSS | esperada: `vpniJudSemPSS`; RBC segue a ficha nesse período (VPNI pela tabela suspensa) |
+| 6) VPNI SINPOJUFES anterior a 15/12/1999 | **novo:** aviso na entrada para pedir a informação do processo |
+| 7) Divisor = dias do mês desde 01/2018 | **corrigido:** era 12/2017 |
+| 8) PSS sobre GAE desde 12/2008 | **novo:** regra `gaeDesde` = 2008-12 (antes, GAE incidia sempre) |
+| 9) GAS com restituição 16/04/2014–30/10/2019 | GAS fora da RBC; **causa por ano** só conta PSS sobre GAS até 10/2019 e identifica a restituição |
+| 10) AQ por VR desde 01/2026 | esperada usa VR desde 2026 |
+| Folhas de URV com rubrica genérica de exercício anterior (2001.2.11, 2001.3.11, 2001.12.16, 2002.9.7, 2002.12.15) | **novo:** não são passivo (o 11,98% entra pelo ajuste mensal) |
+| Tabela de nomes de função → FC | **novo:** CTC sem código usa a tabela (Assistente Secretário FC-5 … Auxiliar Especializado FC-1) |
