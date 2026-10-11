@@ -194,3 +194,9 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Cada célula mostra a RBC do mês em valor inteiro (oculto em telas < 1000 px); triângulo azul no canto = mês ajustado pela calculadora (ajuste, tabela, sem ficha, borda de período).
 - Coluna do ano: resumo do modo (confere / diferença em R$ / meses iguais / 13º ≠) e Σ dos meses + 13º.
 - Dica ao passar o mouse/foco: RBC, esperada, anterior e diferença com provável causa, PSS descontada × sobre a RBC, itens pago × esperado e ajustes. Clique abre o detalhe.
+
+### Fase 15l (11/10/2026): causas da comparação e progressão confirmada pela planilha da DIPROF
+
+- Causas: VPI tirada pelas RRCs antigas desde 21/07/2016 (absorvida pela Lei 13.317; jul/2016 com 20/30); mudança de tabela em 21/07/2016 dividida por 30 na RRC (sem ficha); pro rata do desligamento combinado com outra causa; 13º aponta o último mês cheio com causa.
+- `lerRBCPlanilha` lê a coluna CLASSE/PADRÃO (`refs` por mês; "A-1 até 01/A-2" traz as duas).
+- `confAnterior`: sem ficha, linha de progressão da CTC lida por imagem fica "confere com a planilha da DIPROF" (origem `anterior`) quando os meses inteiros do período trazem só aquela referência; senão continua incerta.

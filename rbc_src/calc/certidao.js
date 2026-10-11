@@ -98,15 +98,17 @@
         const c = (rows[i] || []).map(x => String(x == null ? '' : x).trim().toLowerCase());
         if (!/^m[eê]s/.test(c[0] || '')) continue;
         const j = c.findIndex(x => /remunera|base de c/.test(x)); if (j < 0) continue;
-        const mensal = {}, gn = {}; let ult = null;
+        const mensal = {}, gn = {}, refs = {}; let ult = null;
+        const jc = c.findIndex(x => /classe|padr[ãa]o/.test(x));   // "A-1", "A-1 até 01/A-2" (progressão no mês)
         for (const r of rows.slice(i + 1)) {
           if (!r) continue; const k = mes(r[0]), v = r[j];
+          if (k && k !== ult && jc >= 0 && r[jc]) { const rs = [...String(r[jc]).toUpperCase().matchAll(/\b([A-C])\s*-?\s*(\d{1,2})\b/g)].map(m => ({ classe: m[1], padrao: String(+m[2]) })); if (rs.length) refs[k] = rs; }
           // o mesmo mês repetido (sem classe) é a linha do 13º: dezembro ou o proporcional do mês de saída (relatório do SGRH e RRC)
           if (k && k === ult && mensal[k] != null) { if (typeof v === 'number' && v > 0) gn[k.slice(0, 4)] = Math.round(((gn[k.slice(0, 4)] || 0) + v) * 100 + 1e-6) / 100; }
           else if (k) { ult = k; if (typeof v === 'number' && v > 0) mensal[k] = Math.round(v * 100 + 1e-6) / 100; }
           else if (ult && /GN|13|NATAL/i.test(String(r[0] || '')) && typeof v === 'number' && v > 0) gn[ult.slice(0, 4)] = Math.round(v * 100 + 1e-6) / 100;
         }
-        if (Object.keys(mensal).length && (!best || Object.keys(mensal).length > Object.keys(best.mensal).length)) best = { mensal, gn, moeda: {}, aba: a.nome, fonte: 'planilha' };
+        if (Object.keys(mensal).length && (!best || Object.keys(mensal).length > Object.keys(best.mensal).length)) best = { mensal, gn, refs, moeda: {}, aba: a.nome, fonte: 'planilha' };
       }
     }
     return best;

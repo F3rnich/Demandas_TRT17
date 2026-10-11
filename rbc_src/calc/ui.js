@@ -99,7 +99,7 @@ const REL = {
     dica:'Opcional. Sem relatório, vale a ficha: se houve AQ pago no mês, o direito é presumido e o valor devido é calculado pela tabela (até 2025, % do vencimento da Lei 11.416; desde 2026, valores de referência). O nível é deduzido do valor pago. Linhas preenchidas aqui têm prioridade sobre a ficha.'},
   V1323:{titulo:'13,23% (decisão judicial)', cols:[cIni,cFim], dica:'Períodos em que o 13,23% foi devido. Não vem de relatório: informe se houver.'}
 };
-const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], relatorioOk:['ok','do relatório; confere com o vencimento pago'], corrigido:['att','ajustado pelo vencimento pago — confira'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], presumida:['att','presumida: A1 no exercício, +1 padrão por ano — confira'], manual:['info','informado por você'] };
+const ORIGEM = { ficha:['ok','confere com o vencimento pago'], relatorio:['ok','do relatório'], relatorioOk:['ok','do relatório; confere com o vencimento pago'], corrigido:['att','ajustado pelo vencimento pago — confira'], leitura:['info','lido da imagem — confira'], incerta:['att','incerto — confira'], anterior:['ok','confere com a planilha da DIPROF (RBC anterior)'], presumida:['att','presumida: A1 no exercício, +1 padrão por ano — confira'], manual:['info','informado por você'] };
 function tagOrigem(r){ const o=ORIGEM[r.origem]; return o?`<span class="tag ${o[0]}"${r.dica?` title="Texto lido: ${esc(r.dica)}"`:''}>${o[1]}${r.origem==='corrigido'&&r.relOrig?' (relatório: '+esc(r.relOrig)+')':''}</span>`:''; }
 
 function celula(t,i,c,r){
@@ -278,6 +278,18 @@ function vbFichaPara(ini,fim){
   const l=ok.find(x=>x.comp>='1994-07'&&x.comp<=RBC.addM(k>'1994-07'?k:'1994-07',3))||ok.find(x=>x.comp<=RBC.addM(k,3));
   return l?{k:l.comp,vb:l.bruto.VB}:null;
 }
+// Linha de progressão confirmada pela planilha de trabalho da DIPROF (coluna CLASSE/PADRÃO): os meses inteiros do período
+// trazem só essa referência; o mês da mudança ("A-1 até 01/A-2") precisa citá-la. Sem mês inteiro, basta o mês de início.
+function confAnterior(r){
+  const nrm=x=>String(x||'').toUpperCase().replace(/\s|-/g,''), npd=x=>{ x=String(x||'').trim(); return /^\d+$/.test(x)?String(+x):x; };
+  const eq=x=>nrm(x.classe)===nrm(r.classe)&&npd(x.padrao)===npd(r.padrao);
+  for(const a of S.anteriores){ const refs=a.r&&a.r.refs; if(!refs||!Object.keys(refs).length) continue;
+    const k0=r.ini.slice(0,7), kf=r.fim?r.fim.slice(0,7):'9999-12'; let inteiros=0, bate=true;
+    for(const [k,rs] of Object.entries(refs)){ if(k<=k0||k>=kf) continue; inteiros++; if(!(rs.length===1&&eq(rs[0]))){ bate=false; break; } }
+    if(inteiros&&bate) return true;
+    if(!inteiros&&refs[k0]&&refs[k0].some(eq)) return true; }
+  return false;
+}
 function aplicarSugestoes(){
   const cargo=$('cargo').value; if(!cargo) return false; let mud=false;
   const nrm=x=>String(x||'').toUpperCase().replace(/\s|-/g,'').replace(/^N[ISA](?=[A-D])/,'');
@@ -285,9 +297,12 @@ function aplicarSugestoes(){
   for(const r of S.rel.PROGRESSAO){
     // linha de relatório em texto: confere com o vencimento pago; se a ficha indicar outra referência, ajusta e avisa
     // CTC lida por imagem com classe/padrão: mesma conferência; sem mês de ficha para conferir, continua incerta
-    const ctcImg=r.fonte==='CTC'&&r.origem==='incerta'&&r.classe&&r.padrao;
+    const ctcImg=r.fonte==='CTC'&&(r.origem==='incerta'||r.origem==='anterior')&&r.classe&&r.padrao;
     if(!r.ocr&&(r.origem==='relatorio'||r.origem==='relatorioOk'||r.origem==='corrigido'||ctcImg)&&r.ini&&!r.revogada){
-      const ref=vbFichaPara(r.ini,r.fim); if(!ref) continue;
+      const ref=vbFichaPara(r.ini,r.fim);
+      if(!ref){   // sem ficha: a coluna CLASSE/PADRÃO da planilha da DIPROF (RBC anterior) é a outra fonte
+        if(ctcImg||r.origem==='anterior'){ const ok=confAnterior(r); const o=ok?'anterior':'incerta'; if(r.origem!==o){ r.origem=o; mud=true; } }
+        continue; }
       const d=ref.k+'-01'>r.ini?ref.k+'-01':r.ini;
       const sg=E.sugerirRef(BASE,r.cargo||cargo,d,'',ref.vb);   // dois vínculos: a linha traz o cargo do período
       const orig=r.relOrig?r.relOrig.split(' '):[r.classe,r.padrao];
@@ -1110,7 +1125,7 @@ function renderEtapa2Extras(C){
   const [rr,ra]=htmlRubricas(C), [pr,pa]=htmlPend(C);
   let ex='';
   if(!$('cargo').value) ex+=`<section class="res-item"><h4>Cargo não informado</h4><p class="muted small" style="margin:0">Sem o cargo não há remuneração esperada nem conferência de classe e padrão. <button class="btn link" data-ir1="1">Informar na etapa 1</button></p></section>`;
-  if(nInc) ex+=`<section class="res-item"><h4>${nInc} linha(s) da progressão com classe/padrão a conferir</h4><p class="muted small" style="margin:0">Lidas por imagem e não confirmadas pelo vencimento pago. <button class="btn link" data-ir1="1">Conferir na etapa 1</button></p></section>`;
+  if(nInc) ex+=`<section class="res-item"><h4>${nInc} linha(s) da progressão com classe/padrão a conferir</h4><p class="muted small" style="margin:0">Lidas por imagem e não confirmadas pelo vencimento pago${S.anteriores.some(a=>a.r&&a.r.refs&&Object.keys(a.r.refs).length)?" nem pela coluna CLASSE/PADRÃO da planilha da DIPROF":""}. <button class="btn link" data-ir1="1">Conferir na etapa 1</button></p></section>`;
   const res=ex+rr+pr, n=resolverItens(C).length;
   $('resolverBox').hidden=!res; $('resolver').innerHTML=res; $('resolverTit').textContent=`A resolver antes de emitir (${n})`;
   $('ajustes').innerHTML=pa+ra;
