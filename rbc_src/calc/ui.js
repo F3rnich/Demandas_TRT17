@@ -776,11 +776,15 @@ $('avancar').onclick=()=>{ if(S.etapa<2) irPara(2); else $('x_rbc').click(); };
 
 function etapa1Status(){
   const nInc=S.rel.PROGRESSAO.filter(r=>r.origem==='incerta'&&!r.revogada).length;
-  if(!$('cargo').value) return 'Escolha o cargo (servidor) ou magistrado.';
-  if(!S.recs.length&&!S.rel.PROGRESSAO.length) return 'Envie a pasta do processo (ou ao menos a ficha financeira).';
-  if(!S.esp) return 'Remuneração esperada não calculada: confira o cargo e a progressão (a CTC pode ser de outro cargo). A RBC sai da ficha mesmo assim.';
+  if(S.lendo) return 'Lendo os arquivos… a calculadora preenche os dados e abre a conferência sozinha.';
+  const temArq=S.recs.length||S.relArqs.length||S.anteriores.length;
+  if(!temArq) return 'Arraste a pasta do processo: a calculadora separa os arquivos, preenche os dados e abre a conferência.';
+  if(!$('cargo').value) return 'Os arquivos não indicaram o cargo: escolha-o abaixo.';
+  if(!S.recs.length&&!S.rel.PROGRESSAO.length) return 'Falta a ficha financeira ou a CTC com a progressão: arraste os arquivos que faltam.';
+  if(!iniEf()) return 'Os arquivos não indicaram o ingresso: informe a data de posse abaixo.';
+  if(!S.esp&&S.res) return 'RBC calculada; remuneração esperada não calculada: confira o cargo e a progressão (a CTC pode ser de outro cargo). A RBC sai da ficha mesmo assim.';
   if(nInc) return `${nInc} linha(s) da progressão com classe/padrão a conferir${S.res?'':' (a ficha ajuda a confirmar)'}.`;
-  return S.esp?`Remuneração esperada calculada para ${S.esp.linhas.length} meses.`:'Informe o ingresso ou envie a ficha.';
+  return S.esp?`Remuneração esperada calculada para ${S.esp.linhas.length} meses.`:'Confira os dados abaixo.';
 }
 function renderGNCert(){
   const box=$('gnCertBox'); if(!box) return; const g=(S.gnCert||[]).filter(x=>x.valor>0);
@@ -799,7 +803,7 @@ function renderTudo(){
     const n=+li.dataset.e; li.classList.toggle('atual', n===S.etapa); li.classList.toggle('feito', n<S.etapa);
     const b=li.querySelector('button'); b.disabled = n>1 && !S.res;
     if(n===S.etapa) b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current');
-    li.classList.toggle('alerta', !!((n===1 && (!$('cargo').value || nInc || (S.esp&&S.esp.avisos.length))) || (C && n===2 && (nRes || C.att))));
+    li.classList.toggle('alerta', !!((n===1 && ((!$('cargo').value&&(S.recs.length||S.relArqs.length)) || nInc || (S.esp&&S.esp.avisos.length))) || (C && n===2 && (nRes || C.att))));
   });
   $('voltar').hidden = S.etapa===1;
   $('avancar').disabled = S.etapa>=2 && !S.res;
@@ -1302,6 +1306,7 @@ async function classificar(f){
   if(/\.pdf$/i.test(n)){
     let pg; try{ pg=(await pdfDoc(await f.arrayBuffer())).pages; }catch(e){ return {tipo:'ignorado',motivo:'PDF ilegível'}; }
     const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=charsTexto(pg);
+    if(chars<30&&/RBC|RELA..O DAS BASES|BASES DE C.LCULO|REMUNERA..O DE CONTRIBUI/i.test(n+' '+pg.map(p=>p.items.map(i=>i.str).join('')).join(' '))&&!pareceCTCImg(pg,n)) return {tipo:'ignorado',motivo:'RBC anterior digitalizada: não é lida para comparação (envie em .docx, PDF de texto ou planilha)'};
     if(chars<30) return pareceCTCImg(pg,n)?{tipo:'img',sub:'CTC',motivo:'CTC digitalizada (imagem)'}:{tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
     if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};
@@ -1325,8 +1330,10 @@ async function classificar(f){
   return {tipo:'ignorado',motivo:'formato não usado'};
 }
 async function lerTudo(lista){
+  S.lendo=true; renderTudo();
   try{ await lerTudo0(lista); }
   catch(e){ console.error(e); $('tudoSt').innerHTML='Erro ao ler os arquivos: '+esc(e.message||String(e))+' — use os envios separados abaixo. (0 ignorado(s))'; }
+  finally{ if(S.lendo){ S.lendo=false; renderTudo(); } }
 }
 async function lerTudo0(lista){
   let fs=[...lista]; if(!fs.length) return;
@@ -1340,13 +1347,14 @@ async function lerTudo0(lista){
   grupos.ficha.sort((a,b)=>(a.rel?1:0)-(b.rel?1:0)||(COPIA.test(a.f.name)?1:0)-(COPIA.test(b.f.name)?1:0)||a.f.name.localeCompare(b.f.name));   // relatório do SGRH só completa o que a ficha não tem
   grupos.rel.sort((a,b)=>(a.sub==='CTC'?0:1)-(b.sub==='CTC'?0:1)||a.f.name.localeCompare(b.f.name));
   const ROT={ficha:'Ficha financeira',rel:'CTC / relatório',rbc:'RBC já emitida (comparação)',img:'Digitalizado',ignorado:'Ignorado'};
-  ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||t==='img'?'':'ok'}">${ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
   // só há digitalizados: lê por imagem sem esperar o clique (é o único caminho para calcular)
   // ou não há CTC em texto nem ficha: a CTC digitalizada é a fonte do período e do ingresso
   // ou há CTC digitalizada e nenhuma CTC em texto: ela traz os dados da certidão (nome, CPF, mãe…), funções, substituições e progressão
   const semCTCtexto=!grupos.rel.some(c=>c.sub==='CTC');
   const soImg=grupos.img.length&&!grupos.ficha.length&&semCTCtexto;
   const lerImg=soImg?grupos.img:semCTCtexto?grupos.img.filter(c=>c.sub==='CTC'):[];
+  for(const c of lerImg){ c.lida=true; c.motivo=c.sub==='CTC'?'digitalizada: lida por imagem — confira':'digitalizado: lido por imagem — confira'; }
+  ul.innerHTML=Object.entries(grupos).flatMap(([t,l])=>l.map(c=>`<li><span class="tag ${t==='ignorado'||(t==='img'&&!c.lida)?'':'ok'}">${c.lida?(c.sub==='CTC'?'CTC / relatório':'Relatório'):ROT[t]}${c.sub&&c.sub!=='CTC'?' ('+esc(c.sub.toLowerCase())+')':c.sub==='CTC'?' (CTC)':''}</span> ${esc(c.f.caminho||c.f.name)}${c.motivo?` <span class="q">${esc(c.motivo)}</span>`:''}</li>`)).join('');
   let nOCR=0, errOCR=''; if(lerImg.length){ $('tudoSt').textContent='Lendo '+lerImg.length+' documento(s) digitalizado(s) por imagem — pode levar alguns minutos…';
     S.lendoImg=true; try{ await lerRelatorios(lerImg.map(c=>c.f)); } finally { S.lendoImg=false; }
     errOCR=S.relArqs.filter(a=>a.ocr&&a.erro).map(a=>a.nome+': '+a.erro).join('; ');
@@ -1375,14 +1383,18 @@ async function lerTudo0(lista){
     if(ult>RBC.addM($('fim').value.slice(0,7),2)) notaCargo+=` A ficha vai até ${ult.slice(5)}/${ult.slice(0,4)}, depois do desligamento informado (${brData($('fim').value)}${S.ctc&&S.ctc.fim===$('fim').value?', tirado da CTC':''}): se a certidão cobre também o vínculo seguinte, apague ou ajuste o desligamento.`; }
   // dois vínculos (ex.: técnico e depois analista): a tabela esperada usa o cargo de cada período
   if($('cargo').value&&iniEf()&&fimEf()){ const vs=[]; for(const p of progDaFicha($('cargo').value,iniEf(),fimEf())){ const cg=p.cargo||$('cargo').value; if(vs.length&&vs[vs.length-1].cg===cg) vs[vs.length-1].fim=p.fim; else vs.push({cg,ini:p.ini,fim:p.fim}); }
-    if(vs.length>1) notaCargo+=` Vencimento de mais de um cargo na ficha: ${vs.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> ${v.ini.slice(5,7)}/${v.ini.slice(0,4)} a ${v.fim?v.fim.slice(5,7)+'/'+v.fim.slice(0,4):'fim'}`).join(', ')}. A remuneração esperada e os meses sem vencimento usam a tabela do cargo de cada período — confira as datas de posse.`; }
+    const pc=S.rel.PROGRESSAO.filter(r=>r.fonte==='CTC'&&!r.revogada&&r.ini).sort((a,b)=>a.ini<b.ini?-1:1), vc=[];
+    for(const r of pc){ const cg=r.cargo||$('cargo').value; if(vc.length&&vc[vc.length-1].cg===cg) vc[vc.length-1].fim=r.fim; else vc.push({cg,ini:r.ini,fim:r.fim}); }
+    if(S.ctc&&S.ctc.provimentos>1&&vc.length>1) notaCargo+=` ${S.ctc.provimentos} provimentos na declaração: ${vc.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> de ${brData(v.ini)}${v.fim?' a '+brData(v.fim):' em diante'}`).join(', ')}. A remuneração esperada usa a tabela do cargo de cada período.`;
+    else if(vs.length>1) notaCargo+=` Vencimento de mais de um cargo na ficha: ${vs.map(v=>`<b>${esc(v.cg.toLowerCase())}</b> ${v.ini.slice(5,7)}/${v.ini.slice(0,4)} a ${v.fim?v.fim.slice(5,7)+'/'+v.fim.slice(0,4):'fim'}`).join(', ')}. A remuneração esperada e os meses sem vencimento usam a tabela do cargo de cada período — confira as datas de posse.`; }
   const falta=[]; if(!$('cargo').value) falta.push('o cargo'); if(!iniEf()) falta.push('o ingresso');
   notaCargo+=notaPres; S.notasEntrada=notaCargo.trim();
-  $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length} CTC/relatório(s)${nOCR?` (+${nOCR} digitalizado(s) lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
-    (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler por imagem</button>`:'')+
+  $('tudoSt').innerHTML=`${grupos.ficha.length} ficha(s), ${grupos.rel.length+nOCR} CTC/relatório(s)${nOCR?` (${nOCR} lido(s) por imagem — confira)`:''}, ${grupos.rbc.length} RBC anterior(es), ${grupos.ignorado.length} ignorado(s).`+
+    (grupos.img.length?` ${grupos.img.length} digitalizado(s) não lido(s) <button class="btn link" id="lerImg">ler como relatório de progressão (por imagem)</button>`:'')+
     (errOCR?` <b>Leitura por imagem falhou</b> (${esc(errOCR)}).`:'')+notaCargo+(falta.length?` <b>Informe ${falta.join(' e ')} abaixo.</b>`:'');
   if($('lerImg')) $('lerImg').onclick=async()=>{ const l=S.digitalizados.splice(0); await lerRelatorios(l); };
-  if(S.res) irPara(2);
+  S.lendo=false;
+  if(S.res) irPara(2); else renderTudo();
 }
 { const d=$('dropTudo'), f=$('fileTudo');
   d.onclick=()=>f.click();
