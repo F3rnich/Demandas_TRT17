@@ -1360,9 +1360,17 @@ function causasCmp(dif){
   hip.push({txt:'função ou substituição: a RBC anterior incluiu; sem opção do servidor ficam fora (Lei 10.887/2004, art. 4º, § 1º, VIII)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.FC||0)+(l.bruto.SUBST||0):0; }});
   hip.push({txt:'GAS: a RBC anterior incluiu; a calculadora exclui (Tema 163 do STF)', f:k=>{ const l=lin(k); return l&&l.bruto?(l.bruto.GAS||0):0; }});
   const ini=iniEf(), fim=fimEf(), dm=k=>new Date(+k.slice(0,4),+k.slice(5,7),0).getDate();
+  // um título de AQ só: o que explica mais meses (sozinho ou com outra causa). Evita "doutorado" num mês isolado
+  // quando o resto do período é especialização + 13,23%.
+  { const aqs=hip.filter(h=>/^adicional de qualif/.test(h.txt)), outras=hip.filter(h=>!/^adicional de qualif/.test(h.txt));
+    if(aqs.length>1){ let best=null, bn=-1;
+      for(const a of aqs){ let n=0; for(const x of dif){ const falta=x.ant-x.calc, tol=Math.max(1,Math.abs(x.ant)*0.001), va=a.f(x.k);
+          if(Math.abs(va)<0.5) continue; if(Math.abs(va-falta)<=tol||outras.some(o=>Math.abs(va+o.f(x.k)-falta)<=tol)) n++; }
+        if(n>bn){ bn=n; best=a; } }
+      for(const a of aqs) if(a!==best) hip.splice(hip.indexOf(a),1); } }
   const out={};
   for(const x of dif){ const k=x.k, falta=x.ant-x.calc, tol=Math.max(1,Math.abs(x.ant)*0.001), l=lin(k), c=[];
-    const hs=hip.map(h=>({txt:h.txt,v:h.f(k)})).filter(h=>Math.abs(h.v)>0.5);
+    const hs=hip.map(h=>({txt:h.txt,v:h.f(k),f:h.f})).filter(h=>Math.abs(h.v)>0.5);
     const um=hs.find(h=>Math.abs(h.v-falta)<=tol);
     if(um) c.push(um.txt);
     else { let par=null; for(let i=0;i<hs.length&&!par;i++) for(let j=i+1;j<hs.length;j++){ if(hs[i].txt.slice(0,10)===hs[j].txt.slice(0,10)) continue; if(Math.abs(hs[i].v+hs[j].v-falta)<=tol){ par=[hs[i].txt,hs[j].txt]; break; } } if(par) c.push(...par); }
@@ -1376,7 +1384,10 @@ function causasCmp(dif){
       if(fim&&k===fim.slice(0,7)&&+fim.slice(8)<n){ const dF=+fim.slice(8), cheio=x.calc*n/dF; a=cheio*Math.min(dF,30)/30; }
       if(a!=null&&Math.abs(a-x.ant)<=tol) c.push('pro rata do mês de ingresso/desligamento: a RBC anterior dividiu por 30; a calculadora usa os dias do mês (prática da DIPROF desde 2018)');
     }
-    if(!c.length&&Math.abs(falta)<5) c.push('arredondamento ou dia da mudança no mês (progressão, pro rata)');
+    if(!c.length){   // mês em que a parcela começa ou termina: a RBC anterior tem parte dela (pro rata)
+      for(const h of hs){ const r=falta/h.v; if(r>0.02&&r<0.98){ const ant=dif.find(y=>y.k===RBC.addM(k,-1)), dep=dif.find(y=>y.k===RBC.addM(k,1));
+        if((dep&&Math.abs(h.f(dep.k)-(dep.ant-dep.calc))<=Math.max(1,dep.ant*0.001))||(ant&&Math.abs(h.f(ant.k)-(ant.ant-ant.calc))<=Math.max(1,ant.ant*0.001))){ c.push(h.txt+' — mês em que começa ou termina (proporcional a '+Math.round(r*30)+'/30)'); break; } } } }
+    if(!c.length&&Math.abs(falta)<Math.max(5,Math.abs(x.ant)*0.001)) c.push('arredondamento ou dia da mudança no mês (progressão, pro rata)');
     if(!c.length&&k==='2012-12') c.push('enquadramento da Lei 12.774 em 31/12/2012: a DIPROF tratou dezembro/2012 de forma própria');
     out[k]=c.length?c.join(' + '):'';
   }
