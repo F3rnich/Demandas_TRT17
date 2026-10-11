@@ -499,7 +499,9 @@ function calc(){ ajustarCargo();
   if(aplicarSugestoes()) renderRelTabelas();
   S.esp=null; S.cmp=null; S.espBy={};
   const d=dadosServidor();
-  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{}})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res&&S.recs.length) S.cmp=E.comparar(S.esp,S.res); /* sem ficha não há pago para comparar */ }catch(e){ console.error(e); S.esp=null; } }
+  if(d){ try{ S.esp=E.calcularEsperada(BASE,d,Object.assign(regrasCalc(),{aqTreinAnos:S.res?S.res.aqTreinAnos:{},
+    // ficha com competência própria (Big Grid: "Ano/Mês" × "Ano/Mês Folha"): a substituição já está no mês do exercício
+    substMesSeguinte:!S.recs.some(r=>/SUBSTITU/i.test(r.desc||'')&&r.pago&&r.pago!==r.comp)})); for(const l of S.esp.linhas) S.espBy[l.comp]=l; if(S.res&&S.recs.length) S.cmp=E.comparar(S.esp,S.res); /* sem ficha não há pago para comparar */ }catch(e){ console.error(e); S.esp=null; } }
   aplicarTabelaAntiga();
   aplicarSemFicha();
   aplicarTeto();
@@ -1307,6 +1309,7 @@ async function classificar(f){
     let pg; try{ pg=(await pdfDoc(await f.arrayBuffer())).pages; }catch(e){ return {tipo:'ignorado',motivo:'PDF ilegível'}; }
     const txt=pg.map(p=>p.items.map(i=>i.str).join(' ')).join('\n'), chars=charsTexto(pg);
     if(chars<30&&/RBC|RELA..O DAS BASES|BASES DE C.LCULO|REMUNERA..O DE CONTRIBUI/i.test(n+' '+pg.map(p=>p.items.map(i=>i.str).join('')).join(' '))&&!pareceCTCImg(pg,n)) return {tipo:'ignorado',motivo:'RBC anterior digitalizada: não é lida para comparação (envie em .docx, PDF de texto ou planilha)'};
+    if(chars<30&&!pareceCTCImg(pg,n)&&/(^|[^A-Z])AQP?([^A-Z]|$)|QUALIFICA/i.test(n)) return {tipo:'ignorado',motivo:'relatório de AQ digitalizado: o AQ é conferido pela ficha'};
     if(chars<30) return pareceCTCImg(pg,n)?{tipo:'img',sub:'CTC',motivo:'CTC digitalizada (imagem)'}:{tipo:'img',motivo:'digitalizado (imagem)'};
     if(CC&&CC.pareceRBC(txt)){ const r=CC.lerRBCPdf(pg); if(Object.keys(r.mensal).length) return {tipo:'rbc',dados:r}; }
     if(RBC.isFichaSGRH(pg)||RBC.isFichaAntigaPDF(pg)||RBC.isFolhaWebPorFolha(pg)||/Ficha Financeira|FICHA FINANCEIRA/.test(txt.slice(0,3000))) return {tipo:'ficha'};

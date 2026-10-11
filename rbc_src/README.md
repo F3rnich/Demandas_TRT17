@@ -142,3 +142,11 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Esperada: substituição de quem é titular de função = diferença para a função substituída (Lei 8.112, art. 38, §1º); depois de `fcAte`, a substituição esperada vai para o mês seguinte (a folha paga após a frequência).
 - Progressão da CTC lida por imagem (com classe/padrão) passa pela mesma conferência com o vencimento pago que o relatório em texto, com o cargo de cada linha. A referência do relatório é mantida quando o vencimento pago é o dela na tabela anterior (reajuste pago com atraso, ex.: Lei 12.774 em 2013) ou quando algum mês do período pagou o vencimento dela (progressão paga com atraso); só é "ajustada pelo vencimento pago" se a ficha nunca pagou aquela referência.
 - Textos da entrada automática: rodapé da etapa 1 orienta pelo estado (sem arquivos / lendo / o que faltou deduzir) e o passo 1 só fica em alerta depois de haver arquivos; RBC anterior digitalizada é ignorada com motivo (antes ia para "ler por imagem", que a leria como progressão); CTC lida por imagem aparece como "CTC / relatório" na lista; nota de dois provimentos com cargos e datas da declaração.
+
+### Fase 15g (11/10/2026): Big Grid de 2025 e CTC da SEINFO com rótulo centralizado
+
+- Ficha "Big Grid" com cabeçalho " Valor " (espaços): chaves aparadas antes da leitura (antes, todos os valores saíam zerados).
+- Funções da CTC com o rótulo no meio da lista de períodos ("FC-05 CHEFE DE SEÇÃO em Substituição" entre 20 datas): se há datas antes do primeiro código, cada linha vai para o rótulo mais próximo; senão, para o anterior.
+- Substituição no mês seguinte só quando a ficha não traz competência própria (Big Grid tem "Ano/Mês" × "Ano/Mês Folha" e já põe o valor no mês do exercício).
+- Filiação "PAI e MÃE" quebrada em linhas: o " e " decide; matrícula com espaço ("308.17. 1665") mantém os pontos; exoneração sem data legível = dia seguinte ao fim do período.
+- AQ digitalizado (nome com AQ/AQP/qualificação) é ignorado com motivo, em vez de oferecer leitura como progressão.

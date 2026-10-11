@@ -381,6 +381,8 @@
     }
     // modelo de 2025: "DATA DE ENCERRAMENTO / AFASTAMENTO" do último provimento = data da exoneração na certidão de RBC
     { const enc = [...flat.matchAll(/ENCERRAMENTO\s*\/?\s*AFASTAMENTO:?\s*(\d{1,2}[\/.]\d{1,2}[\/.]\d{4})/gi)].pop(); if (enc) meta.exoneracao = dBR(enc[1]); }
+    // exoneração sem a data legível (coluna ao lado da admissão): produz efeito no dia seguinte ao fim do período de contribuição
+    if (!meta.exoneracao && meta.fim && /EXONERA/i.test(flat)) { const d = new Date(meta.fim + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); meta.exoneracao = d.toISOString().slice(0, 10); }
     // dados para o cabeçalho da RBC (ficam só no navegador)
     const tiraSexo = n => n && n.replace(/\s+(MASCULINO|FEMININO|[MF])$/, '').trim();
     let mm = /SERVIDOR(?:\(A\))?:?\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|CI\b|$)/.exec(flat) || /NOME(?: DO SERVIDOR)?:\s*([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)\s+(?:SEXO|MATR|CPF|$)/.exec(flat);
@@ -402,7 +404,8 @@
           if (t && /^[A-Za-zÀ-ú .']+$/.test(t)) partes.push(t);
         }
         const tudo = partes.join(' ').trim();
-        const nomes = partes.length === 2 ? partes : tudo.split(/\s+e\s+/i).map(x => x.trim()).filter(x => x.length > 3);
+        const porE = tudo.split(/\s+e\s+/i).map(x => x.trim()).filter(x => x.length > 3);
+        const nomes = porE.length > 1 ? porE : partes.length === 2 ? partes : porE;   // "PAI e MÃE" quebrado em linhas: o " e " decide
         meta.filiacao = nomes.length > 1 ? nomes : partes;
         if (meta.filiacao.length) meta.mae = meta.filiacao[meta.filiacao.length - 1];
       }
@@ -413,8 +416,8 @@
     }
     // leiaute da SEINFO (2019): linha de rótulos "SERVIDOR: SEXO: MATRÍCULA:" e, abaixo, "Nome Sobrenome Masculino 308171535"
     { const i = ls.findIndex(l => /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO:?\s+MATR[ÍI]CULA:?\s*$/i.test(l));
-      const m3 = i >= 0 && ls[i + 1] && /^(.+?)\s+(Masculino|Feminino|M|F)\s+(\d[\d.\-]{3,14}\d)\s*$/i.exec(ls[i + 1].trim());
-      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/[.\s]/g, '');
+      const m3 = i >= 0 && ls[i + 1] && /^(.+?)\s+(Masculino|Feminino|M|F)\s+(\d[\d.\-\s]{3,16}\d)\s*$/i.exec(ls[i + 1].trim());
+      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/\s+/g, '');
         // sobrenome que não coube na coluna (continua na linha de baixo)
         const cont = (ls[i + 2] || '').trim();
         if (/^[A-ZÀ-Úa-zà-ú][A-Za-zÀ-ú .']{1,50}$/.test(cont) && !/:|FILIA|ENDERE|CPF|ÓRG|IDENTID/i.test(cont)) meta.nome += ' ' + cont; } }
@@ -455,15 +458,21 @@
     let lsF = secao(ls, /CARGO EM COMISS[ÃA]O\s*\/\s*FUN[ÇC][ÃA]O COMISSIONADA|EXERC[ÍI]CIO DE CARGO EM COMISS|^\s*(\d+ ?- ?)?FUN[ÇC][ÕO]ES:?\s*$/i, FIM_SEC);
     const RXFL = /^[A-ZÀ-Ú][A-ZÀ-Ú .\-]{2,80}?\s(?:FC|CJ|DAS)\s*-?\s*\d{1,2}\b(?:\s*\(em substitui\S*\))?\s+\d{1,2}\/\d{1,2}\/\d{4}\s+a\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/i;
     if (!lsF.some(l => /\b(FC|CJ|DAS)\s*-?\s*\d/i.test(l))) lsF = ls.filter(l => RXFL.test(l));
-    for (const l of lsF) {
-      const mc = /\b((?:FC|CJ|DAS)\s*-?\s*0?(\d+))\b/i.exec(l);
-      const ds = [...l.matchAll(RXD)].map(x => dBR(x[1]));
-      if (mc) ult = { cod: mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1'), nome: l.slice(0, mc.index).replace(/[-–]\s*$/, '').trim() };
-      if (!ult || !ds.length) continue;
-      // "1 a 13-6-1991" (CTC antiga): mesmo mês
-      // "(em substituição)": substituição, não titularidade
-      const dest = /\(?\s*em substitui/i.test(l) ? SUBSTITUICOES : FUNCOES;
-      for (let i = 0; i < ds.length; i += 2) dest.push({ cod: ult.cod, nome: ult.nome.replace(/\s*\(?\s*em substitui\S*\)?/i, '').trim(), ini: ds[i], fim: ds[i + 1] || null });
+    // rótulo da função centralizado na lista de datas (CTC da SEINFO de 2025: "FC-05 CHEFE DE SEÇÃO em Substituição" no meio
+    // de 20 períodos): se há datas antes do primeiro código, cada linha vai para o rótulo mais próximo; senão, para o anterior
+    const itensF = lsF.map((l, i) => ({ i, l, mc: /\b((?:FC|CJ|DAS)\s*-?\s*0?(\d+))\b/i.exec(l), ds: [...l.matchAll(RXD)].map(x => dBR(x[1])) }));
+    const rotF = itensF.filter(x => x.mc).map(x => { const cod = x.mc[1].toUpperCase().replace(/\s+/g, '').replace(/^(FC|CJ|DAS)-?0?/, '$1-').replace(/-(\d)$/, '-0$1');
+      const tira = t => t.replace(RXD, ' ').replace(/\s*\(?\s*em substitui\S*\)?/i, ' ').replace(/\b(a|até)\b/gi, ' ').replace(/[-–]/g, ' ').replace(/\s+/g, ' ').trim();
+      const nome = tira(x.l.slice(0, x.mc.index)) || tira(x.l.slice(x.mc.index + x.mc[1].length));
+      return { i: x.i, cod, nome, subst: /em substitui/i.test(x.l) }; });
+    const centrF = rotF.length && itensF.some(x => x.ds.length && x.i < rotF[0].i);
+    for (const x of itensF) {
+      if (!x.ds.length) continue;
+      const r = x.mc ? rotF.find(o => o.i === x.i) : centrF ? rotF.reduce((a, b) => Math.abs(b.i - x.i) < Math.abs(a.i - x.i) ? b : a) : [...rotF].reverse().find(o => o.i < x.i);
+      if (!r) continue;
+      // "1 a 13-6-1991" (CTC antiga): mesmo mês; "(em substituição)": substituição, não titularidade
+      const dest = r.subst || /em substitui/i.test(x.l) ? SUBSTITUICOES : FUNCOES;
+      for (let k = 0; k < x.ds.length; k += 2) dest.push({ cod: r.cod, nome: r.nome, ini: x.ds[k], fim: x.ds[k + 1] || null });
     }
     // anuênios: "1% a partir de 01/10/1995"
     const ATS = [];

@@ -83,8 +83,11 @@
    *  Cód. Rubrica, Rubrica, Valor, Tipo Valor). Ano/Mês = competência; Ano/Mês Folha = mês do pagamento.
    *  Retroativo já vem na competência de origem. Linhas "Somente Cálculo" (bases) não entram como rubrica; a base de PSO
    *  calculada pela folha volta em basePSO[comp] para conferência. */
-  function isBigGrid(rows) { return !!(rows && rows.length && ('Relacionamento' in rows[0] || 'Cód. Rubrica' in rows[0]) && 'Tipo Valor' in rows[0]); }
+  function isBigGrid(rows) { rows = rows && chavesLimpas(rows); return !!(rows && rows.length && ('Relacionamento' in rows[0] || 'Cód. Rubrica' in rows[0]) && 'Tipo Valor' in rows[0]); }
+  // cabeçalho com espaços sobrando (exportação de 2025: " Valor "): chaves aparadas
+  const chavesLimpas = rows => rows.length && Object.keys(rows[0]).some(k => k !== k.trim()) ? rows.map(r => { const o = {}; for (const k in r) o[k.trim()] = r[k]; return o; }) : rows;
   function parseBigGrid(rows) {
+    rows = chavesLimpas(rows);
     const recs = [], basePSO = {}, baseGN = {}, info = {};
     for (const r of rows) {
       const ano = +r['Ano'], mes = +r['Mês']; if (!ano || !mes) continue;
