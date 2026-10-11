@@ -381,8 +381,12 @@
       const i = ls.findIndex(l => /^\s*(SERVIDOR(?:\(A\))?|NOME):?\s*$/i.test(l) || /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO/i.test(l));
       if (i >= 0 && ls[i + 1]) { const m2 = /^([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)(?:\s+[MF]\s|\s+\d|\s*$)/.exec(ls[i + 1].trim()); if (m2) meta.nome = tiraSexo(m2[1].trim()); }
     }
+    // leiaute da SEINFO (2019): linha de rótulos "SERVIDOR: SEXO: MATRÍCULA:" e, abaixo, "Nome Sobrenome Masculino 308171535"
+    { const i = ls.findIndex(l => /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO:?\s+MATR[ÍI]CULA:?\s*$/i.test(l));
+      const m3 = i >= 0 && ls[i + 1] && /^(.+?)\s+(Masculino|Feminino|M|F)\s+(\d[\d.\-]{3,14}\d)\s*$/i.exec(ls[i + 1].trim());
+      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/[.\s]/g, ''); } }
     if (meta.nome) meta.nome = tiraSexo(meta.nome);
-    mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?N[º°o]\.?\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
+    mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?\bN(?:[º°o]\.?|\.|\s)\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
     const tipoDoc = /DECLARA[ÇC][ÃA]O(?: COMPLEMENTAR)? (?:DE|À) /i.test(flat.slice(0, 1500)) && !/CERTID[ÃA]O DE TEMPO/i.test(flat.slice(0, 600)) ? 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' : 'CERTIDÃO DE TEMPO DE CONTRIBUIÇÃO';
     if (mm) meta.ctcNumero = mm[2].replace(/\s+/g, '');
     const assin = [...flat.matchAll(/assinado eletronicamente por [^,]{3,80},[^,]{0,80}?,? em (\d{2}\/\d{2}\/\d{4})/gi)].map(x => x[1]);

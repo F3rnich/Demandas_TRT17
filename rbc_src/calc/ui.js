@@ -473,7 +473,8 @@ function aplicarTabelaAntiga(){
     if(!(l.bruto&&l.bruto.VB>0) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push('sem vencimento na ficha: cargo efetivo pela tabela'); }
     // VPI (Lei 10.698/2003) devida de abr/2016 a dez/2018 e não paga na folha a partir de ago/2016: as RBCs da DIPROF
     // emitidas desde 2025 incluem o valor da tabela (6 casos; as de 2024 não incluíam)
-    if(rg.vpiTabela!==false && l.comp>='2016-04' && l.comp<='2018-12' && !(l.v.VPI>0) && e.inc.VPI>0){ v.VPI=e.inc.VPI; aj.push('VPI pela tabela'); }
+    // VPI devida até 31/12/2018 (STJ, REsp 2.085.675; absorção pela Lei 13.317/2016 só em 01/2019); em 07/2016 a folha pagou até o dia 20
+    if(rg.vpiTabela!==false && l.comp>='2016-04' && l.comp<='2018-12' && e.inc.VPI>0 && !((l.v.VPI||0)>=e.inc.VPI-0.005)){ v.VPI=e.inc.VPI; aj.push(l.v.VPI>0?'VPI completada pela tabela':'VPI pela tabela'); }
     if(!aj.length) continue;
     const tot=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); if(Math.abs(tot-l.total)<0.005){ continue; }
     l.vFicha=l.v; l.v=v; l.total=tot; l.ajustes=aj; l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
@@ -656,6 +657,8 @@ function pendAutoMotivo(p){
   // VPI de ago/2016 a dez/2018 paga depois (ex.: passivo de 10/2024): com "VPI pela tabela", esses meses já têm a VPI
   if(p.cat==='VPI'&&p.comp>='2019-01'&&getRegras().vpiTabela!==false&&R.linhas.some(l=>l.comp>='2016-08'&&l.comp<='2018-12'&&l.v&&l.v.VPI>0))
     return 'VPI de ago/2016 a dez/2018 paga depois: a RBC já tem a VPI nesses meses (regra "VPI pela tabela")';
+  // VPI sem mês paga entre 07/2016 e 12/2018 num mês que a regra já completou pela tabela
+  if(p.cat==='VPI'&&p.comp>='2016-07'&&p.comp<='2018-12'&&getRegras().vpiTabela!==false){ const l=R.linhas.find(x=>x.comp===p.comp); if(l&&(l.ajustes||[]).some(a=>/^VPI (pela|completada)/.test(a))) return 'VPI do mês já completada pela tabela (regra "VPI pela tabela")'; }
   return '';
 }
 function contagens(){
@@ -1312,7 +1315,9 @@ function preencherCert(){
 }
 document.querySelectorAll('#certCampos input').forEach(el=>el.addEventListener('input',()=>{ el.dataset.editado='1'; if(['c_nome','c_cpf','c_data'].includes(el.id)) renderGNCert(); }));
 // assinantes lembrados neste navegador (conveniência; não é dado do servidor)
-for(const id of ['c_chefe','c_secretario']){ try{ const v=localStorage.getItem('rbc_'+id); if(v) $(id).value=v; }catch(e){}
+// padrão: chefe da DIPROF e secretária de Gestão de Pessoas atuais; o que o usuário digitar fica lembrado neste navegador
+const ASSINA_PADRAO={c_chefe:'Renatha Diniz Campana',c_secretario:'Cleide Mara Reisen'};
+for(const id of ['c_chefe','c_secretario']){ $(id).value=ASSINA_PADRAO[id]; try{ const v=localStorage.getItem('rbc_'+id); if(v) $(id).value=v; }catch(e){}
   $(id).addEventListener('change',()=>{ try{ localStorage.setItem('rbc_'+id,$(id).value); }catch(e){} }); }
 async function baixarCert(){
   try{

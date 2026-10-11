@@ -130,3 +130,6 @@ As antigas etapas 2 (ficha e rubricas) e 3 (valores a distribuir) deixaram de se
 - Aceita .xlt, .xltx e .xlsm. RBC anterior em planilha: mês repetido = linha do 13º.
 - Textos: servidor ou magistrado; magistrado desativa a especialidade; certidão de RBC com "NOME DO(A) MAGISTRADO(A)".
 - Sem regressão completa (corpus apagado do computador de trabalho); as mudanças só agem nos formatos novos.
+- VPI: a regra "VPI pela tabela" também completa o mês pago só em parte (07/2016, absorção indevida a partir de 21/07); devida até 31/12/2018 (STJ, AgInt no REsp 2.085.675, trânsito em 17/06/2024). VPI sem mês nesses meses fica em "Resolvidos pela calculadora".
+- CTC da SEINFO (2019): nome e matrícula na linha abaixo de "SERVIDOR: SEXO: MATRÍCULA:"; número "N 21/2019" sem o "º".
+- Certidão: chefe da DIPROF e secretária de Gestão de Pessoas preenchidos por padrão (o que o usuário digitar fica lembrado no navegador).

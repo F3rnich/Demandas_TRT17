@@ -370,7 +370,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
       <label class="chk"><input type="checkbox" id="r_teto"> Contribuição limitada ao teto do INSS</label>
       <label class="chk"><input type="checkbox" id="r_semFichaTabela"> Meses sem ficha pela tabela</label>
       <label class="chk"><input type="checkbox" id="r_gnFicha"> 13º pelo valor pago na ficha <span class="dica">(automático para magistrado)</span></label>
-      <label class="chk"><input type="checkbox" id="r_vpiTabela"> VPI pela tabela quando a ficha não paga <span class="dica">(abr/2016–dez/2018)</span></label>
+      <label class="chk"><input type="checkbox" id="r_vpiTabela"> VPI pela tabela quando a ficha não paga ou paga só parte do mês <span class="dica">(abr/2016–dez/2018: devida até a absorção em 01/2019, STJ, REsp 2.085.675)</span></label>
       <label class="chk"><input type="checkbox" id="r_passivoTabela"> Exercício anterior com contribuição distribuído nos meses de origem <span class="dica">(ex.: D.E.A. RRA de 01/2014; só quando houve PSS sobre o valor)</span></label>
     </div>
     <div class="regras" style="margin-top:14px">
@@ -1869,8 +1869,12 @@ const TABELA = [{"i":"1994-04-01","f":"1994-12-31","c":"NÍVEL AUXILIAR","r":"AI
       const i = ls.findIndex(l => /^\s*(SERVIDOR(?:\(A\))?|NOME):?\s*$/i.test(l) || /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO/i.test(l));
       if (i >= 0 && ls[i + 1]) { const m2 = /^([A-ZÀ-Ú][A-ZÀ-Ú .']{4,80}?)(?:\s+[MF]\s|\s+\d|\s*$)/.exec(ls[i + 1].trim()); if (m2) meta.nome = tiraSexo(m2[1].trim()); }
     }
+    // leiaute da SEINFO (2019): linha de rótulos "SERVIDOR: SEXO: MATRÍCULA:" e, abaixo, "Nome Sobrenome Masculino 308171535"
+    { const i = ls.findIndex(l => /^\s*SERVIDOR(?:\(A\))?:?\s+SEXO:?\s+MATR[ÍI]CULA:?\s*$/i.test(l));
+      const m3 = i >= 0 && ls[i + 1] && /^(.+?)\s+(Masculino|Feminino|M|F)\s+(\d[\d.\-]{3,14}\d)\s*$/i.exec(ls[i + 1].trim());
+      if (m3) { meta.nome = m3[1].trim(); meta.matricula = m3[3].replace(/[.\s]/g, ''); } }
     if (meta.nome) meta.nome = tiraSexo(meta.nome);
-    mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?N[º°o]\.?\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
+    mm = /(CERTID[ÃA]O|DECLARA[ÇC][ÃA]O)(?: COMPLEMENTAR)? DE TEMPO DE (?:CONTRIBUI[ÇC][ÃA]O|SERVI[ÇC]O).{0,80}?\bN(?:[º°o]\.?|\.|\s)\s*(\d+\s*\/\s*\d{4})/i.exec(flat);
     const tipoDoc = /DECLARA[ÇC][ÃA]O(?: COMPLEMENTAR)? (?:DE|À) /i.test(flat.slice(0, 1500)) && !/CERTID[ÃA]O DE TEMPO/i.test(flat.slice(0, 600)) ? 'DECLARAÇÃO DE TEMPO DE CONTRIBUIÇÃO' : 'CERTIDÃO DE TEMPO DE CONTRIBUIÇÃO';
     if (mm) meta.ctcNumero = mm[2].replace(/\s+/g, '');
     const assin = [...flat.matchAll(/assinado eletronicamente por [^,]{3,80},[^,]{0,80}?,? em (\d{2}\/\d{2}\/\d{4})/gi)].map(x => x[1]);
@@ -2625,7 +2629,8 @@ function aplicarTabelaAntiga(){
     if(!(l.bruto&&l.bruto.VB>0) && e.v.VB){ set(['VB','GAJ','APJ','DIF2886','GEXTRA','REDUTOR']); aj.push('sem vencimento na ficha: cargo efetivo pela tabela'); }
     // VPI (Lei 10.698/2003) devida de abr/2016 a dez/2018 e não paga na folha a partir de ago/2016: as RBCs da DIPROF
     // emitidas desde 2025 incluem o valor da tabela (6 casos; as de 2024 não incluíam)
-    if(rg.vpiTabela!==false && l.comp>='2016-04' && l.comp<='2018-12' && !(l.v.VPI>0) && e.inc.VPI>0){ v.VPI=e.inc.VPI; aj.push('VPI pela tabela'); }
+    // VPI devida até 31/12/2018 (STJ, REsp 2.085.675; absorção pela Lei 13.317/2016 só em 01/2019); em 07/2016 a folha pagou até o dia 20
+    if(rg.vpiTabela!==false && l.comp>='2016-04' && l.comp<='2018-12' && e.inc.VPI>0 && !((l.v.VPI||0)>=e.inc.VPI-0.005)){ v.VPI=e.inc.VPI; aj.push(l.v.VPI>0?'VPI completada pela tabela':'VPI pela tabela'); }
     if(!aj.length) continue;
     const tot=RBC.r2(Object.values(v).reduce((a,b)=>a+b,0)); if(Math.abs(tot-l.total)<0.005){ continue; }
     l.vFicha=l.v; l.v=v; l.total=tot; l.ajustes=aj; l.pssCalc=RBC.pssDevida(l.total,l.comp,rg.teto); l.dif=RBC.r2(l.pssFicha-l.pssCalc);
@@ -2808,6 +2813,8 @@ function pendAutoMotivo(p){
   // VPI de ago/2016 a dez/2018 paga depois (ex.: passivo de 10/2024): com "VPI pela tabela", esses meses já têm a VPI
   if(p.cat==='VPI'&&p.comp>='2019-01'&&getRegras().vpiTabela!==false&&R.linhas.some(l=>l.comp>='2016-08'&&l.comp<='2018-12'&&l.v&&l.v.VPI>0))
     return 'VPI de ago/2016 a dez/2018 paga depois: a RBC já tem a VPI nesses meses (regra "VPI pela tabela")';
+  // VPI sem mês paga entre 07/2016 e 12/2018 num mês que a regra já completou pela tabela
+  if(p.cat==='VPI'&&p.comp>='2016-07'&&p.comp<='2018-12'&&getRegras().vpiTabela!==false){ const l=R.linhas.find(x=>x.comp===p.comp); if(l&&(l.ajustes||[]).some(a=>/^VPI (pela|completada)/.test(a))) return 'VPI do mês já completada pela tabela (regra "VPI pela tabela")'; }
   return '';
 }
 function contagens(){
@@ -3464,7 +3471,9 @@ function preencherCert(){
 }
 document.querySelectorAll('#certCampos input').forEach(el=>el.addEventListener('input',()=>{ el.dataset.editado='1'; if(['c_nome','c_cpf','c_data'].includes(el.id)) renderGNCert(); }));
 // assinantes lembrados neste navegador (conveniência; não é dado do servidor)
-for(const id of ['c_chefe','c_secretario']){ try{ const v=localStorage.getItem('rbc_'+id); if(v) $(id).value=v; }catch(e){}
+// padrão: chefe da DIPROF e secretária de Gestão de Pessoas atuais; o que o usuário digitar fica lembrado neste navegador
+const ASSINA_PADRAO={c_chefe:'Renatha Diniz Campana',c_secretario:'Cleide Mara Reisen'};
+for(const id of ['c_chefe','c_secretario']){ $(id).value=ASSINA_PADRAO[id]; try{ const v=localStorage.getItem('rbc_'+id); if(v) $(id).value=v; }catch(e){}
   $(id).addEventListener('change',()=>{ try{ localStorage.setItem('rbc_'+id,$(id).value); }catch(e){} }); }
 async function baixarCert(){
   try{
