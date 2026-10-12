@@ -12,11 +12,11 @@
       "dashboard_transformacoes_organograma.html",
       "dashboard_governanca_tcu.html",
       "dashboard_risco_sucessorio.html",
-      "dashboard_alocacao_ingresso_2026.html",
       "calculadora_rbc.html"
     ],
     "must_not_contain": [
-      "dashboard_acoes_reestruturacao_2026.html"
+      "dashboard_acoes_reestruturacao_2026.html",
+      "dashboard_alocacao_ingresso_2026.html"
     ]
   },
   "dashboard_colegiados.html": {
@@ -350,21 +350,6 @@
       "UAE",
       "firebaseConfig",
       "Idade mediana de 47 anos"
-    ]
-  },
-  "dashboard_alocacao_ingresso_2026.html": {
-    "must_contain": [
-      "<html",
-      "</html>",
-      "favicon.svg",
-      "sgp-hub-back",
-      "firebaseConfig",
-      "alocacao_ingresso_2026",
-      "PESOS_PADRAO",
-      "\"unidades\""
-    ],
-    "must_not_contain": [
-      "acoes_reestruturacao_2026"
     ]
   },
   "ler_vagos.py": {
