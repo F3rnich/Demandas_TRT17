@@ -1,0 +1,29 @@
+name: Testar calculadora de RBC
+on:
+  push:
+    branches: [main]
+    paths: ['rbc_src/**', 'calculadora_rbc.html', 'rbc_versao.json', '.github/workflows/calculadora_rbc.yml']
+  pull_request:
+    paths: ['rbc_src/**', 'calculadora_rbc.html', 'rbc_versao.json']
+  workflow_dispatch:
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rbc_src/calc/package-lock.json
+      - name: Instalar dependencias
+        working-directory: rbc_src/calc
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: A pagina publicada corresponde ao codigo-fonte
+        working-directory: rbc_src/calc
+        run: |
+          node build_html.js
+          git diff --exit-code -- ../../calculadora_rbc.html ../../rbc_versao.json || { echo "::error::calculadora_rbc.html ou rbc_versao.json desatualizados: rode node build_html.js e publique de novo"; exit 1; }
+      - name: Teste rapido (caso sintetico, mapa, downloads, versao, ficha)
+        run: node rbc_src/testes/smoke.js

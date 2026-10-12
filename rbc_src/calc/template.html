@@ -221,10 +221,13 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
   .veredito{grid-template-columns:1fr}
   .drop{flex-direction:column;text-align:center}
 }
+.novaVersao{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--att) 22%,var(--paper));border-bottom:2px solid var(--att);padding:10px 16px;text-align:center;font-size:14px}
+.novaVersao .btn{margin:0 6px}
 </style>
 </head>
 <body>
-<div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA</span><b>TRT-17</b></div></div>
+<div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA · <span id="versao" title="Versão da calculadora (data da publicação · código)"></span></span><b>TRT-17</b></div></div>
+<div class="novaVersao" id="novaVersao" role="alert" hidden>Há uma versão mais nova da calculadora (<span id="novaVersaoTxt"></span>). <button class="btn" id="novaVersaoBtn">Recarregar agora</button> <span class="muted small">Se estiver no meio de um cálculo, salve as escolhas antes.</span></div>
 <div class="head"><div class="head-in">
   <h1>Calculadora de RBC</h1>
   <p>Monta a relação das remunerações de contribuição da CTC a partir da ficha financeira, da própria CTC (ou declaração) e, quando houver, dos relatórios do RH; compara o que foi pago com o que era devido pela tabela. Os arquivos são lidos neste computador e não saem dele.</p>
@@ -414,6 +417,7 @@ const RUBREF = /*__RUBREF__*/;
 const RUBCOD = /*__RUBCOD__*/;
 </script>
 <script>
+const RBC_VERSAO=/*__VERSAO__*/;
 /*__UI__*/
 </script>
 </body>

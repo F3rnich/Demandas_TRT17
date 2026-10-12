@@ -1732,4 +1732,18 @@ document.querySelectorAll('[data-limpar]').forEach(b=>{ const txt=b.textContent;
     b.dataset.armado='1'; b.textContent='Confirmar: apagar tudo?'; clearTimeout(t);
     t=setTimeout(()=>{ delete b.dataset.armado; b.textContent=txt; },5000); }; });
 window.__RBC_STATE=S; window.__RBC_IR=irPara; window.__RBC_CALC=calc; window.__RBC_CONT=contagens; // usados nos testes automatizados
+// ---------------------------------------------------------------- versão: rótulo e aviso de versão mais nova
+(function(){
+  const v=typeof RBC_VERSAO==='object'&&RBC_VERSAO; if(!v) return;
+  const fd=d=>d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4);
+  const el=$('versao'); if(el) el.textContent='versão de '+fd(v.data)+' · '+v.id;
+  if(!/^https?:/.test(location.protocol)) return;   // arquivo local: sem checagem
+  const checar=()=>fetch('rbc_versao.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(n=>{
+    if(!n||!n.id||n.id===v.id) return;
+    $('novaVersaoTxt').textContent='de '+fd(n.data); $('novaVersao').hidden=false;
+    $('novaVersaoBtn').onclick=()=>{ const u=new URL(location.href); u.searchParams.set('v',n.id); location.replace(u.toString()); };
+  }).catch(()=>{});
+  checar(); setInterval(checar,30*60*1000);   // na abertura e a cada 30 min (página aberta o dia todo)
+})();
+
 })();

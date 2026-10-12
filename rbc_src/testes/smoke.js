@@ -4,7 +4,7 @@ const CALC=path.resolve(__dirname,'..','calc'), NM=CALC+'/node_modules';
 const {chromium}=require(NM+'/playwright'); const JSZip=require(NM+'/jszip'); const XLSX=require(NM+'/xlsx');
 const PAGINA=path.resolve(CALC,'..','..','calculadora_rbc.html');
 const MAP={'jszip.min.js':'jszip/dist/jszip.min.js','xlsx.full.min.js':'xlsx/dist/xlsx.full.min.js','pdf.min.js':'pdfjs-dist/build/pdf.min.js','pdf.worker.min.js':'pdfjs-dist/build/pdf.worker.min.js','exceljs.min.js':'exceljs/dist/exceljs.min.js'};
-const ok=(c,m)=>console.log((c?'OK   ':'FALHA')+' '+m);
+let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')+' '+m); };
 (async()=>{
  const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1440,height:900},acceptDownloads:true});
  const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(String(e))); p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
@@ -44,5 +44,30 @@ const ok=(c,m)=>console.log((c?'OK   ':'FALHA')+' '+m);
  // tema escuro e tela estreita
  await p.setViewportSize({width:800,height:900}); await p.waitForTimeout(200); ok(await p.evaluate(()=>document.documentElement.scrollWidth<=820),'sem rolagem horizontal em 800 px');
  ok(errs.length===0,'nenhum erro de JavaScript durante o uso '+errs.join(' | '));
+ // ---- versão: rótulo e aviso de versão mais nova (página servida por http)
+ { const http=require('http'), raiz=path.resolve(CALC,'..','..');
+   const srv=http.createServer((q,r)=>{ const f=path.join(raiz,decodeURIComponent(q.url.split('?')[0])); if(!f.startsWith(raiz)||!fs.existsSync(f)){r.writeHead(404);return r.end();} r.writeHead(200,{'content-type':/\.json$/.test(f)?'application/json':'text/html; charset=utf-8'}); fs.createReadStream(f).pipe(r); }).listen(0);
+   const porta=srv.address().port, v=JSON.parse(fs.readFileSync(path.join(raiz,'rbc_versao.json'),'utf8'));
+   const p2=await ctx.newPage(); await p2.goto(`http://127.0.0.1:${porta}/calculadora_rbc.html`); await p2.waitForTimeout(800);
+   ok((await p2.textContent('#versao')).includes(v.id),'rótulo de versão: '+(await p2.textContent('#versao')));
+   ok(await p2.evaluate(()=>document.getElementById('novaVersao').hidden),'sem aviso quando a versão é a mesma');
+   await p2.route(/rbc_versao\.json/,r=>r.fulfill({body:JSON.stringify({id:'ffffffff',data:'2099-01-01'}),contentType:'application/json'}));
+   await p2.reload(); await p2.waitForTimeout(800);
+   ok(!(await p2.evaluate(()=>document.getElementById('novaVersao').hidden)),'aviso de versão mais nova aparece');
+   await p2.close(); srv.close(); }
+ // ---- leitura de ficha: planilha longa sintética (analista A-1, jan–jun/2012), pela entrada única
+ { const rows=[]; const lan=(ano,mes,cod,desc,nat,v)=>rows.push({'Ano':ano,'Mês':mes,'Tipo':0,'Código Rubrica':cod,'Descrição Rubrica':desc,'Tipo Rubrica':nat,'Sequencial Rubrica':1,'Valor Rubrica':v});
+   for(let m=1;m<=6;m++){ lan(2012,m,'1','VENCIMENTO LEI 11416/06','R',4367.68); lan(2012,m,'2','GRAT.ATIV.JUDIC. LEI 11416/06','R',2183.84); lan(2012,m,'3','VANTAGEM PECUNIÁRIA LEI 10698/03','R',59.87); lan(2012,m,'4','AUXILIO-ALIMENTACAO','R',710); lan(2012,m,'5','PREVIDENCIA SOCIAL','D',727.25); }
+   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Ficha'); const fx=require('os').tmpdir()+'/ficha_sintetica.xlsx'; XLSX.writeFile(wb,fx);
+   const p3=await ctx.newPage(); const e3=[]; p3.on('pageerror',e=>e3.push(String(e)));
+   await p3.goto('file://'+PAGINA); await p3.waitForTimeout(500); await p3.setInputFiles('#fileTudo',[fx]);
+   await p3.waitForFunction(()=>/ignorado/.test(document.getElementById('tudoSt').textContent),null,{timeout:60000}); await p3.waitForTimeout(800);
+   const q=await p3.evaluate(()=>{const S=window.__RBC_STATE; const L=(S.res&&S.res.linhas)||[]; return {cargo:document.getElementById('cargo').value,n:L.length,t:L.map(l=>l.total),dif:L.map(l=>l.dif),ali:!!(S.res&&S.res.linhas.every(l=>!('AUXALIM' in (l.v||{}))))};});
+   ok(/ANALISTA/.test(q.cargo),'ficha sintética: cargo deduzido = '+q.cargo);
+   ok(q.n===6&&q.t.every(x=>Math.abs(x-6611.39)<0.02),'ficha sintética: 6 meses de R$ 6.611,39 ('+q.t.join(', ')+')');
+   ok(q.dif.every(x=>Math.abs(x||0)<0.02),'ficha sintética: contribuição descontada confere');
+   ok(e3.length===0,'ficha sintética sem erro de JavaScript '+e3.join(' | '));
+   await p3.close(); }
  await b.close();
+ process.exitCode=falhas?1:0;
 })();
