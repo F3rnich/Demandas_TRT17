@@ -1,5 +1,5 @@
 import json,collections,os
-b=json.load(open('/home/claude/Demandas_TRT17/rbc_src/calc/base_calc.json'))
+b=json.load(open(__import__('os').environ.get('RBC_REPO','/home/claude/demandas_trt17')+'/rbc_src/calc/base_calc.json'))
 MAP={'NÍVEL AUXILIAR':'AUXILIAR JUDICIÁRIO','NÍVEL INTERMEDIÁRIO':'TÉCNICO JUDICIÁRIO','NÍVEL SUPERIOR':'ANALISTA JUDICIÁRIO','ANALISTA JUDICIÁRIO':'ANALISTA JUDICIÁRIO','TÉCNICO JUDICIÁRIO':'TÉCNICO JUDICIÁRIO','AUXILIAR JUDICIÁRIO':'AUXILIAR JUDICIÁRIO'}
 VB=collections.defaultdict(list)
 for i,f,lv,cl,pd,campo,v,_ in b['serv']:

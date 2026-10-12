@@ -223,10 +223,15 @@ Regressões que ficam (5 meses, explicadas): pro rata com divisor 30 em RRC anti
 
 ### Teste rápido (12/10/2026)
 
-`node rbc_src/testes/smoke.js`: abre a página gerada, calcula um caso sintético (técnico 05/2013–03/2017, sem ficha, AQ e 13,23%), confere jun/2013, jan/2015 e jan/2017 com a RRC de 2017, usa o mapa (modos, dica, detalhe), baixa Excel, certidão .docx e escolhas salvas, verifica rolagem em 800 px e erros de JavaScript. Não precisa de corpus; rodar depois de cada `build_html.js`. Também testa o rótulo e o aviso de versão (página servida por http) e a leitura de uma ficha sintética em planilha longa (analista A-1, jan–jun/2012: cargo deduzido, R$ 6.611,39 por mês, contribuição confere). 24 verificações; sai com código 1 se alguma falhar.
+`node rbc_src/testes/smoke.js`: abre a página gerada, calcula um caso sintético (técnico 05/2013–03/2017, sem ficha, AQ e 13,23%), confere jun/2013, jan/2015 e jan/2017 com a RRC de 2017, usa o mapa (modos, dica, detalhe), baixa Excel, certidão .docx e escolhas salvas, verifica rolagem em 800 px e erros de JavaScript. Não precisa de corpus; rodar depois de cada `build_html.js`. Também testa o rótulo e o aviso de versão (página servida por http) e a leitura de uma ficha sintética em planilha longa (analista A-1, jan–jun/2012: cargo deduzido, R$ 6.611,39 por mês, contribuição confere). Também testa o ingresso deduzido da ficha (exercício em 18/01/2012, janeiro pago por 13/30). 28 verificações; sai com código 1 se alguma falhar.
 
 ### Versão e CI (12/10/2026)
 
 - `build_html.js` grava a versão na página (hash de 8 caracteres do conteúdo + data do build; rebuild sem mudança mantém a data) e em `rbc_versao.json`, na raiz.
 - A página mostra "versão de DD/MM/AAAA · id" no topo. Aberta pelo site, consulta `rbc_versao.json` na abertura e a cada 30 min; se o id mudou, mostra o aviso "Há uma versão mais nova" com botão que recarrega com `?v=<id>` (fura o cache).
 - `.github/workflows/calculadora_rbc.yml`: a cada push que toque a calculadora, confere se a página publicada corresponde ao código-fonte e roda `smoke.js`. Falha = X vermelho no commit e e-mail do GitHub. A publicação do Pages é separada (pela branch): o teste avisa, não bloqueia. Para bloquear, mudar a fonte do Pages para "GitHub Actions" e publicar por workflow depois do teste.
+
+### Ingresso deduzido da ficha e regressão em um comando (12/10/2026)
+
+- **Ingresso sem CTC/declaração (`deduzirIngresso`):** quando a data de exercício não veio de documento, o dia sai do vencimento proporcional do primeiro mês da ficha comparado ao do mês seguinte (fração × divisor do mês = número inteiro de dias, tolerância 0,05). A data entra só no cálculo (`S.iniAuto`), não no campo, e a conferência mostra o aviso "Ingresso deduzido da ficha … confira". Efeito no corpus: medir na próxima regressão.
+- **`pipeline/rodar_regressao.sh <pasta_com_o_corpus> [commit_base]`:** copia o corpus, converte .doc/.odt, roda o pipeline inteiro, a regressão da versão atual e, se pedido, a do commit base (worktree), e imprime o placar e os ganhos/regressões por caso. `TUDO=1` roda também pela entrada única. Os scripts do pipeline passaram a achar o repositório por `RBC_REPO` (padrão `/home/claude/demandas_trt17`) e criam `recs/` sozinhos.

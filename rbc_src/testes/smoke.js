@@ -56,7 +56,7 @@ let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')
    ok(!(await p2.evaluate(()=>document.getElementById('novaVersao').hidden)),'aviso de versão mais nova aparece');
    await p2.close(); srv.close(); }
  // ---- leitura de ficha: planilha longa sintética (analista A-1, jan–jun/2012), pela entrada única
- { const rows=[]; const lan=(ano,mes,cod,desc,nat,v)=>rows.push({'Ano':ano,'Mês':mes,'Tipo':0,'Código Rubrica':cod,'Descrição Rubrica':desc,'Tipo Rubrica':nat,'Sequencial Rubrica':1,'Valor Rubrica':v});
+ { const rows=[]; const lan=(ano,mes,cod,desc,nat,v)=>rows.push({'Ano':ano,'Mês':mes,'Tipo':0,'Código Rubrica':cod,'Descrição Rubrica':desc,'Tipo Rubrica':nat,'Sequencial Rubrica':0,'Valor Rubrica':v});
    for(let m=1;m<=6;m++){ lan(2012,m,'1','VENCIMENTO LEI 11416/06','R',4367.68); lan(2012,m,'2','GRAT.ATIV.JUDIC. LEI 11416/06','R',2183.84); lan(2012,m,'3','VANTAGEM PECUNIÁRIA LEI 10698/03','R',59.87); lan(2012,m,'4','AUXILIO-ALIMENTACAO','R',710); lan(2012,m,'5','PREVIDENCIA SOCIAL','D',727.25); }
    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Ficha'); const fx=require('os').tmpdir()+'/ficha_sintetica.xlsx'; XLSX.writeFile(wb,fx);
    const p3=await ctx.newPage(); const e3=[]; p3.on('pageerror',e=>e3.push(String(e)));
@@ -68,6 +68,19 @@ let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')
    ok(q.dif.every(x=>Math.abs(x||0)<0.02),'ficha sintética: contribuição descontada confere');
    ok(e3.length===0,'ficha sintética sem erro de JavaScript '+e3.join(' | '));
    await p3.close(); }
+ // ---- ingresso deduzido da ficha: exercício em 18/01/2012, janeiro pago por 13/30
+ { const rows=[]; const lan=(ano,mes,cod,desc,nat,v)=>rows.push({'Ano':ano,'Mês':mes,'Tipo':0,'Código Rubrica':cod,'Descrição Rubrica':desc,'Tipo Rubrica':nat,'Sequencial Rubrica':0,'Valor Rubrica':v});
+   for(let m=1;m<=4;m++){ const f=m===1?13/30:1, r2=x=>Math.round(x*f*100)/100; lan(2012,m,'1','VENCIMENTO LEI 11416/06','R',r2(4367.68)); lan(2012,m,'2','GRAT.ATIV.JUDIC. LEI 11416/06','R',r2(2183.84)); lan(2012,m,'3','VANTAGEM PECUNIÁRIA LEI 10698/03','R',r2(59.87)); lan(2012,m,'5','PREVIDENCIA SOCIAL','D',r2(727.25)); }
+   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Ficha'); const fx=require('os').tmpdir()+'/ficha_ingresso.xlsx'; XLSX.writeFile(wb,fx);
+   const p4=await ctx.newPage(); const e4=[]; p4.on('pageerror',e=>e4.push(String(e)));
+   await p4.goto('file://'+PAGINA); await p4.waitForTimeout(500); await p4.setInputFiles('#fileTudo',[fx]);
+   await p4.waitForFunction(()=>/ignorado/.test(document.getElementById('tudoSt').textContent),null,{timeout:60000}); await p4.waitForTimeout(800);
+   const q=await p4.evaluate(()=>{const S=window.__RBC_STATE; const L=S.res.linhas; return {auto:S.iniAuto, jan:L[0].total, n:L.length, aviso:/Ingresso deduzido da ficha/.test(document.body.innerText)};});
+   ok(q.auto==='2012-01-18','ingresso deduzido da ficha = 18/01/2012 ('+q.auto+')');
+   ok(Math.abs(q.jan-2864.94)<0.03&&q.n===4,'jan/2012 proporcional = 2.864,94 ('+q.jan+')');
+   ok(q.aviso,'aviso do ingresso deduzido na conferência');
+   ok(e4.length===0,'ingresso deduzido sem erro de JavaScript '+e4.join(' | '));
+   await p4.close(); }
  await b.close();
  process.exitCode=falhas?1:0;
 })();

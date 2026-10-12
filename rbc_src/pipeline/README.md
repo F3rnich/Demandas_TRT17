@@ -4,6 +4,10 @@ Scripts que transformam as pastas de RBC da DIPROF em casos para `testes/regress
 
 Caminhos fixos: corpus em `/home/claude/corpus`, trabalho em `/home/claude/work` (casos em `/home/claude/work/casos`). Rode a partir de `/home/claude/work`, com os scripts copiados para lá.
 
+## Em um comando
+
+`bash rbc_src/pipeline/rodar_regressao.sh <pasta_com_o_corpus> [commit_base]` faz tudo o que está abaixo (montar, pipeline, regressão, placar). As seções seguintes descrevem os passos, para diagnóstico.
+
 ## Montar o corpus
 1. Copiar as pastas do Downloads de Leo (pasta "RBC - 0000775-34.2024…" com 3 subpastas, mais `RBC/` e `RRC/`) para `/home/claude/corpus`.
 2. Converter `.doc`/`.odt` para `.docx`: `soffice --headless --convert-to docx --outdir <pasta> <arquivo>`.

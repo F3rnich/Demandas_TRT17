@@ -61,7 +61,16 @@ for (const id of ['inicio','fim','cargo','espDesde']) $(id).addEventListener('ch
 $('especialidade').addEventListener('change',()=>{ calc(); });
 
 // período efetivo: a RBC cobre todo o período de contribuição; desligamento em branco = último mês da ficha
-function iniEf(){ let v=$('inicio').value; if(!v && S.recs.length) v=S.recs.map(r=>r.comp).sort()[0]+'-01'; return v; }
+function iniEf(){ let v=$('inicio').value; if(!v && S.recs.length) v=S.iniAuto||S.recs.map(r=>r.comp).sort()[0]+'-01'; return v; }
+// Ingresso sem CTC/declaração: o dia sai do vencimento proporcional do primeiro mês da ficha (ex.: 13/30 do vencimento do mês
+// seguinte = exercício desde o dia 18). Só quando a fração dá um número inteiro de dias (sem progressão ou reajuste no meio).
+function deduzirIngresso(){
+  if($('inicio').value||!S.res) return null;
+  const L=S.res.linhas, a=L[0], b=L[1]; if(!a||!b||!a.fonte||!b.fonte||b.comp!==RBC.addM(a.comp,1)) return null;
+  const v0=a.bruto&&a.bruto.VB, v1=b.bruto&&b.bruto.VB; if(!(v0>0&&v1>0&&v0<v1-0.01)) return null;
+  const dv=RBC.divisor(a.comp), n=v0/v1*dv, d=Math.round(n); if(Math.abs(n-d)>0.05||d<1||d>=dv) return null;
+  const dia=dv-d+1; return {data:a.comp+'-'+String(dia).padStart(2,'0'), dias:d, dv, comp:a.comp};
+}
 // moeda de cada competência: a RBC usa a moeda da época, sem conversão; a média da aposentadoria só usa de 07/1994 em diante
 // 03–06/1994: valores em URV, rotulados CR$ como no modelo da DIPROF (a moeda corrente era o cruzeiro real)
 function moedaDe(k){ return k<'1986-03'?'Cr$':k<'1989-02'?'Cz$':k<'1990-04'?'NCz$':k<'1993-08'?'Cr$':k<'1994-07'?'CR$':'R$'; }
@@ -534,7 +543,7 @@ async function lerArquivos(list){
 // ------------------------------------------------------------ cálculo
 function ignMap(){ const o={}; for(const k in S.ignorar) o[k]=true; return o; }
 function calc(){ ajustarCargo();
-  const ini=iniEf(), fim=fimEf();
+  S.iniAuto=''; let ini=iniEf(); const fim=fimEf();
   S.res=null;
   S.tetoAuto=RBC.detectarTeto(S.recs, ini);
   if(S.ctc&&S.ctc.teto==='sim') S.tetoAuto={desde:(S.ctc.inicio||ini||'').slice(0,7), motivo:'CTC: contribuição limitada ao teto do RGPS'};
@@ -545,6 +554,7 @@ function calc(){ ajustarCargo();
   if((S.recs.length || S.rel.PROGRESSAO.length) && ini && fim && ini<=fim){
     try{ S.gaeAuto=''; const rg=regrasCalc(); if($('cargo').value==='MAGISTRADO'||S.recs.some(r=>r.fonte==='relSGRH')) rg.gnFicha=true;   // relatório do SGRH traz a linha do 13º
       S.res = RBC.calcular(S.recs,{inicio:ini, fim, lacunas:lacunasEf(), cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()});
+      if(S.recs.length){ const di=deduzirIngresso(); S.iniInfo=di; if(di){ S.iniAuto=di.data; ini=di.data; S.res = RBC.calcular(S.recs,{inicio:ini, fim, lacunas:lacunasEf(), cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); } }
       if(S.recs.length){ const g=gaeIncidenciaFicha(); if(g){ S.gaeAuto=g; rg.gaeDesde=g; S.res = RBC.calcular(S.recs,{inicio:ini, fim, lacunas:lacunasEf(), cats:S.cats, refs:S.refs, tabela:TABELA, regras:rg, manual:S.manual, ignorarAloc:ignMap()}); } } }
     catch(e){ console.error(e); S.res=null; }
   }
@@ -958,12 +968,13 @@ function faixas(lista){ const fx=[]; for(const k of [...lista].sort()){ const u=
 function renderCobertura(){
   const el=$('cobertura'); if(!S.res){ el.innerHTML=S.recs.length?'<div class="aviso att"><span class="ic">!</span><div>Confira as datas de ingresso e desligamento na etapa 1.</div></div>':''; return; }
   const ls=S.res.linhas, ehBorda=l=>l===ls[0]||l===ls[ls.length-1];
+  const avIni=S.iniInfo&&!$('inicio').value?`<div class="aviso att"><span class="ic">!</span><div>Ingresso deduzido da ficha: <b>${brData(S.iniInfo.data)}</b> (vencimento de ${mesTxt(S.iniInfo.comp)} pago por ${S.iniInfo.dias}/${S.iniInfo.dv} do mês seguinte). Confira com o processo e, se for outro, informe na etapa 1.</div></div>`:'';
   // mês de ingresso/desligamento sem ficha, mas com valor ligado a ele (atrasado da folha seguinte), não é falta de ficha
   const sem=ls.filter(l=>!l.fonte&&!l.daTabela&&!(ehBorda(l)&&Math.abs(l.total)>0.005)).map(l=>l.comp);
   const tab=ls.filter(l=>!l.fonte&&l.daTabela&&!l.borda).map(l=>l.comp), borda=ls.filter(l=>!l.fonte&&(l.borda||(ehBorda(l)&&!l.daTabela&&Math.abs(l.total)>0.005)));
   const semBorda=sem.filter(k=>ehBorda(ls.find(l=>l.comp===k))), semMeio=sem.filter(k=>!semBorda.includes(k));
   if(!S.recs.length){ el.innerHTML=`<div class="aviso info"><span class="ic">i</span><div>Sem ficha financeira: toda a RBC, de ${mesTxt(ls[0].comp)} a ${mesTxt(ls[ls.length-1].comp)}, sai da tabela de remuneração, pela classe e padrão da etapa 1, com pro rata pelos dias de exercício no ${ls.length>1?'primeiro e no último mês':'mês'}. Função e substituição só entram com opção pela contribuição: lance em "Ajustes da RBC" se for o caso.</div></div>`; return; }
-  el.innerHTML = (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês no mapa mês a mês.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração (classe e padrão da etapa 1). Função e substituição sem tabela precisam ser lançadas em "Ajustes da RBC" (lançar outro valor).</div></div>`:'') + (semMeio.length
+  el.innerHTML = avIni + (borda.length?`<div class="aviso info"><span class="ic">i</span><div>${borda.map(l=>`${mesTxt(l.comp)} (${l===ls[0]?'mês de ingresso':'mês de desligamento'}) não tem ficha própria: ${l.borda?'a RBC usa a tabela pelos dias de exercício':'o valor veio como atrasado na folha seguinte'}.`).join(' ')} Confira o detalhe do mês no mapa mês a mês.</div></div>`:'') + (semBorda.length?`<div class="aviso info"><span class="ic">i</span><div>${semBorda.map(mesTxt).join(' e ')} (início ou fim do período) não tem ficha própria. O proporcional costuma vir na folha seguinte; com a progressão informada na etapa 1, a RBC usa a tabela pelos dias de exercício.</div></div>`:'') + (tab.length?`<div class="aviso info"><span class="ic">i</span><div>Sem ficha em <b>${faixas(tab)}</b>: a RBC desses meses sai da tabela de remuneração (classe e padrão da etapa 1). Função e substituição sem tabela precisam ser lançadas em "Ajustes da RBC" (lançar outro valor).</div></div>`:'') + (semMeio.length
     ? `<div class="aviso att"><span class="ic">!</span><div>Falta a ficha de ${semMeio.length} mês(es): <b>${faixas(semMeio)}</b>. Esses meses sairão zerados na RBC. Envie a ficha que cobre esse intervalo.</div></div>`
     : (tab.length||borda.length||semBorda.length)?'':`<div class="aviso ok"><span class="ic">✓</span><div>A ficha cobre todo o período, de ${mesTxt(S.res.meses[0])} a ${mesTxt(S.res.meses[S.res.meses.length-1])}.</div></div>`);
 }

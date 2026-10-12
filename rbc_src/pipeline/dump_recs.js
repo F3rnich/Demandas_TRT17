@@ -1,5 +1,5 @@
 const path=require('path'),fs=require('fs');
-const CALC='/home/claude/Demandas_TRT17/rbc_src/calc';
+const CALC=(process.env.RBC_REPO||'/home/claude/demandas_trt17')+'/rbc_src/calc';
 const req=require('module').createRequire(CALC+'/package.json');
 const XLSX=req('xlsx'), RBC=require(CALC+'/rbc_core.js'), H=require(CALC+'/harness.js');
 const ROOT='/home/claude/corpus'; const CODREF=JSON.parse(fs.readFileSync(CALC+'/rubricas_cod.json','utf8'));
@@ -26,7 +26,7 @@ const pref=f=>(/c[oó]pia|lavinia|mara|luan|\(\d\)|DIPROF-|renatha/i.test(path.b
     log.push(f+': '+tipo+' '+recs.length+' recs, '+novos.length+' comps novas');
   }
   for(const r of all) r.cat=RBC.classify(r.cod,r.desc);
-  fs.writeFileSync('/home/claude/work/recs/'+c.id+'.json',JSON.stringify({id:c.id,recs:all,basePSO,baseGN,info,refs,log}));
+  fs.mkdirSync('/home/claude/work/recs',{recursive:true}); fs.writeFileSync('/home/claude/work/recs/'+c.id+'.json',JSON.stringify({id:c.id,recs:all,basePSO,baseGN,info,refs,log}));
   console.log(c.id,c.nome.slice(0,30),all.length,'|',log.join(' ; ').slice(0,300));
  }
 })();

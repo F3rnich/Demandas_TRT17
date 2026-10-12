@@ -10,5 +10,5 @@ for x in D:
 out={}
 for c,ds in m.items():
   out[c]=sorted([[min(a),max(a),d] for d,a in ds.items()], key=lambda e:(e[0],-len(ds[e[2]])))
-json.dump(out,open('/home/claude/Demandas_TRT17/rbc_src/calc/rubricas_cod.json','w'),ensure_ascii=False,separators=(',',':'))
+json.dump(out,open(__import__('os').environ.get('RBC_REPO','/home/claude/demandas_trt17')+'/rbc_src/calc/rubricas_cod.json','w'),ensure_ascii=False,separators=(',',':'))
 print(len(out))

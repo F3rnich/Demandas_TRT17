@@ -1,4 +1,4 @@
-const CALC='/home/claude/Demandas_TRT17/rbc_src/calc';const req=require('module').createRequire(CALC+'/package.json');
+const CALC=(process.env.RBC_REPO||'/home/claude/demandas_trt17')+'/rbc_src/calc';const req=require('module').createRequire(CALC+'/package.json');
 const JSZip=req('jszip'),fs=require('fs'),C=require(CALC+'/certidao.js'),H=require(CALC+'/harness.js');
 (async()=>{const G=JSON.parse(fs.readFileSync('golds.json'));let n=0;
 for(const g of G){ const p='/home/claude/corpus/'+g.arquivo; let r;
