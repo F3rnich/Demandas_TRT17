@@ -38,6 +38,10 @@ a{color:var(--navy)}
 
 .head{background:#003A5C;color:#fff;padding:22px 20px 0}
 .head-in{max-width:var(--larg);margin:0 auto}
+.h1row{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.btnGuia{display:inline-flex;align-items:center;gap:8px;background:#FFD040;color:#003A5C;font-weight:800;font-size:15px;text-decoration:none;padding:9px 16px 9px 10px;border-radius:999px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btnGuia:hover{background:#FFE07A}
+.btnGuia .ico{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#003A5C;color:#FFD040;font-size:14px;font-weight:800}
 .head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em}
 .head p{margin:6px 0 0;color:#C9DCE8}
 .trilho{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);max-width:760px}
@@ -230,7 +234,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 <div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA · <a class="guiaLink" href="guia_rbc.html" target="_blank" rel="noopener">Como usar</a> · <span id="versao" title="Versão da calculadora (data da publicação · código)"></span></span><b>TRT-17</b></div></div>
 <div class="novaVersao" id="novaVersao" role="alert" hidden>Há uma versão mais nova da calculadora (<span id="novaVersaoTxt"></span>). <button class="btn" id="novaVersaoBtn">Recarregar agora</button> <span class="muted small">Se estiver no meio de um cálculo, salve as escolhas antes.</span></div>
 <div class="head"><div class="head-in">
-  <h1>Calculadora de RBC</h1>
+  <div class="h1row"><h1>Calculadora de RBC</h1><a class="btnGuia" href="guia_rbc.html" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">?</span>Como usar a calculadora</a></div>
   <p>Monta a relação das remunerações de contribuição da CTC a partir da ficha financeira, da própria CTC (ou declaração) e, quando houver, dos relatórios do RH; compara o que foi pago com o que era devido pela tabela. Os arquivos são lidos neste computador e não saem dele.</p>
   <ol class="trilho" id="trilho">
     <li data-e="1"><button type="button"><span class="num">1</span><span class="txt">Arquivos e dados<span class="sub">Pasta do processo; servidor ou magistrado</span></span></button></li>
