@@ -34,6 +34,7 @@ a{color:var(--navy)}
 .topo{background:#003A5C;border-bottom:4px solid #FFD040}
 .topo-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:8px 20px;display:flex;justify-content:space-between;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E2}
 .topo-in b{color:#FFD040}
+.topo-in a.guiaLink{color:#FFD040;font-weight:700;text-decoration:underline}
 
 .head{background:#003A5C;color:#fff;padding:22px 20px 0}
 .head-in{max-width:var(--larg);margin:0 auto}
@@ -226,7 +227,7 @@ details > summary{cursor:pointer;font-weight:700;color:var(--navy);padding:2px 0
 </style>
 </head>
 <body>
-<div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA · <span id="versao" title="Versão da calculadora (data da publicação · código)"></span></span><b>TRT-17</b></div></div>
+<div class="topo"><div class="topo-in"><span>SGP — DIPROF · FERRAMENTA · <a class="guiaLink" href="guia_rbc.html" target="_blank" rel="noopener">Como usar</a> · <span id="versao" title="Versão da calculadora (data da publicação · código)"></span></span><b>TRT-17</b></div></div>
 <div class="novaVersao" id="novaVersao" role="alert" hidden>Há uma versão mais nova da calculadora (<span id="novaVersaoTxt"></span>). <button class="btn" id="novaVersaoBtn">Recarregar agora</button> <span class="muted small">Se estiver no meio de um cálculo, salve as escolhas antes.</span></div>
 <div class="head"><div class="head-in">
   <h1>Calculadora de RBC</h1>

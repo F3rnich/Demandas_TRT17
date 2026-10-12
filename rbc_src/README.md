@@ -235,3 +235,8 @@ Regressões que ficam (5 meses, explicadas): pro rata com divisor 30 em RRC anti
 
 - **Ingresso sem CTC/declaração (`deduzirIngresso`):** quando a data de exercício não veio de documento, o dia sai do vencimento proporcional do primeiro mês da ficha comparado ao do mês seguinte (fração × divisor do mês = número inteiro de dias, tolerância 0,05). A data entra só no cálculo (`S.iniAuto`), não no campo, e a conferência mostra o aviso "Ingresso deduzido da ficha … confira". Efeito no corpus: medir na próxima regressão.
 - **`pipeline/rodar_regressao.sh <pasta_com_o_corpus> [commit_base]`:** copia o corpus, converte .doc/.odt, roda o pipeline inteiro, a regressão da versão atual e, se pedido, a do commit base (worktree), e imprime o placar e os ganhos/regressões por caso. `TUDO=1` roda também pela entrada única. Os scripts do pipeline passaram a achar o repositório por `RBC_REPO` (padrão `/home/claude/demandas_trt17`) e criam `recs/` sozinhos.
+
+### Guia de uso (12/10/2026)
+
+- Fonte: `rbc_src/guia/guia_rbc.md`; página: `python3 rbc_src/guia/build_guia.py` → `guia_rbc.html` na raiz (precisa de pandoc). Link "Como usar" no topo da calculadora; registrado em `checks.json`; o teste rápido confere o link (29 verificações).
+- Ao mudar a calculadora de modo que o usuário perceba (avisos, botões, mapa, regras), atualizar o guia no mesmo envio.

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia da calculadora de RBC</title>
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#003A5C;--yellow:#FFD040;--bg:#EEF2F5;--paper:#FFFFFF;--ink:#17242C;--mute:#55666F;--line:#D3DDE3;--soft:#E4EDF3;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--navy:#7DB6DA;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;--soft:#1C2E3A;color-scheme:dark}}
+:root[data-theme="dark"]{--navy:#7DB6DA;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;--soft:#1C2E3A;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Public Sans",system-ui,"Segoe UI",Arial,sans-serif}
+a{color:var(--navy)}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.topo{background:#003A5C;border-bottom:4px solid #FFD040}
+.topo-in{max-width:960px;margin:0 auto;padding:8px 16px;display:flex;justify-content:space-between;font-family:ui-monospace,Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E6}
+.topo-in b{color:#FFD040}
+.head{background:#003A5C;color:#fff;padding:22px 16px 26px}
+.head-in{max-width:960px;margin:0 auto}
+.head h1{margin:0;font-size:30px;font-weight:800}
+.head p{margin:6px 0 0;color:#D5E3EC}
+.head a{color:#FFD040}
+main{max-width:960px;margin:0 auto;padding:8px 16px 48px}
+main>section,main>.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 22px 18px;margin:18px 0}
+h2{font-size:21px;margin:20px 0 8px;color:var(--navy)}
+p,li{max-width:78ch}
+table{border-collapse:collapse;width:100%;font-size:14.5px;margin:10px 0}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:var(--soft)}
+.tw{overflow-x:auto}
+.btn{display:inline-block;background:var(--navy);color:var(--paper);padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:700}
+footer{color:var(--mute);font-size:13px;max-width:960px;margin:0 auto;padding:0 16px 30px}
+@media print{.topo,.head{background:none;color:#000;border:0} .head p,.head a{color:#000} main>section{border:0;padding:0}}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span>SGP — DIPROF · GUIA</span><b>TRT-17</b></div></div>
+<div class="head"><div class="head-in"><h1>Guia da calculadora de RBC</h1><p>Como montar, conferir e emitir a relação das remunerações de contribuição. <a href="calculadora_rbc.html">Abrir a calculadora</a> · <a href="index.html">Hub</a></p></div></div>
+<main>
+<section class="card"><p>A calculadora monta a RBC a partir da pasta do processo e mostra onde
+ela pode estar errada; a decisão e a assinatura continuam com a DIPROF.
+Os arquivos são lidos no próprio computador e não saem dele.</p>
+<p><a class="btn" href="calculadora_rbc.html">Abrir a calculadora</a></p>
+</section><section><h2 id="antes-de-começar-o-que-pôr-na-pasta">Antes de começar: o que pôr
+na pasta</h2>
+<p>Junte numa pasta tudo o que veio no processo. A calculadora separa os
+arquivos sozinha pelo conteúdo, então não é preciso renomear nada.</p>
+<div class="tw"><table>
+<thead>
+<tr class="header">
+<th>Documento</th>
+<th>Formatos lidos</th>
+<th>Para que serve</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Ficha financeira</td>
+<td>Planilha do sistema antigo (.xls), Big Grid do FolhaWeb, PDFs do
+FolhaWeb, do SGRH e do CSJT, ficha antiga em PDF, relatório de
+remuneração do SGRH (.xlt)</td>
+<td>Valores pagos e contribuição descontada, mês a mês. É a base da
+RBC</td>
+</tr>
+<tr class="even">
+<td>CTC ou declaração de tempo</td>
+<td>PDF em texto ou digitalizado pelo SEI (lido por imagem)</td>
+<td>Nome, matrícula, períodos, progressões, funções, VPNI, teto</td>
+</tr>
+<tr class="odd">
+<td>Relatórios do RH</td>
+<td>Progressão, funções e substituições, VPNI (PDF)</td>
+<td>Completam ou conferem o que a CTC traz</td>
+</tr>
+<tr class="even">
+<td>RBC anterior (se houver)</td>
+<td>Certidão em .docx ou PDF em texto; planilha de trabalho da DIPROF
+(.xls)</td>
+<td>Comparação mês a mês com a RBC nova</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Pode arrastar a pasta inteira, um .zip ou arquivos soltos. E-mails e
+documentos sem relação com a RBC são ignorados e listados como
+"ignorados".</li>
+<li>Sem ficha financeira a calculadora ainda funciona: monta a RBC pela
+tabela de remuneração, com a classe e o padrão da CTC. Nesse caso o
+resultado depende do que você informar (veja "Quando desconfiar").</li>
+<li>CTC digitalizada leva alguns minutos para ser lida por imagem. A
+barra inferior mostra o andamento.</li>
+</ul>
+</section><section><h2 id="passo-a-passo">Passo a passo</h2>
+<ol type="1">
+<li><strong>Abra a página e confira a versão.</strong> O topo mostra
+"versão de DD/MM/AAAA". Se aparecer a faixa "Há uma versão mais nova",
+clique em <strong>Recarregar agora</strong> antes de começar.</li>
+<li><strong>Arraste a pasta do processo</strong> para a página (ou use
+<strong>Escolher uma pasta</strong>). Na etapa 1 ("Arquivos e dados") a
+calculadora lê tudo e preenche cargo, especialidade, ingresso e
+desligamento. Se nada faltar, ela abre a conferência sozinha.</li>
+<li><strong>Resolva o quadro "A resolver"</strong>, no topo da etapa 2.
+São as únicas decisões que a calculadora não toma. Leia também o aviso
+"Antes de emitir, confira", quando houver.</li>
+<li><strong>Confira o resultado</strong> no mapa mês a mês e, se houver
+RBC anterior, na tabela de comparação com a provável causa de cada
+diferença.</li>
+<li><strong>Emita.</strong> Confira os campos da certidão (nome,
+matrícula, mãe, PIS, CPF, datas, assinantes), baixe a certidão (.docx) e
+a RBC em Excel, e salve as escolhas.</li>
+</ol>
+<p>Duas áreas ficam recolhidas e normalmente não precisam ser
+abertas:</p>
+<ul>
+<li><strong>Ajustes da RBC:</strong> tudo o que a calculadora deduziu ou
+distribuiu sozinha (datas, atrasados, exercício anterior, lançamentos).
+Abra quando quiser entender um mês.</li>
+<li><strong>Regras de cálculo (padrão DIPROF):</strong> as regras das
+anotações da DIPROF (função até 11/1998, anuênio desde 04/2002, 13º
+desde 2003, divisor, teto etc.). Só altere com orientação da chefia; o
+que for alterado aparece nas notas da planilha.</li>
+</ul>
+</section><section><h2 id="o-quadro-a-resolver-e-os-avisos">O quadro "A resolver" e os
+avisos</h2>
+<p>Enquanto houver item no quadro, a barra inferior mostra "Há
+pendências antes de gerar". Cada item tem um botão que leva ao lugar da
+correção.</p>
+<div class="tw"><table>
+<thead>
+<tr class="header">
+<th>Item</th>
+<th>O que significa</th>
+<th>O que fazer</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cargo não informado</td>
+<td>A calculadora não conseguiu deduzir o cargo pelo vencimento
+pago</td>
+<td>Escolher o cargo na etapa 1</td>
+</tr>
+<tr class="even">
+<td>Linhas da progressão com classe/padrão a conferir</td>
+<td>Progressão lida por imagem que não pôde ser confirmada nem pelo
+vencimento pago nem pela planilha da DIPROF</td>
+<td>Conferir classe e padrão na etapa 1, contra a CTC</td>
+</tr>
+<tr class="odd">
+<td>Rubricas não reconhecidas</td>
+<td>Rubrica da ficha sem regra conhecida</td>
+<td>Escolher a categoria (vencimento, função, não entra etc.); a
+sugestão vem marcada</td>
+</tr>
+<tr class="even">
+<td>Valores pagos sem mês de referência</td>
+<td>Atrasado ou exercício anterior sem competência de origem</td>
+<td>Usar "Incluir em ‹mês›", distribuir por período ou
+desconsiderar</td>
+</tr>
+<tr class="odd">
+<td>Devolução de contribuição sem período</td>
+<td>Devolução marcada como integral sem dizer de quais meses</td>
+<td>Informar o período ou desmarcar "integral"</td>
+</tr>
+</tbody>
+</table></div>
+<p>Avisos que não bloqueiam, mas pedem atenção:</p>
+<ul>
+<li><strong>Sem ficha: AQ e 13,23%.</strong> A CTC não traz o adicional
+de qualificação nem o 13,23%. Se o servidor tinha direito, lance nas
+tabelas da etapa 1. Sem isso, um caso sem ficha pode dar quase todos os
+meses diferentes da RBC anterior.</li>
+<li><strong>Ingresso deduzido da ficha.</strong> Sem CTC com a data de
+exercício, a calculadora deduz o dia pelo vencimento proporcional do
+primeiro mês. Confira com o processo; se for outro, informe na etapa
+1.</li>
+<li><strong>Datas a confirmar.</strong> Atrasados distribuídos por parte
+do mês (início ou fim de período). Confira com o processo.</li>
+<li><strong>CTC lida por imagem.</strong> Confira nome, matrícula e
+períodos nos campos da certidão.</li>
+<li><strong>VPNI SINPOJUFES anterior a 15/12/1999.</strong> Peça a
+informação do processo judicial.</li>
+<li><strong>Ficha cortada.</strong> A ficha não cobre todo o período da
+CTC; os meses sem ficha saem da tabela.</li>
+</ul>
+</section><section><h2 id="conferência-o-mapa-mês-a-mês">Conferência: o mapa mês a mês</h2>
+<p>Cada linha do mapa é um ano e cada quadrado, um mês, com a RBC do mês
+em reais (em telas estreitas só as cores). O último quadrado é o 13º, e
+a coluna da direita resume o ano e soma meses + 13º. Os botões acima do
+mapa trocam o que as cores mostram:</p>
+<div class="tw"><table>
+<thead>
+<tr class="header">
+<th>Modo</th>
+<th>Pergunta que responde</th>
+<th>Cores</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>RBC anterior</strong> (abre por padrão quando há
+anterior)</td>
+<td>A RBC nova bate com a certificada?</td>
+<td>Verde = igual; tracejado = diferente, com causa provável
+identificada; laranja = diferente sem causa; cinza = mês fora da
+anterior</td>
+</tr>
+<tr class="even">
+<td><strong>Contribuição</strong></td>
+<td>A contribuição descontada bate com a calculada sobre a RBC? A
+conferência vale para o ano, porque atrasados são descontados no mês em
+que são pagos</td>
+<td>Verde = ano confere; laranja = ano com diferença; cinza = não
+verificado ou sem ficha</td>
+</tr>
+<tr class="odd">
+<td><strong>Pago × esperado</strong></td>
+<td>O que a ficha pagou é o que a CTC e as tabelas mandavam?</td>
+<td>Verde = igual; laranja = parcela diferente do esperado</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Triângulo azul no canto</strong> = mês que a calculadora
+ajustou (atrasado distribuído, valor pela tabela, mês sem ficha, início
+ou fim de período). Não é erro; é onde vale olhar primeiro.</li>
+<li><strong>Passe o mouse</strong> num mês para ver RBC, esperada, RBC
+anterior e diferença com a provável causa, contribuição descontada ×
+calculada e os ajustes. <strong>Clique</strong> para abrir a composição
+completa.</li>
+</ul>
+<p><strong>Comparação com a RBC anterior.</strong> Abaixo do mapa, a
+tabela lista só os meses diferentes, com a provável causa, e termina com
+um resumo por causa e o 13º. As causas mais comuns: AQ ou 13,23% não
+informados (casos sem ficha), VPI de 2016 a 2018 (a calculadora segue a
+decisão do STJ; RRCs antigas tiraram), pro rata com divisor 30 em RRCs
+antigas, padrão devido × valor pago. "Sem causa identificada" pede
+análise do mês.</p>
+</section><section><h2 id="quando-desconfiar-do-resultado">Quando desconfiar do
+resultado</h2>
+<p>Na última regressão (75 RBCs da DIPROF), a calculadora acertou 78%
+dos meses nos casos com ficha e 66% nos casos sem ficha, contra a
+certidão emitida. A maior parte das diferenças cai em pontos que
+dependem de decisão da DIPROF. Redobre a conferência nestes casos:</p>
+<ul>
+<li><strong>Sem ficha financeira.</strong> A RBC sai toda da tabela; AQ,
+13,23% e função só entram se informados. O mês incompleto usa os dias do
+mês; RRCs antigas usavam 30.</li>
+<li><strong>Períodos de 1991 a 1994.</strong> A prática da DIPROF para a
+função variou de mês a mês; a calculadora acerta de 12 a 51 meses por
+caso.</li>
+<li><strong>Períodos de 1994 a 1999.</strong> A RBC certificada pode ter
+usado a tabela, não o pago. Se a comparação apontar "ajuste a regra
+Tabela até", siga a orientação da chefia.</li>
+<li><strong>Progressão paga com atraso.</strong> A calculadora usa o
+padrão devido; RRCs antigas usaram o pago.</li>
+<li><strong>CTC lida por imagem.</strong> Confira períodos, progressões
+e funções com a CTC; a leitura por imagem pode errar um dígito.</li>
+<li><strong>Qualquer mês "sem causa identificada"</strong> na comparação
+ou <strong>ano laranja</strong> no modo Contribuição.</li>
+</ul>
+<p>Em caso de dúvida sobre um mês, abra a composição (clique no mês) e
+confira com a ficha. Se a calculadora estiver errada, anote o processo e
+o mês e envie a Leonardo, com a pasta, para correção.</p>
+</section><section><h2 id="emitir-e-guardar">Emitir e guardar</h2>
+<div class="tw"><table>
+<thead>
+<tr class="header">
+<th>Botão</th>
+<th>O que gera</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Baixar certidão (.docx)</td>
+<td>Relação das bases de cálculo no modelo da DIPROF, com os dados da
+CTC</td>
+<td>Confira os campos antes; o documento é editável no Word</td>
+</tr>
+<tr class="even">
+<td>Baixar certidão de 13º (.docx)</td>
+<td>Certidão complementar do 13º anterior à incidência (antes de
+2003)</td>
+<td>Aparece só quando há esse período</td>
+</tr>
+<tr class="odd">
+<td>Baixar RBC em Excel</td>
+<td>Planilha no modelo da DIPROF, com abas RBC, Conferência PSS,
+Esperada, Esperada × paga, Ajustes e Rubricas</td>
+<td>Junte ao processo como memória de cálculo</td>
+</tr>
+<tr class="even">
+<td>Salvar escolhas para refazer depois</td>
+<td>Arquivo .json com as decisões tomadas (rubricas, distribuições,
+regras, dados informados)</td>
+<td>Guarde junto com a pasta; com "Abrir escolhas salvas" e a mesma
+pasta, o cálculo volta igual</td>
+</tr>
+<tr class="odd">
+<td>Limpar dados</td>
+<td>Apaga tudo da página</td>
+<td>Use antes de começar outro processo</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Registre a versão.</strong> Anote no processo a versão
+mostrada no topo ("versão de DD/MM/AAAA · código"). Se a calculadora for
+corrigida depois, dá para saber com qual versão a RBC foi feita.</li>
+<li><strong>O cálculo não fica salvo no navegador.</strong> Ao fechar a
+página, ele se perde (só os nomes dos assinantes da certidão são
+lembrados); salve as escolhas antes de interromper o trabalho.</li>
+<li><strong>Dúvidas ou erros:</strong> Leonardo Felipe Di Donato
+(SGP).</li>
+</ul>
+</section>
+</main>
+<footer>Atualizado em 12/10/2026.</footer>
+</body>
+</html>

@@ -525,5 +525,15 @@
       "HINDEMBURG",
       "MARCELO DE CASTRO"
     ]
+  },
+  "guia_rbc.html": {
+    "must_contain": [
+      "Guia da calculadora de RBC",
+      "calculadora_rbc.html",
+      "O quadro \"A resolver\""
+    ],
+    "must_not_contain": [
+      "CPF:"
+    ]
   }
 }

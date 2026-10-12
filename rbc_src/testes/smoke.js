@@ -13,6 +13,7 @@ let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')
  await p.goto('file://'+PAGINA); await p.waitForTimeout(800);
  ok(errs.length===0,'página abre sem erro '+errs.join(' | '));
  ok(/Arraste a pasta/.test(await p.textContent('#barraSt')),'barra inicial');
+ ok(await p.evaluate(()=>{const a=document.querySelector('a.guiaLink'); return !!a&&a.getAttribute('href')==='guia_rbc.html';})&&fs.existsSync(path.resolve(CALC,'..','..','guia_rbc.html')),'link "Como usar" para o guia, e o guia existe');
  // caso sintético sem ficha: técnico 02/05/2013 a 01/03/2017, progressão A1..A4
  await p.evaluate(()=>{ const S=window.__RBC_STATE; const set=(id,v)=>{const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('change',{bubbles:true}));};
    set('cargo','TÉCNICO JUDICIÁRIO'); set('inicio','2013-05-02'); set('fim','2017-03-01');
