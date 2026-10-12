@@ -220,3 +220,7 @@ Correções de regressões (60 meses que batiam na base e deixaram de bater → 
 - **GAE antes de 12/2008 (`gaeIncidenciaFicha`):** entra quando a contribuição descontada no ano mostra PSS sobre ela (oficial com PSS sobre a GAE desde 02/2008); nota nas regras.
 
 Regressões que ficam (5 meses, explicadas): pro rata com divisor 30 em RRC antiga sem ficha (2000-02, 2003-02; a calculadora usa os dias do mês — pergunta aberta à DIPROF); fim de período em 07/2012 com a DIPROF usando 22/31; 03/2009 com retroativo que a DIPROF manteve; 07/2016 com VPI 20/30 (os outros 6 casos do corpus usam a VPI cheia).
+
+### Teste rápido (12/10/2026)
+
+`node rbc_src/testes/smoke.js`: abre a página gerada, calcula um caso sintético (técnico 05/2013–03/2017, sem ficha, AQ e 13,23%), confere jun/2013, jan/2015 e jan/2017 com a RRC de 2017, usa o mapa (modos, dica, detalhe), baixa Excel, certidão .docx e escolhas salvas, verifica rolagem em 800 px e erros de JavaScript. Não precisa de corpus; rodar depois de cada `build_html.js`.
