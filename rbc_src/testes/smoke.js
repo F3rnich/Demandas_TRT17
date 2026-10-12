@@ -13,7 +13,7 @@ let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')
  await p.goto('file://'+PAGINA); await p.waitForTimeout(800);
  ok(errs.length===0,'página abre sem erro '+errs.join(' | '));
  ok(/Arraste a pasta/.test(await p.textContent('#barraSt')),'barra inicial');
- ok(await p.evaluate(()=>{const a=document.querySelector('a.guiaLink'), b=document.querySelector('a.btnGuia'); return !!a&&!!b&&a.getAttribute('href')==='guia_rbc.html'&&b.getAttribute('href')==='guia_rbc.html';})&&fs.existsSync(path.resolve(CALC,'..','..','guia_rbc.html')),'link "Como usar" para o guia, e o guia existe');
+ ok(await p.evaluate(()=>{const b=document.querySelector('a.btnGuia'), q=[...document.querySelectorAll('a.ajudaGuia')].map(a=>a.getAttribute('href')); return !!b&&b.getAttribute('href')==='guia_rbc.html'&&q.length===2;})&&fs.existsSync(path.resolve(CALC,'..','..','guia_rbc.html')),'botão "Como usar" e 2 atalhos "?" para o guia, e o guia existe');
  // caso sintético sem ficha: técnico 02/05/2013 a 01/03/2017, progressão A1..A4
  await p.evaluate(()=>{ const S=window.__RBC_STATE; const set=(id,v)=>{const e=document.getElementById(id); e.value=v; e.dispatchEvent(new Event('change',{bubbles:true}));};
    set('cargo','TÉCNICO JUDICIÁRIO'); set('inicio','2013-05-02'); set('fim','2017-03-01');
@@ -45,6 +45,7 @@ let falhas=0; const ok=(c,m)=>{ if(!c) falhas++; console.log((c?'OK   ':'FALHA')
  // tema escuro e tela estreita
  await p.setViewportSize({width:800,height:900}); await p.waitForTimeout(200); ok(await p.evaluate(()=>document.documentElement.scrollWidth<=820),'sem rolagem horizontal em 800 px');
  ok(errs.length===0,'nenhum erro de JavaScript durante o uso '+errs.join(' | '));
+ { const g=fs.readFileSync(path.resolve(CALC,'..','..','guia_rbc.html'),'utf8'); const hs=await p.$$eval('a.ajudaGuia',as=>as.map(a=>a.getAttribute('href').split('#')[1])); ok(hs.length===2&&hs.every(h=>g.includes('id="'+h+'"')),'atalhos "?" apontam para seções que existem no guia ('+hs.join(', ')+')'); }
  // ---- versão: rótulo e aviso de versão mais nova (página servida por http)
  { const http=require('http'), raiz=path.resolve(CALC,'..','..');
    const srv=http.createServer((q,r)=>{ const f=path.join(raiz,decodeURIComponent(q.url.split('?')[0])); if(!f.startsWith(raiz)||!fs.existsSync(f)){r.writeHead(404);return r.end();} r.writeHead(200,{'content-type':/\.json$/.test(f)?'application/json':'text/html; charset=utf-8'}); fs.createReadStream(f).pipe(r); }).listen(0);

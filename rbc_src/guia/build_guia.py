@@ -5,6 +5,9 @@ import pathlib, subprocess, datetime
 D = pathlib.Path(__file__).resolve().parent
 md = (D / 'guia_rbc.md').read_text(encoding='utf-8')
 corpo = subprocess.run(['pandoc', '-f', 'gfm', '-t', 'html5'], input=md, capture_output=True, text=True, check=True).stdout
+# ids sem acento (estáveis para links da calculadora: guia_rbc.html#conferencia-o-mapa-mes-a-mes)
+import unicodedata, re
+corpo = re.sub(r'id="([^"]+)"', lambda m: 'id="%s"' % unicodedata.normalize('NFKD', m.group(1)).encode('ascii', 'ignore').decode(), corpo)
 hoje = datetime.date.today().strftime('%d/%m/%Y')
 html = f'''<!doctype html>
 <html lang="pt-BR">

@@ -238,5 +238,5 @@ Regressões que ficam (5 meses, explicadas): pro rata com divisor 30 em RRC anti
 
 ### Guia de uso (12/10/2026)
 
-- Fonte: `rbc_src/guia/guia_rbc.md`; página: `python3 rbc_src/guia/build_guia.py` → `guia_rbc.html` na raiz (precisa de pandoc). Link "Como usar" no topo da calculadora; registrado em `checks.json`; o teste rápido confere o link (29 verificações).
+- Fonte: `rbc_src/guia/guia_rbc.md`; página: `python3 rbc_src/guia/build_guia.py` → `guia_rbc.html` na raiz (precisa de pandoc). Botão "Como usar a calculadora" no cabeçalho e atalhos "?" ao lado de "A resolver" e "Mês a mês", que abrem a seção do guia (ids sem acento, gerados por `build_guia.py`). Registrado em `checks.json`; o teste rápido confere os links e as âncoras (30 verificações).
 - Ao mudar a calculadora de modo que o usuário perceba (avisos, botões, mapa, regras), atualizar o guia no mesmo envio.
