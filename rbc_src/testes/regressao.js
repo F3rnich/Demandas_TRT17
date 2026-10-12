@@ -77,8 +77,8 @@ async function rodar(b, id, c) {
     const todos = (c.fichas || []).concat(SEM_REL ? [] : (c.relatorios || [])).concat(c.extras || []).map(f);
     await p.setInputFiles('#fileTudo', todos);
     await p.waitForFunction(() => /ignorado/.test(document.getElementById('tudoSt').textContent), null, { timeout: 300000 });
-    auto = await p.evaluate(() => ({ cargo: document.getElementById('cargo').value, inicio: document.getElementById('inicio').value, fim: document.getElementById('fim').value, esp: document.getElementById('especialidade').value }));
-    auto.ok = { cargo: auto.cargo === (s.cargo || ''), inicio: auto.inicio === s.inicio, fim: !auto.fim || auto.fim === s.fim, esp: auto.esp === (s.especialidade || '') };
+    auto = await p.evaluate(() => ({ cargo: document.getElementById('cargo').value, inicio: document.getElementById('inicio').value, fim: document.getElementById('fim').value, esp: document.getElementById('especialidade').value, iniAuto: (window.__RBC_STATE && window.__RBC_STATE.iniAuto) || '' }));
+    auto.ok = { cargo: auto.cargo === (s.cargo || ''), inicio: auto.inicio === s.inicio, fim: !auto.fim || auto.fim === s.fim, esp: auto.esp === (s.especialidade || ''), iniAuto: auto.iniAuto ? auto.iniAuto === s.inicio : null };
     // período do gabarito sempre (a CTC pode cobrir outro período que o da RBC comparada)
     await p.evaluate(sv => { const $ = id => document.getElementById(id);
       if (sv.cargo && !$('cargo').value) $('cargo').value = sv.cargo;

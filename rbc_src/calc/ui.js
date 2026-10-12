@@ -66,7 +66,7 @@ function iniEf(){ let v=$('inicio').value; if(!v && S.recs.length) v=S.iniAuto||
 // seguinte = exercício desde o dia 18). Só quando a fração dá um número inteiro de dias (sem progressão ou reajuste no meio).
 function deduzirIngresso(){
   if($('inicio').value||!S.res) return null;
-  const L=S.res.linhas, a=L[0], b=L[1]; if(!a||!b||!a.fonte||!b.fonte||b.comp!==RBC.addM(a.comp,1)) return null;
+  const L=S.res.linhas, a=L[0], b=L[1]; if(!a||!b||!a.fonte||!b.fonte||b.comp!==RBC.addM(a.comp,1)||a.comp<'1995-01') return null;   // antes de 1995 (URV, Real) a ficha tem meses parciais por outros motivos: no corpus, 1 erro em 1 caso
   const v0=a.bruto&&a.bruto.VB, v1=b.bruto&&b.bruto.VB; if(!(v0>0&&v1>0&&v0<v1-0.01)) return null;
   const dv=RBC.divisor(a.comp), n=v0/v1*dv, d=Math.round(n); if(Math.abs(n-d)>0.05||d<1||d>=dv) return null;
   const dia=dv-d+1; return {data:a.comp+'-'+String(dia).padStart(2,'0'), dias:d, dv, comp:a.comp};

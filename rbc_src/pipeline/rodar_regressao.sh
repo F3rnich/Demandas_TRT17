@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Regressão completa em um comando (corpus fora do repositório; nada aqui contém dados pessoais).
 #
-# uso:  bash rbc_src/pipeline/rodar_regressao.sh <pasta_com_o_corpus> [commit_base]
+# uso (leva ~40 min; rode em segundo plano: nohup … > regr.log &):
+#       bash rbc_src/pipeline/rodar_regressao.sh <pasta_com_o_corpus> [commit_base]
 #   <pasta_com_o_corpus>  pasta com as pastas do processo SEI 0000775-34.2024 (as 3 subpastas e, se houver, RBC/ e RRC/)
 #   [commit_base]         opcional: commit com que comparar (ex.: ac367ce). Sem ele, só a versão atual.
 #   TUDO=1                também roda pela entrada única (--tudo)
@@ -45,6 +46,7 @@ if [ -n "$BASE" ]; then
   WT=/home/claude/rbc_base_$BASE; git -C "$REPO" worktree add -q "$WT" "$BASE"
   ln -s "$CALC/node_modules" "$WT/rbc_src/calc/node_modules"; (cd "$WT/rbc_src/calc" && node build_html.js >/dev/null)
   node ../testes/regressao.js "$WORK/casos" --par="$PAR" --resumo --pagina="$WT/calculadora_rbc.html" --saida=_res_base.json > "$WORK/log_base.txt" 2>&1; tail -1 "$WORK/log_base.txt"
+  [ -n "${TUDO:-}" ] && { node ../testes/regressao.js "$WORK/casos" --par="$PAR" --resumo --tudo --pagina="$WT/calculadora_rbc.html" --saida=_res_base_tudo.json > "$WORK/log_base_tudo.txt" 2>&1; echo "--tudo: $(tail -1 "$WORK/log_base_tudo.txt")"; }
   git -C "$REPO" worktree remove --force "$WT"
 fi
 
