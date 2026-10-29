@@ -49,3 +49,6 @@ fechar_pendencias.py
 # Calculadora de RBC — casos de teste têm dados pessoais (fichas, RBCs, relatórios do RH)
 rbc_src/casos/
 node_modules
+
+# Coleta bruta do portal (entra só o JSON processado)
+legislacao_trt17_site.json

@@ -32,7 +32,7 @@
   .carimbo{display:inline-block;margin:0 0 11px;padding:3px 9px;border-radius:4px;font-size:.69rem;font-weight:700;letter-spacing:.05em;
     background:#E8F1F7;border:1px solid var(--navy-2);color:var(--navy)}
 
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 16px;border-top:4px solid var(--navy);cursor:pointer;text-align:left;font:inherit;color:inherit}
   .kpi:hover{box-shadow:0 2px 8px rgba(0,40,70,.12)}
   .kpi.on{outline:2px solid var(--navy-2)}
@@ -93,6 +93,13 @@
   .ato.citado{border-left-color:#9AA8B4;border-left-style:dashed;background:#FBFCFD}
   .kpi.cit{border-top-color:#9AA8B4} .kpi.cit .n{color:#5B6B78}
   .aviso{font-size:.8rem;background:#F4F6F8;border:1px dashed #9AA8B4;border-radius:6px;padding:9px 12px;margin-top:8px;color:var(--txt-2)}
+  .tag.site{background:#E3EEF8;color:#2D5F8A}
+  .ato.site{border-left-color:#4F86B5}
+  .kpi.sit{border-top-color:#4F86B5} .kpi.sit .n{color:#2D5F8A}
+  .tag.pdf{background:#fff;color:var(--navy-2);border:1px solid var(--navy-2);text-decoration:none}
+  .tag.pdf:hover{background:#E8F1F7}
+  .arqs{list-style:none;font-size:.84rem} .arqs li{padding:5px 0;border-bottom:1px dashed var(--line)}
+  .arqs a{color:var(--navy-2);font-weight:600}
   .tag.tp{background:#EEF1F4;color:var(--txt-2)}
   .tag.lk{background:#E8F1F7;color:var(--navy)}
   mark{background:#FFE58A;color:inherit;padding:0 1px;border-radius:2px}
@@ -163,10 +170,15 @@
           <option value="nao_revogado">Não revogados (sem registro + alterados)</option>
           <option value="citado">Citados sem verbete na compilação</option>
           <option value="compilacao">Só atos com verbete na compilação</option>
+          <option value="site">Só no site do TRT</option>
         </select></div>
         <div><label for="f-un">Unidade emissora (sigla)</label><select id="f-un"></select></div>
-        <div><label for="f-veic">Veículo</label><select id="f-veic">
-          <option value="">Todos</option><option>DEJT</option><option>D.O.</option><option>B.I.</option>
+        <div><label for="f-veic">Fonte</label><select id="f-veic">
+          <option value="">Todas</option>
+          <option value="pdf">Com PDF no site do TRT</option>
+          <option value="cs">Na compilação e no site</option>
+          <option value="c">Só na compilação</option>
+          <option value="s">Só no site</option>
         </select></div>
         <div><label>Ano de publicação</label><div class="range"><select id="f-a0"></select><select id="f-a1"></select></div></div>
         <div><label for="f-onde">Buscar em</label><select id="f-onde">
@@ -223,9 +235,9 @@
 'use strict';
 const FONTE = 'dados_atos_normativos.json';
 const PAG = 40;
-const ST_ROT = {revogado:'Revogado / sem efeito', alterado:'Alterado / complementado', sem_registro:'Sem registro de revogação', citado:'Citado — sem verbete na compilação'};
+const ST_ROT = {revogado:'Revogado / sem efeito', alterado:'Alterado / complementado', sem_registro:'Sem registro de revogação', citado:'Citado — sem verbete na compilação', site:'Só no site — situação não anotada'};
 const ST_FILTRO = {nao_revogado:'não revogados', compilacao:'só atos da compilação'};
-const ST_COR = {revogado:'#C0392B', alterado:'#E0AE00', sem_registro:'#1E7B54', citado:'#9AA8B4'};
+const ST_COR = {revogado:'#C0392B', alterado:'#E0AE00', sem_registro:'#1E7B54', site:'#4F86B5', citado:'#9AA8B4'};
 const ABREV = {ra:'resolucao administrativa', os:'ordem de servico', in:'instrucao normativa', er:'emenda regimental',
   prov:'provimento', port:'portaria', rec:'recomendacao', nt:'nota tecnica', ac:'ato conjunto'};
 
@@ -261,7 +273,8 @@ function init(j){
   CIT = new Array(A.length).fill(0);
   A.forEach(a => {
     const nome = prep(a.n), em = prep(a.e), no = prep((a.o || []).join(' '));
-    HAY[a.i] = {nome, em: nome + ' | ' + em, tudo: nome + ' | ' + em + ' | ' + no + ' | ' + prep(a.p || '')};
+    const ds = a.ds ? prep(a.ds) : '';
+    HAY[a.i] = {nome, em: nome + ' | ' + em + ' | ' + ds, tudo: nome + ' | ' + em + ' | ' + ds + ' | ' + no + ' | ' + prep(a.p || '') + ' | ' + prep(a.ps || '')};
     (a.x || []).forEach(() => CIT[a.i]++);
   });
   montaFiltros(); kpis(); ressalvas(); lerHash(); aplicaUI(); roda();
@@ -286,6 +299,7 @@ function kpis(){
   $('carimbo').textContent = `Compilação oficial atualizada até ${META.atualizado_ate} · ${META.n_atos.toLocaleString('pt-BR')} atos com verbete + ${(META.n_citados || 0).toLocaleString('pt-BR')} citados · ${Math.min(...anos)}–${Math.max(...anos)}`;
   const k = [
     ['compilacao', 'n', META.n_atos, 'atos com verbete na compilação'],
+    ['site', 'sit', META.n_so_site || 0, 'atos só no site do TRT'],
     ['sem_registro', 'sem', s.sem_registro || 0, 'sem registro de revogação'],
     ['alterado', 'alt', s.alterado || 0, 'alterados ou complementados'],
     ['revogado', 'rev', s.revogado || 0, 'revogados ou sem efeito'],
@@ -303,6 +317,10 @@ function ressalvas(){
     perda de eficácia de atos temporários (designações, editais, suspensões de expediente), nem revogações tácitas.
     Antes de fundamentar decisão, confira o texto integral no DEJT/Diário Oficial.<br><br>
     <strong>Lacuna da fonte.</strong> O PDF de origem não traz verbetes de atos publicados entre <b>maio/1997 e agosto/2006</b>.<br><br>
+    ${META.site ? `<strong>Site do TRT-17.</strong> A seção Legislação do portal foi incorporada: cada ato traz o link do PDF oficial quando ele existe no site, e os
+    ${(META.n_so_site || 0).toLocaleString('pt-BR')} atos que estão no portal mas não na compilação entram como “só no site” (sem notas de alteração/revogação;
+    revogação só quando o próprio título no site a marca). Ligação site × compilação por tipo, número, ano e, nos Atos, unidade emissora.
+    ${META.site.parcial ? `<b>Coleta parcial:</b> o portal limita pedidos automatizados e a coleta foi interrompida antes de terminar ${Object.keys(META.site.secoes_incompletas || {}).map(esc).join(' e ')} — os demais tipos estão completos.` : ''}<br><br>` : ''}
     <strong>Atos citados sem verbete.</strong> A compilação costuma registrar o ato que altera ou revoga outro apenas como nota do ato alterado,
     sem verbete próprio. Para que esses atos apareçam na busca, o painel cria um registro “citado — sem verbete” para cada um
     (${(META.n_citados || 0).toLocaleString('pt-BR')} ao todo), com tipo, número e data tirados da citação e, no lugar da ementa,
@@ -314,7 +332,8 @@ function ressalvas(){
     (CNJ, CSJT, TST, leis, decretos) não entram na contagem.`;
   $('meta').innerHTML = `<p><b>Fonte:</b> ${esc(META.fonte)} — compilação “Atos Normativos do TRT da 17ª Região”, por ordem cronológica, atualizada até ${esc(META.atualizado_ate)}.</p>
     <p><b>Processamento:</b> <code>build_atos_normativos.py</code> (leitura do PDF pelos cabeçalhos em negrito) · gerado em ${esc(META.gerado_em)} · esquema v${META.schema}.</p>
-    <p><b>Atualização:</b> rodar o script com o PDF novo e publicar <code>dados_atos_normativos.json</code>. Os links de consulta guardam busca e filtros; o link direto a um ato vale enquanto a compilação não for reprocessada.</p>`;
+    ${META.site ? `<p><b>Site do TRT-17:</b> seção Legislação coletada em ${esc((META.site.coletado_em || '').slice(0, 10).split('-').reverse().join('/'))} — ${META.site.n_docs.toLocaleString('pt-BR')} documentos; ${(META.site.fundidos || 0).toLocaleString('pt-BR')} casados com verbetes da compilação e ${(META.n_so_site || 0).toLocaleString('pt-BR')} atos só no site. Atualização pelo <a href="coletor_legislacao.html">coletor de legislação</a>.</p>` : ''}
+    <p><b>Atualização:</b> rodar o script com o PDF novo (e, opcionalmente, <code>--site legislacao_trt17_site.json</code>) e publicar <code>dados_atos_normativos.json</code>. Os links de consulta guardam busca e filtros; o link direto a um ato vale enquanto a compilação não for reprocessada.</p>`;
 }
 
 // ------------------------------------------------------------- busca
@@ -355,12 +374,15 @@ function filtra(){
   for (const a of A){
     if (st.tipo && a.t !== st.tipo) continue;
     if (st.s){
-      if (st.s === 'nao_revogado'){ if (a.s === 'revogado' || a.s === 'citado') continue; }
-      else if (st.s === 'compilacao'){ if (a.s === 'citado') continue; }
+      if (st.s === 'nao_revogado'){ if (a.s === 'revogado' || a.s === 'citado' || a.s === 'site') continue; }
+      else if (st.s === 'compilacao'){ if (a.s === 'citado' || a.s === 'site') continue; }
       else if (a.s !== st.s) continue;
     }
     if (st.un && !(a.u || []).includes(st.un)) continue;
-    if (st.veic && a.v !== st.veic) continue;
+    if (st.veic){
+      if (st.veic === 'pdf'){ if (!a.pdf) continue; }
+      else if (a.f !== st.veic) continue;
+    }
     if ((a.a || 0) < a0 || (a.a || 9999) > a1) { if (st.a0 || st.a1) continue; }
     let sc = 0;
     if (termos){
@@ -426,37 +448,37 @@ function mais(){
 function cartao(a){
   const nv = (a.x || []).length + (a.r || []).length;
   return `<article class="ato ${a.s}" data-i="${a.i}" tabindex="0">
-    <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p)}</span></div>
+    <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p || (a.f === 's' ? 'publicação: ' + (a.a || 's/ano') : ''))}</span></div>
     <div class="em">${a.s === 'citado' ? '<span style="color:var(--txt-2)">Ementa não disponível. Citações: </span>' : ''}${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
-    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}</div>
+    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}${a.pdf ? `<a class="tag pdf" href="${esc(a.pdf[0][0])}" target="_blank" rel="noopener" data-pdf="1">PDF ↗</a>` : ''}</div>
   </article>`;
 }
 
 function hist(){
   const anos = {};
-  lista.forEach(a => { if (!a.a) return; const o = anos[a.a] || (anos[a.a] = {sem_registro:0, alterado:0, revogado:0, citado:0}); o[a.s]++; });
+  lista.forEach(a => { if (!a.a) return; const o = anos[a.a] || (anos[a.a] = {sem_registro:0, alterado:0, revogado:0, site:0, citado:0}); o[a.s]++; });
   const todos = [...new Set(A.map(a => a.a).filter(Boolean))].sort((x, y) => x - y);
   const y0 = todos[0], y1 = todos[todos.length - 1], N = y1 - y0 + 1;
-  const max = Math.max(1, ...Object.values(anos).map(o => o.sem_registro + o.alterado + o.revogado + o.citado));
+  const max = Math.max(1, ...Object.values(anos).map(o => o.sem_registro + o.alterado + o.revogado + o.site + o.citado));
   const W = 1000, H = 80, bw = W / N;
   let svg = `<svg viewBox="0 0 ${W} ${H + 16}" preserveAspectRatio="none" role="img" aria-label="Atos por ano de publicação">`;
   for (let y = y0; y <= y1; y++){
     const o = anos[y], x = (y - y0) * bw;
     if (o){
       let base = H;
-      ['sem_registro', 'alterado', 'revogado', 'citado'].forEach(k => {
+      ['sem_registro', 'alterado', 'revogado', 'site', 'citado'].forEach(k => {
         const h = o[k] / max * H; if (!h) return;
         base -= h;
-        svg += `<rect class="b" data-y="${y}" x="${x + 1}" y="${base}" width="${bw - 2}" height="${h}" fill="${ST_COR[k]}"><title>${y}: ${o.sem_registro + o.alterado + o.revogado} atos com verbete (${o.revogado} revogados, ${o.alterado} alterados) + ${o.citado} citados sem verbete</title></rect>`;
+        svg += `<rect class="b" data-y="${y}" x="${x + 1}" y="${base}" width="${bw - 2}" height="${h}" fill="${ST_COR[k]}"><title>${y}: ${o.sem_registro + o.alterado + o.revogado} atos com verbete (${o.revogado} revogados, ${o.alterado} alterados) + ${o.site} só no site + ${o.citado} citados sem verbete</title></rect>`;
       });
     }
-    if (y > 1997 && y < 2006 && (!o || !(o.sem_registro + o.alterado + o.revogado))){
+    if (y > 1997 && y < 2006 && (!o || !(o.sem_registro + o.alterado + o.revogado + o.site))){
       svg += `<rect x="${x + 1}" y="${H - 3}" width="${bw - 2}" height="3" fill="#DDE3E9"><title>${y}: período ausente da compilação</title></rect>`;
     }
     if (y % 5 === 0 || y === y0 || y === y1) svg += `<text x="${x + bw / 2}" y="${H + 13}" font-size="10" text-anchor="middle" fill="#5B6B78">${y}</text>`;
   }
   svg += '</svg>';
-  $('hist').innerHTML = svg + `<div class="legend"><span><i style="background:${ST_COR.sem_registro}"></i>sem registro de revogação</span><span><i style="background:${ST_COR.alterado}"></i>alterado</span><span><i style="background:${ST_COR.revogado}"></i>revogado</span><span><i style="background:${ST_COR.citado}"></i>citado sem verbete</span><span>· clique numa barra para filtrar o ano · mai/1997–ago/2006: a compilação não tem verbetes, só atos citados</span></div>`;
+  $('hist').innerHTML = svg + `<div class="legend"><span><i style="background:${ST_COR.sem_registro}"></i>sem registro de revogação</span><span><i style="background:${ST_COR.alterado}"></i>alterado</span><span><i style="background:${ST_COR.revogado}"></i>revogado</span><span><i style="background:${ST_COR.site}"></i>só no site</span><span><i style="background:${ST_COR.citado}"></i>citado sem verbete</span><span>· clique numa barra para filtrar o ano · mai/1997–ago/2006: sem verbetes na compilação; atos vêm do site e de citações</span></div>`;
   $('hist').querySelectorAll('rect.b').forEach(r => r.onclick = () => {
     const y = r.dataset.y;
     if (st.a0 === y && st.a1 === y){ st.a0 = st.a1 = ''; } else { st.a0 = st.a1 = y; }
@@ -469,7 +491,7 @@ function chips(){
   if (st.tipo) c.push(['tipo', 'Tipo: ' + st.tipo]);
   if (st.s) c.push(['s', 'Situação: ' + (ST_ROT[st.s] || ST_FILTRO[st.s] || st.s)]);
   if (st.un) c.push(['un', 'Unidade: ' + st.un]);
-  if (st.veic) c.push(['veic', 'Veículo: ' + st.veic]);
+  if (st.veic) c.push(['veic', 'Fonte: ' + ({pdf:'com PDF no site', cs:'compilação e site', c:'só compilação', s:'só no site'}[st.veic] || st.veic)]);
   if (st.a0 || st.a1) c.push(['ano', 'Ano: ' + (st.a0 === st.a1 ? st.a0 : (st.a0 || '…') + '–' + (st.a1 || '…'))]);
   $('ativos').innerHTML = c.map(([k, t]) => `<button data-k="${k}">${esc(t)}</button>`).join('');
   $('ativos').querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -508,6 +530,7 @@ function abre(id, empilha){
   (a.r || []).forEach(r => { if (r.de === 'nota') (notasRefs[r.k] = notasRefs[r.k] || []).push(r); else emRefs.push(r); });
   let h = `<h4>Situação</h4><span class="tag ${a.s}">${ST_ROT[a.s]}</span>`;
   if (a.s === 'citado') h += `<div class="aviso">Este ato <b>não tem verbete</b> na compilação. Tipo, número e data foram extraídos de citações em outros atos; a ementa e a situação (vigente, alterado, revogado) não constam da fonte. Confira o texto no DEJT/Diário Oficial.</div>`;
+  if (a.so === 'site') h += `<p class="stnote">Situação indicada pelo site do TRT-17, que marca o título deste ato como “revogado”.</p>`;
   if (a.so === 'ementa') h += `<p class="stnote">Situação inferida da ementa de ato posterior${a.rp != null ? ': ' + linkAto(a.rp) : ''} — a compilação não anota este ato.</p>`;
   if (a.s !== 'citado') h += `<h4>Ementa</h4><div class="em">${comLinks(a.e, emRefs) || '<i>(sem ementa na compilação)</i>'}</div>`;
   if (a.o && a.o.length) h += `<h4>Notas da compilação</h4>` + a.o.map((n, k) => `<div class="nota">${comLinks(n, notasRefs[k])}</div>`).join('');
@@ -520,9 +543,12 @@ function abre(id, empilha){
     return arr.filter(([r, i]) => { const k = r + '|' + i; if (vis.has(k)) return false; vis.add(k); return true; })
       .map(([r, i]) => `<li><span class="rel">${esc(r)}</span><span>${linkAto(i)} <span class="pub">· ${esc(fmtData(A[i].d) || A[i].a || '')}</span> <span class="tag ${A[i].s}" style="font-size:.6rem">${ST_ROT[A[i].s]}</span></span></li>`).join('');
   };
+  if (a.pdf && a.pdf.length) h += `<h4>Texto oficial no site do TRT-17</h4><ul class="arqs">${a.pdf.map(([u, t]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t || 'Abrir documento')} ↗</a></li>`).join('')}</ul>`;
+  if (a.ds) h += `<h4>Descrição no site</h4><div class="em">${esc(a.ds)}</div>`;
   if (sai.length) h += `<h4>Relações anotadas neste ato</h4><ul class="vinc">${lst(sai)}</ul>`;
   if (ent.length) h += `<h4>Relações anotadas em outros atos (${ent.length})</h4><ul class="vinc">${lst(ent)}</ul>`;
-  h += a.s === 'citado' ? `<h4>Localização</h4><p class="pub">Sem verbete no PDF da compilação · ${esc(a.p)}</p>` : `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
+  if (a.f === 's') h += `<div class="aviso" style="margin-top:14px">Este ato está no site do TRT-17 (pasta <b>${esc(a.ps || '')}</b>), mas não tem verbete na compilação em PDF. Por isso não há notas de alteração ou revogação; a situação só é indicada quando o próprio site ou a ementa de outro ato a registra.</div>`;
+  h += a.f === 's' ? '' : a.s === 'citado' ? `<h4>Localização</h4><p class="pub">Sem verbete no PDF da compilação · ${esc(a.p)}</p>` : `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
   h += `<p style="margin-top:14px"><button class="btn" id="b-copia">Copiar referência</button> <button class="btn" id="b-alink">Copiar link deste ato</button></p>`;
   $('dr-b').innerHTML = h; $('dr-b').scrollTop = 0; $('dr').scrollTop = 0;
   $('dr').classList.add('on'); $('ov').classList.add('on'); $('dr').setAttribute('aria-hidden', 'false');
@@ -565,8 +591,8 @@ function aplicaUI(){
 
 function csv(){
   const c = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const linhas = [['Ato', 'Tipo', 'Publicação', 'Data', 'Ano', 'Situação', 'Ementa', 'Notas'].map(c).join(';')];
-  lista.forEach(a => linhas.push([a.n, a.t, a.p, fmtData(a.d), a.a, ST_ROT[a.s], a.e, (a.o || []).join(' | ')].map(c).join(';')));
+  const linhas = [['Ato', 'Tipo', 'Publicação', 'Data', 'Ano', 'Situação', 'Ementa', 'Notas', 'PDF no site do TRT'].map(c).join(';')];
+  lista.forEach(a => linhas.push([a.n, a.t, a.p, fmtData(a.d), a.a, ST_ROT[a.s], a.e, (a.o || []).join(' | '), a.pdf ? a.pdf[0][0] : ''].map(c).join(';')));
   const blob = new Blob(['﻿' + linhas.join('\r\n')], {type: 'text/csv;charset=utf-8'});
   const u = URL.createObjectURL(blob), l = document.createElement('a');
   l.href = u; l.download = 'atos_normativos_trt17_consulta.csv'; document.body.appendChild(l); l.click(); l.remove();
@@ -581,7 +607,7 @@ function bind(){
   $('b-limpa').onclick = () => { st = {q:'', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'}; aplicaUI(); roda(); $('q').focus(); };
   $('b-csv').onclick = csv;
   $('b-link').onclick = () => copia(location.href, $('b-link'));
-  $('res').addEventListener('click', e => { const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
+  $('res').addEventListener('click', e => { if (e.target.closest('[data-pdf]')) return; const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
   $('res').addEventListener('keydown', e => { if (e.key === 'Enter') { const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); } });
   $('dr-b').addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) { e.preventDefault(); abre(+l.dataset.go, true); } });
   $('dr-p').parentElement.addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) abre(+l.dataset.go, true); });

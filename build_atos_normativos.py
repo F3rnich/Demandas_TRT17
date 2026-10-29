@@ -273,6 +273,10 @@ def citacoes(texto):
     fam_pos = [(m.start(), FAM_CITACAO[int(next(k for k, v in m.groupdict().items() if v)[1:])][1]) for m in RX_FAM.finditer(texto)]
     for m in re.finditer(r"(?<![\d/])(\d{1,4})\s*/\s*(\d{4}|\d{2})(?![\d])(?!\s*/\s*\d)", texto):
         ini = m.start()
+        if 1950 <= int(m.group(1)) <= 2100 and len(m.group(2)) == 4:
+            continue   # "biênio 2001/2003", "2015/2020": período, não número de ato
+        if not 1991 <= ano4(m.group(2)) <= datetime.date.today().year:
+            continue   # TRT-17 instalado em 1991; ano fora disso é erro de digitação na fonte
         # descarta datas (dd/mm/aaaa já filtrado pelo lookahead) e "nº 01/91" de B.I.
         antes = texto[max(0, ini - 22):ini]
         # número logo após "B.I./D.O." sem data no meio = número do boletim, não do ato
@@ -384,11 +388,113 @@ def constroi_citados(atos, faltantes):
         prox += 1
     return citados
 
+# ---------------------------------------------------------------- site do TRT-17 (seção Legislação)
+SECAO_FAM = {"atos da presidencia": "ATO", "resolucoes administrativas": "RA", "portarias": "PORT",
+             "provimentos": "PROV", "editais": "EDITAL", "recomendacoes": "REC", "ordens de servico": "OS",
+             "instrucoes normativas": "IN"}
+# série (unidade) dos Atos: pasta do site -> sigla canônica; siglas do PDF -> mesma sigla
+PASTA_SERIE = {"presidencia": "PRESI", "gestao de pessoas": "SGP", "administracao": "SEADM", "diretoria-geral": "DIGER",
+               "corregedoria": "SECOR", "escola judicial": "EJUD", "conciliacao": "NUPEMEC"}
+SIGLA_SERIE = {"SGP": "SGP", "SEGEP": "SGP", "SEREH": "SGP", "SGPE": "SGP", "SEDER": "SGP", "SECOR": "SECOR",
+               "SEADM": "SEADM", "SADM": "SEADM", "DIGER": "DIGER", "DG": "DIGER", "EJUD": "EJUD", "EMATRA": "EJUD",
+               "NUPEMEC": "NUPEMEC", "CEJUSC": "NUPEMEC"}
+URL_SITE = "https://www.trt17.jus.br"
+
+def serie_pdf(a):
+    for s_ in a["un"]:
+        if s_ in SIGLA_SERIE: return SIGLA_SERIE[s_]
+    return "PRESI"
+
+def palavras(t):
+    return {w for w in re.findall(r"[a-z]{4,}", norm(t))} - {"para", "pelo", "pela", "sobre", "dispoe", "tribunal", "regiao", "trabalho", "17ª"}
+
+def parse_doc_site(d):
+    """-> (fam, num, ano, serie, nome, assunto)"""
+    partes = [norm(x) for x in d["pasta"].split("/")]
+    fam = SECAO_FAM.get(partes[0], "OUTROS")
+    serie = PASTA_SERIE.get(partes[1]) if fam == "ATO" and len(partes) > 1 else None
+    tit = re.sub(r"\s+", " ", d["titulo"] or "").strip()
+    # "TIPO nº 12/2024 - assunto"  |  "RA 129/2012 - assunto"
+    m = re.match(r"^(.*?\d{1,4}\s*/\s*\d{2,4})\s*(?:[-–—:]\s*(.*))?$", tit) or \
+        re.match(r"^(.*?\d{1,4}-(?:19|20)\d{2})\b\s*(?:[-–—:]\s*(.*))?$", tit)   # "SECOR ATO 84-2022 - ..."
+    nome, assunto = (m.group(1).strip(), (m.group(2) or "").strip()) if m else (tit, "")
+    mn = re.search(r"(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)", nome) or re.search(r"(\d{1,4})-((?:19|20)\d{2})\b", nome)
+    num, ano = (int(mn.group(1)), ano4(mn.group(2))) if mn else (None, None)
+    if num is not None and 1950 <= num <= 2100:     # "biênio 2003/2005" não é número de ato
+        num, ano = None, None
+    if ano is None:
+        my = re.search(r"/((?:19|20)\d\d)(?:/|$)", "/" + d["pasta"] + "/")
+        ano = int(my.group(1)) if my else None
+    # título com tipo diferente da pasta (ex.: Ato Conjunto dentro de Atos)
+    rot, fam_t = classifica(nome)
+    if fam_t not in ("OUTROS",) and fam_t != fam and not (fam == "ATO" and fam_t == "ATO"):
+        fam = fam_t if fam_t in ("ATOCONJ", "RES", "PORTCONJ", "ER") else fam
+    return fam, num, ano, serie, nome, assunto
+
+# marca de revogação no título do site: "(REVOGADA)" ou "- REVOGADA -"
+RX_REV_SITE = re.compile(r"\(\s*(revogad[oa]s?|tornad[oa] sem efeito)\s*\)|[-–]\s*REVOGAD[OA]S?\s*(?:[-–]|$)", re.I)
+
+def incorpora_site(atos, site):
+    """Funde os documentos do site com os verbetes do PDF; cria atos 'só no site'."""
+    grupos = collections.OrderedDict()
+    for d in site["docs"]:
+        if (d.get("ext") or "").lower() not in ("pdf", "doc", "docx", "odt", "htm", "html", ""):
+            continue
+        fam, num, ano, serie, nome, assunto = parse_doc_site(d)
+        chave = (fam, num, ano, serie) if num is not None else ("SEMNUM", norm(d["titulo"]), ano)
+        grupos.setdefault(chave, []).append((d, nome, assunto))
+    idx = collections.defaultdict(list)
+    for a in atos:
+        if a["num"] is not None:
+            idx[(a["fam"], a["num"], a["anum"])].append(a)
+    st = collections.Counter()
+    novos = []
+    for chave, docs in grupos.items():
+        # documento principal: o que não é anexo/errata
+        docs.sort(key=lambda x: (bool(re.search(r"anexo|errata|retifica", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
+        d0, nome, assunto = docs[0]
+        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] for x in docs if x[0].get("url")]
+        texto_site = max([assunto, d0.get("descricao") or ""], key=len)
+        rev_site = any(RX_REV_SITE.search(x[0]["titulo"] or "") for x in docs)
+        alvo = None
+        if chave[0] != "SEMNUM":
+            fam, num, ano, serie = chave
+            cands = [a for a in idx.get((fam, num, ano), []) if "site" not in a]
+            if fam == "ATO" and serie:
+                cands = [a for a in cands if serie_pdf(a) == serie]
+            if len(cands) > 1:
+                pw = palavras(texto_site)
+                cands.sort(key=lambda a: -len(pw & palavras(a["ementa"])))
+                st["desempate_texto"] += 1
+            alvo = cands[0] if cands else None
+        if alvo is not None:
+            alvo["site"] = {"arq": arquivos, "txt": texto_site, "rev": rev_site}
+            st["fundidos"] += 1
+        else:
+            fam = chave[0] if chave[0] != "SEMNUM" else classifica(nome)[1]
+            rot = FAM_ROT.get(fam) or classifica(nome)[0]
+            if chave[0] != "SEMNUM" and re.match(r"^(RA|R\.A\.)\s", nome):
+                nome = f"Resolução Administrativa nº {chave[1]}/{chave[2]}"
+            un = siglas(nome)
+            if chave[0] == "ATO" and chave[3] and chave[3] not in un: un.append(chave[3])
+            novos.append({"tipo": rot, "fam": fam, "nome": nome, "pub": "", "veic": "", "dpub": None,
+                          "ano": chave[2], "num": chave[1] if chave[0] != "SEMNUM" else None,
+                          "anum": chave[2] if chave[0] != "SEMNUM" else None, "un": un, "ementa": texto_site,
+                          "notas": [], "pg": None, "site": {"arq": arquivos, "txt": texto_site, "rev": rev_site}, "pasta": d0["pasta"]})
+            st["so_site"] += 1
+        st["arquivos"] += len(docs)
+    base = len(atos)
+    for k, n in enumerate(sorted(novos, key=lambda a: (a["ano"] or 0, a["num"] or 0))):
+        n["id"] = base + k
+        atos.append(n)
+    return st
+
 # ---------------------------------------------------------------- principal
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     caminho = sys.argv[1]
+    site_path = sys.argv[sys.argv.index("--site") + 1] if "--site" in sys.argv else None
     brutos, atualizado = extrai_atos(caminho)
 
     atos = []
@@ -412,6 +518,15 @@ def main():
             "veic": veiculo, "dpub": dpub, "ano": ano_ref, "num": num, "anum": ano,
             "un": siglas(nome), "ementa": ementa, "notas": notas, "pg": b["pg"],
         })
+
+    n_compilacao = len(atos)
+    st_site, site_meta = None, None
+    if site_path:
+        with open(site_path, encoding="utf-8") as f:
+            site = json.load(f)
+        st_site = incorpora_site(atos, site)
+        site_meta = {"coletado_em": site.get("coletado_em"), "n_docs": len(site["docs"]), **st_site,
+                     "parcial": bool(site.get("parcial")), "secoes_incompletas": site.get("secoes_incompletas") or {}}
 
     # índice para casamento
     idx = collections.defaultdict(list)
@@ -509,7 +624,10 @@ def main():
         if not alt and any(x["rel"].startswith(("altera", "acrescenta", "complementa", "republica", "retifica", "prorroga")) for x in entrada_rel[a["id"]] if "(ementa)" in x["rel"]):
             alt = True
             origem = origem or "ementa"
-        a["st"] = "revogado" if rev else "alterado" if alt else "sem_registro"
+        if "site" in a and a["site"]["rev"] and not rev:
+            # o título no site do TRT marca o ato como revogado
+            rev, origem = True, "site"
+        a["st"] = "revogado" if rev else "alterado" if alt else ("site" if a["pg"] is None else "sem_registro")
         a["st_origem"] = origem
         # vínculos de entrada, sem duplicar
         vis, ent = set(), []
@@ -529,8 +647,10 @@ def main():
         "fonte": os.path.basename(caminho),
         "atualizado_ate": atualizado,
         "gerado_em": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "n_atos": len(atos),
+        "n_atos": n_compilacao,
+        "n_so_site": len(atos) - n_compilacao,
         "n_citados": len(citados),
+        "site": site_meta,
         "citacoes": {"total": total_cit, "casadas": stats["cit_ok"], "ambiguas": stats["cit_ambiguo"], "sem_par": stats["cit_nao"]},
         "status": {k[3:]: v for k, v in stats.items() if k.startswith("st_")},
     }
@@ -539,18 +659,25 @@ def main():
     for a in atos:
         o = {"i": a["id"], "t": a["tipo"], "n": a["nome"], "p": a["pub"], "v": a["veic"], "d": a["dpub"],
              "a": a["ano"], "u": a["un"], "e": a["ementa"], "o": a["notas"], "pg": a["pg"], "s": a["st"]}
-        if a["st_origem"] == "ementa": o["so"] = "ementa"
+        if a["st_origem"] in ("ementa", "site"): o["so"] = a["st_origem"]
+        o["f"] = ("cs" if a["pg"] is not None else "s") if "site" in a else "c"
+        if "site" in a:
+            o["pdf"] = a["site"]["arq"]
+            if a["pg"] is not None and a["site"]["txt"] and norm(a["site"]["txt"])[:60] not in norm(a["ementa"]):
+                o["ds"] = a["site"]["txt"]
+            if a.get("pasta"): o["ps"] = a["pasta"]
         if a.get("rev_por") is not None: o["rp"] = a["rev_por"]
         if a["refs"]: o["r"] = [{k: v for k, v in r.items()} for r in a["refs"]]
         if a["ent"]: o["x"] = a["ent"]
         enx.append(o)
     for c in citados:
         o = {"i": c["id"], "t": c["tipo"], "n": c["nome"], "p": c["pub"], "v": "", "d": c["dpub"], "a": c["ano"],
-             "u": c["un"], "e": c["ementa"], "o": [], "pg": None, "s": "citado", "x": c["ent"]}
+             "u": c["un"], "e": c["ementa"], "o": [], "pg": None, "s": "citado", "x": c["ent"], "f": "x"}
         enx.append(o)
     with open(SAIDA, "w", encoding="utf-8") as f:
         json.dump({"meta": meta, "atos": enx}, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"{len(atos)} atos · {len(citados)} atos citados sem verbete · atualizado até {atualizado}")
+    print(f"{n_compilacao} atos da compilação · {len(atos) - n_compilacao} só no site · {len(citados)} citados sem verbete · atualizado até {atualizado}")
+    if st_site: print(f"site: {dict(st_site)}")
     print(f"status: {meta['status']}")
     c = meta["citacoes"]
     if c["total"]:

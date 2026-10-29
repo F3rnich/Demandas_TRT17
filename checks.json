@@ -546,7 +546,9 @@
       "dados_atos_normativos.json",
       "Sem registro de revogação",
       "maio/1997 e agosto/2006",
-      "sem verbete na compilação"
+      "sem verbete na compilação",
+      "Só no site",
+      "coletor_legislacao.html"
     ],
     "must_not_contain": [
       "CPF",
@@ -574,6 +576,21 @@
     ],
     "must_not_contain": [
       "github_pat_"
+    ]
+  },
+  "coletor_legislacao.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "coletor_legislacao",
+      "legislacao_trt17_site.json",
+      "PAUSA = 6000"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "iframe"
     ]
   }
 }
