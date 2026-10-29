@@ -51,7 +51,7 @@ MESES = {"janeiro": 1, "fevereiro": 2, "marco": 3, "abril": 4, "maio": 5, "junho
 
 def primeira_data(s):
     """Primeira data dd/mm/aa(aa) ou mês/aa do texto -> 'AAAA-MM-DD' ou 'AAAA-MM'."""
-    m = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{2,4})", s)
+    m = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})\s*/\s*(\d{4}|\d{2})(?!\d)", s)
     if m:
         d, mo, a = int(m.group(1)), int(m.group(2)), ano4(m.group(3))
         if 1 <= mo <= 12 and 1 <= d <= 31:
@@ -263,6 +263,7 @@ def status_por_notas(notas):
     return rev, alt
 
 # ---------------------------------------------------------------- citações
+RX_EXTERNO = re.compile(r"\b(CNJ|CSJT|TST|CJF|STF|STJ|TCU|Lei|Decreto|Conselho|Supremo|Superior|Receita|Minist[eé]rio|Corregedoria-Geral|Constitui[cç][aã]o|Emenda Constitucional|Medida Provis[oó]ria|TRT\s*(da\s*)?(?!17)\d{1,2}ª)")
 RX_DATA_CIT = re.compile(r"(\d{1,2}\s*/\s*\d{1,2}\s*/\s*\d{2,4})")
 
 def citacoes(texto):
@@ -274,7 +275,10 @@ def citacoes(texto):
         ini = m.start()
         # descarta datas (dd/mm/aaaa já filtrado pelo lookahead) e "nº 01/91" de B.I.
         antes = texto[max(0, ini - 22):ini]
-        if re.search(r"(B\.\s*I\.|D\.\s*O\.|DEJT|Boletim)[^,;)]*$", antes, re.I) and not RX_FAM.search(antes):
+        # número logo após "B.I./D.O." sem data no meio = número do boletim, não do ato
+        # (após "DEJT dd/mm/aaaa e" o número seguinte é outro ato da enumeração)
+        if re.search(r"(B\.\s*I\.|D\.\s*O\.|Boletim)[^,;)]*$", antes, re.I) and not RX_FAM.search(antes) \
+                and not re.search(r"\d{1,2}\s*/\s*\d{1,2}\s*/\s*\d{2,4}|/\d{2}\s*(e|,)\s*$", antes):
             continue
         if re.search(r"\d{1,2}\s*/\s*$", antes):
             continue
@@ -285,6 +289,9 @@ def citacoes(texto):
         p_ult = max(p for p, f in fam_pos if p < ini)
         trecho = texto[p_ult:ini]
         if len(trecho) > 260 or re.search(r"\)\s*\(", trecho):
+            continue
+        # ato de outro órgão (CNJ, CSJT, TST, lei, decreto…): fora do escopo da compilação
+        if RX_EXTERNO.search(trecho):
             continue
         # se entre a palavra de tipo e o número há "B.I./D.O. nº", ignora (é número do boletim)
         if re.search(r"(B\.\s*I\.|D\.\s*O\.)\s*(TRT\s*17\S*)?\s*n\S*\s*$", antes, re.I):
@@ -301,6 +308,81 @@ def citacoes(texto):
         sig = siglas(texto[p_ult:ini])
         out.append((fams[-1], int(m.group(1)), ano4(m.group(2)), dpub, sig, ini, m.end()))
     return out
+
+# ---------------------------------------------------------------- atos citados sem verbete
+# famílias com numeração única no Tribunal: divergência de data é erro de digitação, não outra série
+SERIE_UNICA = {"RA", "RES", "PROV", "ER"}
+FEMININO = ("Resolu", "Portaria", "Instru", "Ordem", "Recomenda", "Nota", "Emenda", "Ata", "Apostila", "Decis", "Escala")
+
+FAM_ROT = {"ATO": "Ato", "ATOCONJ": "Ato Conjunto", "RA": "Resolução Administrativa", "RES": "Resolução",
+           "ER": "Emenda Regimental", "PORTCONJ": "Portaria Conjunta", "PORT": "Portaria", "PROV": "Provimento",
+           "IN": "Instrução Normativa", "OS": "Ordem de Serviço", "REC": "Recomendação", "NT": "Nota Técnica",
+           "EDITAL": "Edital", "DESP": "Despacho"}
+VERBO_ATIVO = [(r"^rerratificad", "Rerratifica"), (r"^revogad", "Revoga"), (r"^alterad", "Altera"),
+               (r"^retificad", "Retifica"), (r"^referendad", "Referenda"), (r"^prorrogad", "Prorroga"),
+               (r"^suprimid", "Suprime"), (r"^cessad", "Faz cessar os efeitos de"), (r"^republicad", "Republica"),
+               (r"^complementad", "Complementa"), (r"^regulamentad", "Regulamenta"), (r"^suspens", "Suspende")]
+EMENTA_PASSIVO = {"revoga": "Revogado por", "altera": "Alterado por", "regulamenta": "Regulamentado por",
+                  "referenda": "Referendado por", "prorroga": "Prorrogado por", "republica": "Republicado por",
+                  "retifica": "Retificado por", "suspende": "Suspenso por", "torna sem efeito": "Tornado sem efeito por",
+                  "faz cessar": "Efeitos cessados por", "substitui": "Substituído por", "complementa": "Complementado por",
+                  "acrescenta": "Complementado por", "homologa": "Homologado por"}
+
+def constroi_citados(atos, faltantes):
+    """Cria um registro por ato citado que não tem verbete na compilação.
+    Chave: (família, número, ano, data citada); citações sem data juntam-se ao único registro datado, se houver."""
+    grupos = collections.OrderedDict()
+    for f in faltantes:
+        cit = atos[f["cit"]]
+        if (cit["fam"], cit["num"], cit["anum"]) == (f["fam"], f["num"], f["ano"]) or \
+           (f["fam"] in SERIE_UNICA and any(a["fam"] == f["fam"] and a["num"] == f["num"] and a["anum"] == f["ano"] for a in (cit,))):
+            continue   # autocitação (republicação, retificação do próprio ato)
+        grupos.setdefault((f["fam"], f["num"], f["ano"], f["dpub"]), []).append(f)
+    for chave in [k for k in grupos if k[3] is None]:
+        irmaos = [k for k in grupos if k[:3] == chave[:3] and k[3] is not None]
+        if len(irmaos) == 1:
+            grupos[irmaos[0]].extend(grupos.pop(chave))
+    citados, prox = [], len(atos)
+    for (fam, num, ano, dpub), fs in grupos.items():
+        sig = []
+        for f in fs:
+            for x in f["sig"]:
+                if x not in sig: sig.append(x)
+        rot = FAM_ROT.get(fam, "Ato")
+        nome = f"{rot} {'/'.join(sig) + ' ' if sig else ''}nº {num}/{ano}"
+        ementa, ent, vis = [], [], set()
+        for f in sorted(fs, key=lambda f: f["cit"]):
+            alvo = atos[f["cit"]]
+            resumo = alvo["ementa"][:180] + ("…" if len(alvo["ementa"]) > 180 else "")
+            if f["de"] == "nota":
+                r = norm(f["rel"])
+                verbo = next((v for rx, v in VERBO_ATIVO if re.search(rx, r)), None)
+                if re.match(r"normas? correlatas?", r):
+                    frase = f"Norma correlata de {alvo['nome']}"
+                elif verbo:
+                    art = "a" if alvo["tipo"].startswith(FEMININO) else "o"
+                    frase = f"{verbo} {art} {alvo['nome']}"
+                else:
+                    frase = f"Citado em nota de {alvo['nome']} ({f['rel']})"
+                rel_ent = f["rel"]
+            else:
+                passivo = EMENTA_PASSIVO.get(f["rel"])
+                frase = f"{passivo} {alvo['nome']}" if passivo else f"Citado na ementa de {alvo['nome']}"
+                rel_ent = f["rel"] + " (ementa)"
+            frase += f" — {resumo}" if resumo else ""
+            if frase not in vis:
+                vis.add(frase); ementa.append(frase)
+            if (rel_ent, f["cit"]) not in {(e["rel"], e["id"]) for e in ent}:
+                ent.append({"rel": rel_ent, "id": f["cit"]})
+            # liga a citação, no ato que cita, a este registro
+            r_ = {"de": f["de"], "rel": f["rel"], "ids": [prox], "q": "citado", "s": f["s"], "e": f["e"]}
+            if f["de"] == "nota": r_["k"] = f["k"]
+            f["ref"].append(r_)
+        citados.append({"id": prox, "tipo": rot, "nome": nome, "dpub": dpub,
+                        "pub": f"publicação citada: {'/'.join(reversed(dpub.split('-')))}" if dpub else "data de publicação não citada",
+                        "ano": int(dpub[:4]) if dpub else ano, "un": sig, "ementa": " · ".join(ementa), "ent": ent})
+        prox += 1
+    return citados
 
 # ---------------------------------------------------------------- principal
 def main():
@@ -345,7 +427,7 @@ def main():
             cands = [c for c in idx.get(("RA", num, ano), []) if c != origem_id]
         if not cands and fam == "ATO":
             cands = [c for c in idx.get(("ATOCONJ", num, ano), []) if c != origem_id]
-        if dpub and len(dpub) == 10:
+        if dpub and len(dpub) == 10 and fam not in SERIE_UNICA:
             # data citada diverge da data do candidato (> 10 dias): não é o mesmo ato
             dd_, mm_, aa_ = dpub[8:], dpub[5:7], dpub[:4]
             def perto(c):
@@ -378,6 +460,7 @@ def main():
     saida_rel = collections.defaultdict(list)    # id -> [(rel, alvo_ids, qualidade, texto_citado)]
     entrada_rel = collections.defaultdict(list)  # alvo -> [(rel, origem)]
     revog_por_ementa = {}
+    faltantes = []   # citações a atos sem verbete na compilação
 
     for a in atos:
         refs = []
@@ -390,16 +473,21 @@ def main():
                     refs.append({"de": "nota", "k": k, "rel": rel, "ids": ids, "q": q, "s": s, "e": e})
                     for t in ids:
                         entrada_rel[t].append({"rel": rel, "id": a["id"], "inv": True})
+                else:
+                    faltantes.append({"fam": fam, "num": num, "ano": ano, "dpub": dpub, "sig": sig, "de": "nota",
+                                      "k": k, "rel": rel, "cit": a["id"], "s": s, "e": e, "ref": refs})
         for fam, num, ano, dpub, sig, s, e in citacoes(a["ementa"]):
             ids, q = casa(fam, num, ano, dpub, sig, a["id"])
             stats["cit_" + ("ok" if q in ("unico", "data", "unidade") else q)] += 1
-            if not ids:
-                continue
             antes = norm(a["ementa"][max(0, s - 90):s])
             verbo = None
             mv = list(re.finditer(r"\b(revoga|altera|regulamenta|referenda|prorroga|republica|retifica|suspende|torna sem efeito|faz cessar|substitui|complementa|acrescenta|homologa)\b", antes))
             if mv:
                 verbo = mv[-1].group(1)
+            if not ids:
+                faltantes.append({"fam": fam, "num": num, "ano": ano, "dpub": dpub, "sig": sig, "de": "ementa",
+                                  "rel": verbo or "cita", "cit": a["id"], "s": s, "e": e, "ref": refs})
+                continue
             refs.append({"de": "ementa", "rel": verbo or "cita", "ids": ids, "q": q, "s": s, "e": e})
             for t in ids:
                 entrada_rel[t].append({"rel": (verbo or "cita") + " (ementa)", "id": a["id"], "inv": True})
@@ -432,6 +520,9 @@ def main():
         a["ent"] = ent
         stats["st_" + a["st"]] += 1
 
+    citados = constroi_citados(atos, faltantes)
+    stats["st_citado"] = len(citados)
+
     total_cit = stats["cit_ok"] + stats["cit_ambiguo"] + stats["cit_nao"]
     meta = {
         "schema": SCHEMA,
@@ -439,6 +530,7 @@ def main():
         "atualizado_ate": atualizado,
         "gerado_em": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "n_atos": len(atos),
+        "n_citados": len(citados),
         "citacoes": {"total": total_cit, "casadas": stats["cit_ok"], "ambiguas": stats["cit_ambiguo"], "sem_par": stats["cit_nao"]},
         "status": {k[3:]: v for k, v in stats.items() if k.startswith("st_")},
     }
@@ -452,9 +544,13 @@ def main():
         if a["refs"]: o["r"] = [{k: v for k, v in r.items()} for r in a["refs"]]
         if a["ent"]: o["x"] = a["ent"]
         enx.append(o)
+    for c in citados:
+        o = {"i": c["id"], "t": c["tipo"], "n": c["nome"], "p": c["pub"], "v": "", "d": c["dpub"], "a": c["ano"],
+             "u": c["un"], "e": c["ementa"], "o": [], "pg": None, "s": "citado", "x": c["ent"]}
+        enx.append(o)
     with open(SAIDA, "w", encoding="utf-8") as f:
         json.dump({"meta": meta, "atos": enx}, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"{len(atos)} atos · atualizado até {atualizado}")
+    print(f"{len(atos)} atos · {len(citados)} atos citados sem verbete · atualizado até {atualizado}")
     print(f"status: {meta['status']}")
     c = meta["citacoes"]
     if c["total"]:

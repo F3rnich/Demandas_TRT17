@@ -89,6 +89,10 @@
   .mt{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;align-items:center}
   .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.68rem;font-weight:700;letter-spacing:.02em}
   .tag.revogado{background:#FBE3E0;color:var(--red)} .tag.alterado{background:#FDF0D5;color:#8A5A00} .tag.sem_registro{background:#DFF2E8;color:var(--green)}
+  .tag.citado{background:#EEF1F4;color:#4A5966;border:1px dashed #9AA8B4}
+  .ato.citado{border-left-color:#9AA8B4;border-left-style:dashed;background:#FBFCFD}
+  .kpi.cit{border-top-color:#9AA8B4} .kpi.cit .n{color:#5B6B78}
+  .aviso{font-size:.8rem;background:#F4F6F8;border:1px dashed #9AA8B4;border-radius:6px;padding:9px 12px;margin-top:8px;color:var(--txt-2)}
   .tag.tp{background:#EEF1F4;color:var(--txt-2)}
   .tag.lk{background:#E8F1F7;color:var(--navy)}
   mark{background:#FFE58A;color:inherit;padding:0 1px;border-radius:2px}
@@ -157,6 +161,8 @@
           <option value="alterado">Alterado / complementado</option>
           <option value="revogado">Revogado / sem efeito</option>
           <option value="nao_revogado">Não revogados (sem registro + alterados)</option>
+          <option value="citado">Citados sem verbete na compilação</option>
+          <option value="compilacao">Só atos com verbete na compilação</option>
         </select></div>
         <div><label for="f-un">Unidade emissora (sigla)</label><select id="f-un"></select></div>
         <div><label for="f-veic">Veículo</label><select id="f-veic">
@@ -217,8 +223,9 @@
 'use strict';
 const FONTE = 'dados_atos_normativos.json';
 const PAG = 40;
-const ST_ROT = {revogado:'Revogado / sem efeito', alterado:'Alterado / complementado', sem_registro:'Sem registro de revogação'};
-const ST_COR = {revogado:'#C0392B', alterado:'#E0AE00', sem_registro:'#1E7B54'};
+const ST_ROT = {revogado:'Revogado / sem efeito', alterado:'Alterado / complementado', sem_registro:'Sem registro de revogação', citado:'Citado — sem verbete na compilação'};
+const ST_FILTRO = {nao_revogado:'não revogados', compilacao:'só atos da compilação'};
+const ST_COR = {revogado:'#C0392B', alterado:'#E0AE00', sem_registro:'#1E7B54', citado:'#9AA8B4'};
 const ABREV = {ra:'resolucao administrativa', os:'ordem de servico', in:'instrucao normativa', er:'emenda regimental',
   prov:'provimento', port:'portaria', rec:'recomendacao', nt:'nota tecnica', ac:'ato conjunto'};
 
@@ -276,12 +283,13 @@ function montaFiltros(){
 function kpis(){
   const s = META.status;
   const anos = A.map(a => a.a).filter(Boolean);
-  $('carimbo').textContent = `Compilação oficial atualizada até ${META.atualizado_ate} · ${META.n_atos.toLocaleString('pt-BR')} atos · ${Math.min(...anos)}–${Math.max(...anos)}`;
+  $('carimbo').textContent = `Compilação oficial atualizada até ${META.atualizado_ate} · ${META.n_atos.toLocaleString('pt-BR')} atos com verbete + ${(META.n_citados || 0).toLocaleString('pt-BR')} citados · ${Math.min(...anos)}–${Math.max(...anos)}`;
   const k = [
-    ['', 'n', META.n_atos, 'atos na compilação'],
+    ['compilacao', 'n', META.n_atos, 'atos com verbete na compilação'],
     ['sem_registro', 'sem', s.sem_registro || 0, 'sem registro de revogação'],
     ['alterado', 'alt', s.alterado || 0, 'alterados ou complementados'],
     ['revogado', 'rev', s.revogado || 0, 'revogados ou sem efeito'],
+    ['citado', 'cit', META.n_citados || 0, 'citados sem verbete na compilação'],
   ];
   $('kpis').innerHTML = k.map(([v, c, n, lb]) => `<button class="kpi ${c}" data-st="${v}"><div class="n">${n.toLocaleString('pt-BR')}</div><div class="lb">${lb}</div></button>`).join('');
   $('kpis').querySelectorAll('.kpi').forEach(b => b.onclick = () => { st.s = (st.s === b.dataset.st ? '' : b.dataset.st); aplicaUI(); roda(); });
@@ -294,11 +302,16 @@ function ressalvas(){
     (“Revoga a Resolução Administrativa nº…”). <b>“Sem registro de revogação” não equivale a “vigente”</b>: a compilação não anota a
     perda de eficácia de atos temporários (designações, editais, suspensões de expediente), nem revogações tácitas.
     Antes de fundamentar decisão, confira o texto integral no DEJT/Diário Oficial.<br><br>
-    <strong>Lacuna da fonte.</strong> O PDF de origem não traz atos publicados entre <b>maio/1997 e agosto/2006</b>; atos desse período
-    aparecem só quando citados por outros, sem vínculo navegável.<br><br>
+    <strong>Lacuna da fonte.</strong> O PDF de origem não traz verbetes de atos publicados entre <b>maio/1997 e agosto/2006</b>.<br><br>
+    <strong>Atos citados sem verbete.</strong> A compilação costuma registrar o ato que altera ou revoga outro apenas como nota do ato alterado,
+    sem verbete próprio. Para que esses atos apareçam na busca, o painel cria um registro “citado — sem verbete” para cada um
+    (${(META.n_citados || 0).toLocaleString('pt-BR')} ao todo), com tipo, número e data tirados da citação e, no lugar da ementa,
+    a relação com o ato que o cita (ex.: “Altera o Ato… — Regulamenta o teletrabalho”). Esses registros não entram nos totais da compilação
+    e podem ser excluídos pelo filtro “Situação”.<br><br>
     <strong>Vínculos.</strong> ${c.total.toLocaleString('pt-BR')} citações a outros atos foram lidas nas notas e ementas;
-    ${c.casadas.toLocaleString('pt-BR')} (${pct}%) casaram com um ato da compilação, ${c.ambiguas} ficaram ambíguas (mais de um candidato — marcadas como tal)
-    e ${c.sem_par.toLocaleString('pt-BR')} citam atos ausentes da compilação (lacuna acima ou atos de outros órgãos).`;
+    ${c.casadas.toLocaleString('pt-BR')} (${pct}%) casaram com um ato com verbete, ${c.ambiguas} ficaram ambíguas (mais de um candidato — marcadas como tal)
+    e ${c.sem_par.toLocaleString('pt-BR')} apontam para atos sem verbete, agora navegáveis pelos registros “citado”. Citações a atos de outros órgãos
+    (CNJ, CSJT, TST, leis, decretos) não entram na contagem.`;
   $('meta').innerHTML = `<p><b>Fonte:</b> ${esc(META.fonte)} — compilação “Atos Normativos do TRT da 17ª Região”, por ordem cronológica, atualizada até ${esc(META.atualizado_ate)}.</p>
     <p><b>Processamento:</b> <code>build_atos_normativos.py</code> (leitura do PDF pelos cabeçalhos em negrito) · gerado em ${esc(META.gerado_em)} · esquema v${META.schema}.</p>
     <p><b>Atualização:</b> rodar o script com o PDF novo e publicar <code>dados_atos_normativos.json</code>. Os links de consulta guardam busca e filtros; o link direto a um ato vale enquanto a compilação não for reprocessada.</p>`;
@@ -342,7 +355,8 @@ function filtra(){
   for (const a of A){
     if (st.tipo && a.t !== st.tipo) continue;
     if (st.s){
-      if (st.s === 'nao_revogado'){ if (a.s === 'revogado') continue; }
+      if (st.s === 'nao_revogado'){ if (a.s === 'revogado' || a.s === 'citado') continue; }
+      else if (st.s === 'compilacao'){ if (a.s === 'citado') continue; }
       else if (a.s !== st.s) continue;
     }
     if (st.un && !(a.u || []).includes(st.un)) continue;
@@ -366,10 +380,11 @@ function filtra(){
     res.push([a, sc]);
   }
   const ord = st.ord === 'rel' && !termos ? 'rec' : st.ord;
-  const chave = a => (a.d || String(a.a || 0)) + String(a.i).padStart(5, '0');
+  // data de publicação; sem data, o ano; desempate pela ordem da compilação (citados depois)
+  const chave = a => (a.d ? a.d.padEnd(10, '-00') : String(a.a || 0) + '-00-00') + (a.s === 'citado' ? '1' : '0') + String(a.i).padStart(5, '0');
   if (ord === 'rel') res.sort((x, y) => y[1] - x[1] || (chave(y[0]) > chave(x[0]) ? 1 : -1));
-  else if (ord === 'rec') res.sort((x, y) => y[0].i - x[0].i);
-  else if (ord === 'ant') res.sort((x, y) => x[0].i - y[0].i);
+  else if (ord === 'rec') res.sort((x, y) => (chave(y[0]) > chave(x[0]) ? 1 : chave(y[0]) < chave(x[0]) ? -1 : 0));
+  else if (ord === 'ant') res.sort((x, y) => (chave(x[0]) > chave(y[0]) ? 1 : chave(x[0]) < chave(y[0]) ? -1 : 0));
   else if (ord === 'cit') res.sort((x, y) => CIT[y[0].i] - CIT[x[0].i] || y[0].i - x[0].i);
   return res.map(x => x[0]);
 }
@@ -412,35 +427,36 @@ function cartao(a){
   const nv = (a.x || []).length + (a.r || []).length;
   return `<article class="ato ${a.s}" data-i="${a.i}" tabindex="0">
     <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p)}</span></div>
-    <div class="em">${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
-    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}</div>
+    <div class="em">${a.s === 'citado' ? '<span style="color:var(--txt-2)">Ementa não disponível. Citações: </span>' : ''}${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
+    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}</div>
   </article>`;
 }
 
 function hist(){
   const anos = {};
-  lista.forEach(a => { if (!a.a) return; const o = anos[a.a] || (anos[a.a] = {sem_registro:0, alterado:0, revogado:0}); o[a.s]++; });
+  lista.forEach(a => { if (!a.a) return; const o = anos[a.a] || (anos[a.a] = {sem_registro:0, alterado:0, revogado:0, citado:0}); o[a.s]++; });
   const todos = [...new Set(A.map(a => a.a).filter(Boolean))].sort((x, y) => x - y);
   const y0 = todos[0], y1 = todos[todos.length - 1], N = y1 - y0 + 1;
-  const max = Math.max(1, ...Object.values(anos).map(o => o.sem_registro + o.alterado + o.revogado));
+  const max = Math.max(1, ...Object.values(anos).map(o => o.sem_registro + o.alterado + o.revogado + o.citado));
   const W = 1000, H = 80, bw = W / N;
   let svg = `<svg viewBox="0 0 ${W} ${H + 16}" preserveAspectRatio="none" role="img" aria-label="Atos por ano de publicação">`;
   for (let y = y0; y <= y1; y++){
     const o = anos[y], x = (y - y0) * bw;
     if (o){
       let base = H;
-      ['sem_registro', 'alterado', 'revogado'].forEach(k => {
+      ['sem_registro', 'alterado', 'revogado', 'citado'].forEach(k => {
         const h = o[k] / max * H; if (!h) return;
         base -= h;
-        svg += `<rect class="b" data-y="${y}" x="${x + 1}" y="${base}" width="${bw - 2}" height="${h}" fill="${ST_COR[k]}"><title>${y}: ${o.sem_registro + o.alterado + o.revogado} atos (${o.revogado} revogados, ${o.alterado} alterados)</title></rect>`;
+        svg += `<rect class="b" data-y="${y}" x="${x + 1}" y="${base}" width="${bw - 2}" height="${h}" fill="${ST_COR[k]}"><title>${y}: ${o.sem_registro + o.alterado + o.revogado} atos com verbete (${o.revogado} revogados, ${o.alterado} alterados) + ${o.citado} citados sem verbete</title></rect>`;
       });
-    } else if (y > 1997 && y < 2006){
+    }
+    if (y > 1997 && y < 2006 && (!o || !(o.sem_registro + o.alterado + o.revogado))){
       svg += `<rect x="${x + 1}" y="${H - 3}" width="${bw - 2}" height="3" fill="#DDE3E9"><title>${y}: período ausente da compilação</title></rect>`;
     }
     if (y % 5 === 0 || y === y0 || y === y1) svg += `<text x="${x + bw / 2}" y="${H + 13}" font-size="10" text-anchor="middle" fill="#5B6B78">${y}</text>`;
   }
   svg += '</svg>';
-  $('hist').innerHTML = svg + `<div class="legend"><span><i style="background:${ST_COR.sem_registro}"></i>sem registro de revogação</span><span><i style="background:${ST_COR.alterado}"></i>alterado</span><span><i style="background:${ST_COR.revogado}"></i>revogado</span><span>· clique numa barra para filtrar o ano · cinza: período ausente da fonte (mai/1997–ago/2006)</span></div>`;
+  $('hist').innerHTML = svg + `<div class="legend"><span><i style="background:${ST_COR.sem_registro}"></i>sem registro de revogação</span><span><i style="background:${ST_COR.alterado}"></i>alterado</span><span><i style="background:${ST_COR.revogado}"></i>revogado</span><span><i style="background:${ST_COR.citado}"></i>citado sem verbete</span><span>· clique numa barra para filtrar o ano · mai/1997–ago/2006: a compilação não tem verbetes, só atos citados</span></div>`;
   $('hist').querySelectorAll('rect.b').forEach(r => r.onclick = () => {
     const y = r.dataset.y;
     if (st.a0 === y && st.a1 === y){ st.a0 = st.a1 = ''; } else { st.a0 = st.a1 = y; }
@@ -451,7 +467,7 @@ function hist(){
 function chips(){
   const c = [];
   if (st.tipo) c.push(['tipo', 'Tipo: ' + st.tipo]);
-  if (st.s) c.push(['s', 'Situação: ' + (ST_ROT[st.s] || 'não revogados')]);
+  if (st.s) c.push(['s', 'Situação: ' + (ST_ROT[st.s] || ST_FILTRO[st.s] || st.s)]);
   if (st.un) c.push(['un', 'Unidade: ' + st.un]);
   if (st.veic) c.push(['veic', 'Veículo: ' + st.veic]);
   if (st.a0 || st.a1) c.push(['ano', 'Ano: ' + (st.a0 === st.a1 ? st.a0 : (st.a0 || '…') + '–' + (st.a1 || '…'))]);
@@ -491,8 +507,9 @@ function abre(id, empilha){
   const notasRefs = {}; const emRefs = [];
   (a.r || []).forEach(r => { if (r.de === 'nota') (notasRefs[r.k] = notasRefs[r.k] || []).push(r); else emRefs.push(r); });
   let h = `<h4>Situação</h4><span class="tag ${a.s}">${ST_ROT[a.s]}</span>`;
+  if (a.s === 'citado') h += `<div class="aviso">Este ato <b>não tem verbete</b> na compilação. Tipo, número e data foram extraídos de citações em outros atos; a ementa e a situação (vigente, alterado, revogado) não constam da fonte. Confira o texto no DEJT/Diário Oficial.</div>`;
   if (a.so === 'ementa') h += `<p class="stnote">Situação inferida da ementa de ato posterior${a.rp != null ? ': ' + linkAto(a.rp) : ''} — a compilação não anota este ato.</p>`;
-  h += `<h4>Ementa</h4><div class="em">${comLinks(a.e, emRefs) || '<i>(sem ementa na compilação)</i>'}</div>`;
+  if (a.s !== 'citado') h += `<h4>Ementa</h4><div class="em">${comLinks(a.e, emRefs) || '<i>(sem ementa na compilação)</i>'}</div>`;
   if (a.o && a.o.length) h += `<h4>Notas da compilação</h4>` + a.o.map((n, k) => `<div class="nota">${comLinks(n, notasRefs[k])}</div>`).join('');
   // relações, sempre redigidas do ponto de vista do ato aberto
   const sai = [];
@@ -505,14 +522,14 @@ function abre(id, empilha){
   };
   if (sai.length) h += `<h4>Relações anotadas neste ato</h4><ul class="vinc">${lst(sai)}</ul>`;
   if (ent.length) h += `<h4>Relações anotadas em outros atos (${ent.length})</h4><ul class="vinc">${lst(ent)}</ul>`;
-  h += `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
+  h += a.s === 'citado' ? `<h4>Localização</h4><p class="pub">Sem verbete no PDF da compilação · ${esc(a.p)}</p>` : `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
   h += `<p style="margin-top:14px"><button class="btn" id="b-copia">Copiar referência</button> <button class="btn" id="b-alink">Copiar link deste ato</button></p>`;
   $('dr-b').innerHTML = h; $('dr-b').scrollTop = 0; $('dr').scrollTop = 0;
   $('dr').classList.add('on'); $('ov').classList.add('on'); $('dr').setAttribute('aria-hidden', 'false');
   $('dr-back').disabled = !pilha.length;
   const pos = lista.indexOf(a);
   $('dr-prev').disabled = pos <= 0; $('dr-next').disabled = pos < 0 || pos >= lista.length - 1;
-  $('b-copia').onclick = () => copia(`${a.n} (${a.p}). ${a.e}`, $('b-copia'));
+  $('b-copia').onclick = () => copia(a.s === 'citado' ? `${a.n} (${a.p})` : `${a.n} (${a.p}). ${a.e}`, $('b-copia'));
   $('b-alink').onclick = () => copia(location.href.split('#')[0] + '#ato=' + a.i, $('b-alink'));
   history.replaceState(null, '', '#' + hashStr() + (hashStr() ? '&' : '') + 'ato=' + a.i);
 }

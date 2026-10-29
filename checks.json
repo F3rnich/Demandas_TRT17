@@ -545,7 +545,8 @@
       "sgp-hub-back",
       "dados_atos_normativos.json",
       "Sem registro de revogação",
-      "maio/1997 e agosto/2006"
+      "maio/1997 e agosto/2006",
+      "sem verbete na compilação"
     ],
     "must_not_contain": [
       "CPF",
@@ -557,7 +558,8 @@
       "\"meta\"",
       "\"atos\"",
       "atualizado_ate",
-      "citacoes"
+      "citacoes",
+      "n_citados"
     ],
     "must_not_contain": [
       "github_pat_",

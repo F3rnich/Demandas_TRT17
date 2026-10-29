@@ -175,6 +175,12 @@ casamento das citações — compare com a rodada anterior antes de publicar. Qu
 brusca no total indica mudança de formatação no PDF (o parser depende de o
 cabeçalho de cada ato estar em negrito).
 
+Atos citados sem verbete: a compilação costuma registrar o ato que altera ou
+revoga outro só como nota do ato alterado. O script cria um registro "citado"
+para cada um (tipo, número e data tirados da citação; no lugar da ementa, a
+relação com o ato que o cita), para que apareçam na busca e sejam navegáveis.
+Não entram nos totais da compilação.
+
 Limites conhecidos: a situação é inferida das anotações da compilação ("sem
 registro de revogação" ≠ vigente); a fonte não traz atos de mai/1997 a
 ago/2006; o link direto a um ato (`#ato=N`) muda quando o PDF é reprocessado.
