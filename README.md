@@ -170,6 +170,18 @@ python build_atos_normativos.py "ATOS_NORMATIVOS_DO_TRT17_-_Atualizado_até_DD-M
 python deploy.py "Atos normativos: compilação até DD/MM/AAAA" dados_atos_normativos.json
 ```
 
+Com a seção Legislação do portal do TRT-17 (PDF oficial de cada ato e atos
+ausentes da compilação): rodar o coletor (`coletor_legislacao.html`, favorito
+usado na página do TRT, que baixa `legislacao_trt17_site.json`) e passar o
+arquivo ao script:
+
+```
+python build_atos_normativos.py "<PDF>" --site legislacao_trt17_site.json
+```
+
+O portal só responde de dentro dele (firewall AWS): a coleta não roda em
+servidor nem pelo painel. O JSON do site não é versionado (fica na pasta local).
+
 O script imprime o total de atos, a distribuição de situações e a taxa de
 casamento das citações — compare com a rodada anterior antes de publicar. Queda
 brusca no total indica mudança de formatação no PDF (o parser depende de o
