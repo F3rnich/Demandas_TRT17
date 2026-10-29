@@ -12,7 +12,8 @@
       "dashboard_transformacoes_organograma.html",
       "dashboard_governanca_tcu.html",
       "dashboard_risco_sucessorio.html",
-      "calculadora_rbc.html"
+      "calculadora_rbc.html",
+      "dashboard_atos_normativos.html"
     ],
     "must_not_contain": [
       "dashboard_acoes_reestruturacao_2026.html",
@@ -534,6 +535,43 @@
     ],
     "must_not_contain": [
       "CPF:"
+    ]
+  },
+  "dashboard_atos_normativos.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "dados_atos_normativos.json",
+      "Sem registro de revogação",
+      "maio/1997 e agosto/2006"
+    ],
+    "must_not_contain": [
+      "CPF",
+      "firebaseConfig"
+    ]
+  },
+  "dados_atos_normativos.json": {
+    "must_contain": [
+      "\"meta\"",
+      "\"atos\"",
+      "atualizado_ate",
+      "citacoes"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "firebaseConfig"
+    ]
+  },
+  "build_atos_normativos.py": {
+    "must_contain": [
+      "pdfplumber",
+      "dados_atos_normativos.json",
+      "Bold"
+    ],
+    "must_not_contain": [
+      "github_pat_"
     ]
   }
 }

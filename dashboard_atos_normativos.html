@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atos Normativos — TRT-17</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#003A5C; --navy-2:#00507E; --yellow:#FFD040; --yellow-dk:#E0AE00;
+    --bg:#F4F6F8; --card:#FFFFFF; --line:#DDE3E9;
+    --txt:#1B2A36; --txt-2:#5B6B78; --red:#C0392B; --green:#1E7B54; --amber:#B7791F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Open Sans',Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.55;padding-bottom:64px}
+  header{background:var(--navy);color:#fff;padding:26px 0 22px;border-bottom:5px solid var(--yellow)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  header h1{font-size:1.45rem;font-weight:700;letter-spacing:.2px}
+  header p{font-size:.86rem;opacity:.85;margin-top:5px}
+  .sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99999;display:inline-flex;align-items:center;gap:8px;
+    background:var(--navy);color:var(--yellow);text-decoration:none;font-size:11.5px;font-weight:700;letter-spacing:.06em;
+    padding:9px 14px;border-radius:8px;border:1px solid var(--navy-2);box-shadow:0 2px 6px rgba(0,40,70,.18)}
+  .sgp-hub-back:hover{background:var(--navy-2)}
+  @media print{.sgp-hub-back,.filters,.toolbar,#hist{display:none}}
+
+  section{margin-top:22px}
+  h2{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--yellow);display:inline-block}
+  .carimbo{display:inline-block;margin:0 0 11px;padding:3px 9px;border-radius:4px;font-size:.69rem;font-weight:700;letter-spacing:.05em;
+    background:#E8F1F7;border:1px solid var(--navy-2);color:var(--navy)}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 16px;border-top:4px solid var(--navy);cursor:pointer;text-align:left;font:inherit;color:inherit}
+  .kpi:hover{box-shadow:0 2px 8px rgba(0,40,70,.12)}
+  .kpi.on{outline:2px solid var(--navy-2)}
+  .kpi.rev{border-top-color:var(--red)} .kpi.alt{border-top-color:var(--amber)} .kpi.sem{border-top-color:var(--green)}
+  .kpi .n{font-size:1.7rem;font-weight:700;color:var(--navy);line-height:1.1}
+  .kpi.rev .n{color:var(--red)} .kpi.alt .n{color:var(--amber)} .kpi.sem .n{color:var(--green)}
+  .kpi .lb{font-size:.76rem;color:var(--txt-2);margin-top:3px}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+
+  /* busca */
+  .search{display:flex;gap:10px;align-items:center}
+  .search input{flex:1;font:inherit;font-size:1rem;padding:12px 14px 12px 40px;border:2px solid var(--navy-2);border-radius:8px;outline:none;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2300507E' stroke-width='2.4'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 13px center no-repeat}
+  .search input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(255,208,64,.55)}
+  .hint{font-size:.74rem;color:var(--txt-2);margin-top:7px}
+  .hint code{background:#EEF1F4;padding:0 4px;border-radius:3px;font-size:.72rem}
+
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
+  .filters label{font-size:.7rem;font-weight:700;color:var(--txt-2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+  .filters select,.filters input{width:100%;font:inherit;font-size:.84rem;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--txt)}
+  .range{display:flex;gap:6px}
+
+  #hist{margin-top:14px}
+  #hist svg{width:100%;height:96px;display:block}
+  #hist rect.b{cursor:pointer}
+  #hist rect.b:hover{opacity:.75}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--txt-2);margin-top:4px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0 10px}
+  .count{font-size:.88rem;color:var(--txt-2)} .count b{color:var(--navy)}
+  .tb-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{font:inherit;font-size:.78rem;font-weight:600;padding:7px 12px;border-radius:6px;border:1px solid var(--navy-2);background:#fff;color:var(--navy);cursor:pointer}
+  .btn:hover{background:#E8F1F7}
+  .btn.pri{background:var(--navy);color:#fff}
+  .btn.pri:hover{background:var(--navy-2)}
+  .tb-right select{font:inherit;font-size:.8rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px}
+
+  .chipsel{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chipsel button{font:inherit;font-size:.72rem;padding:3px 9px;border-radius:12px;border:1px solid var(--navy-2);background:#E8F1F7;color:var(--navy);cursor:pointer}
+  .chipsel button::after{content:" ×";font-weight:700}
+
+  /* resultados */
+  .res{display:flex;flex-direction:column;gap:10px}
+  .ato{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:8px;padding:12px 16px;cursor:pointer}
+  .ato:hover{box-shadow:0 2px 10px rgba(0,40,70,.1)}
+  .ato.revogado{border-left-color:var(--red)} .ato.alterado{border-left-color:var(--amber)}
+  .ato.revogado .ttl{color:#6b5b5b}
+  .ato .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .ttl{font-weight:700;font-size:.93rem;color:var(--navy)}
+  .pub{font-size:.74rem;color:var(--txt-2)}
+  .em{font-size:.86rem;margin-top:4px}
+  .mt{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;align-items:center}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.68rem;font-weight:700;letter-spacing:.02em}
+  .tag.revogado{background:#FBE3E0;color:var(--red)} .tag.alterado{background:#FDF0D5;color:#8A5A00} .tag.sem_registro{background:#DFF2E8;color:var(--green)}
+  .tag.tp{background:#EEF1F4;color:var(--txt-2)}
+  .tag.lk{background:#E8F1F7;color:var(--navy)}
+  mark{background:#FFE58A;color:inherit;padding:0 1px;border-radius:2px}
+  .more{text-align:center;margin:16px 0}
+  .vazio{padding:30px;text-align:center;color:var(--txt-2);font-size:.9rem}
+
+  /* detalhe */
+  .ov{position:fixed;inset:0;background:rgba(0,30,50,.45);z-index:1000;display:none}
+  .ov.on{display:block}
+  .dr{position:fixed;top:0;right:0;height:100%;width:min(640px,100%);background:#fff;z-index:1001;transform:translateX(100%);transition:transform .2s;
+      overflow-y:auto;box-shadow:-4px 0 20px rgba(0,30,50,.25)}
+  .dr.on{transform:none}
+  .dr-h{background:var(--navy);color:#fff;padding:18px 20px 16px;border-bottom:4px solid var(--yellow);position:sticky;top:0}
+  .dr-h h3{font-size:1.05rem;line-height:1.35;padding-right:30px}
+  .dr-h p{font-size:.78rem;opacity:.85;margin-top:4px}
+  .x{position:absolute;top:12px;right:14px;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer;line-height:1}
+  .nav{display:flex;gap:6px;margin-top:10px}
+  .nav button{font:inherit;font-size:.72rem;padding:3px 9px;border-radius:5px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;cursor:pointer}
+  .nav button:disabled{opacity:.35;cursor:default}
+  .dr-b{padding:18px 20px 40px}
+  .dr-b h4{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-2);margin:18px 0 6px}
+  .dr-b h4:first-child{margin-top:0}
+  .dr-b .em{font-size:.92rem}
+  .nota{font-size:.84rem;background:#F7F9FB;border-left:3px solid var(--line);padding:7px 10px;margin-bottom:6px;border-radius:0 4px 4px 0}
+  .nota a,.vinc a,.em a{color:var(--navy-2);font-weight:600;text-decoration:underline;text-decoration-style:dotted;cursor:pointer}
+  .vinc{font-size:.82rem;list-style:none}
+  .vinc li{padding:6px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px;align-items:baseline}
+  .vinc li .rel{flex:none;min-width:130px;font-size:.72rem;font-weight:700;color:var(--txt-2);text-transform:uppercase;letter-spacing:.03em}
+  .stnote{font-size:.75rem;color:var(--txt-2);margin-top:6px}
+  .amb{font-size:.7rem;color:var(--amber);font-weight:700}
+
+  .note{background:#FFFBEC;border-left:4px solid var(--yellow);padding:11px 15px;border-radius:0 6px 6px 0;font-size:.8rem}
+  .note strong{color:var(--navy)}
+  .meta{font-size:.74rem;color:var(--txt-2);margin-top:26px;padding-top:14px;border-top:1px solid var(--line)}
+  .meta p{margin-bottom:6px}
+  .falha{color:var(--red);font-size:.85rem;padding:20px}
+  @media(max-width:640px){.vinc li{flex-direction:column;gap:2px}.vinc li .rel{min-width:0}.cards{grid-template-columns:1fr 1fr}.kpi .n{font-size:1.35rem}.hint{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Atos Normativos do TRT da 17ª Região</h1>
+    <p>Consulta dinâmica à compilação cronológica oficial · Secretaria de Gestão de Pessoas · TRT-17</p>
+  </div>
+</header>
+
+<div class="wrap" id="app">
+  <section>
+    <p class="carimbo" id="carimbo">Carregando dados…</p>
+    <div class="cards" id="kpis"></div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <div class="search">
+        <input id="q" type="search" autocomplete="off" placeholder="Buscar por assunto, número ou trecho — ex.: teletrabalho, RA 49/2026, &quot;banco de horas&quot;" aria-label="Buscar atos normativos">
+      </div>
+      <p class="hint">Todas as palavras precisam aparecer (sem distinguir acentos). Use <code>"aspas"</code> para frase exata, <code>-palavra</code> para excluir e números como <code>49/2026</code> ou <code>RA 49/2026</code>. Atalho: <code>/</code> foca a busca.</p>
+      <div class="filters">
+        <div><label for="f-tipo">Tipo</label><select id="f-tipo"></select></div>
+        <div><label for="f-st">Situação</label><select id="f-st">
+          <option value="">Todas</option>
+          <option value="sem_registro">Sem registro de revogação</option>
+          <option value="alterado">Alterado / complementado</option>
+          <option value="revogado">Revogado / sem efeito</option>
+          <option value="nao_revogado">Não revogados (sem registro + alterados)</option>
+        </select></div>
+        <div><label for="f-un">Unidade emissora (sigla)</label><select id="f-un"></select></div>
+        <div><label for="f-veic">Veículo</label><select id="f-veic">
+          <option value="">Todos</option><option>DEJT</option><option>D.O.</option><option>B.I.</option>
+        </select></div>
+        <div><label>Ano de publicação</label><div class="range"><select id="f-a0"></select><select id="f-a1"></select></div></div>
+        <div><label for="f-onde">Buscar em</label><select id="f-onde">
+          <option value="tudo">Título, ementa e notas</option>
+          <option value="em">Título e ementa</option>
+          <option value="nome">Só o título</option>
+        </select></div>
+      </div>
+      <div id="hist"></div>
+      <div class="chipsel" id="ativos"></div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <div class="count" id="count"></div>
+    <div class="tb-right">
+      <select id="ord" aria-label="Ordenação">
+        <option value="rel">Mais relevantes</option>
+        <option value="rec">Mais recentes</option>
+        <option value="ant">Mais antigos</option>
+        <option value="cit">Mais citados</option>
+      </select>
+      <button class="btn" id="b-link" title="Copia o endereço com a busca e os filtros atuais">Copiar link da consulta</button>
+      <button class="btn" id="b-csv">Exportar CSV</button>
+      <button class="btn" id="b-limpa">Limpar</button>
+    </div>
+  </div>
+
+  <div class="res" id="res"></div>
+  <div class="more" id="more"></div>
+
+  <section>
+    <div class="note" id="ressalvas"></div>
+  </section>
+
+  <div class="meta" id="meta"></div>
+</div>
+
+<div class="ov" id="ov"></div>
+<aside class="dr" id="dr" aria-hidden="true" role="dialog" aria-label="Detalhe do ato">
+  <div class="dr-h">
+    <button class="x" id="dr-x" aria-label="Fechar">×</button>
+    <h3 id="dr-t"></h3>
+    <p id="dr-p"></p>
+    <div class="nav"><button id="dr-back" disabled>◂ Voltar</button><button id="dr-prev">↑ Anterior</button><button id="dr-next">↓ Próximo</button></div>
+  </div>
+  <div class="dr-b" id="dr-b"></div>
+</aside>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis">&#9666; HUB</a>
+
+<script>
+(function(){
+'use strict';
+const FONTE = 'dados_atos_normativos.json';
+const PAG = 40;
+const ST_ROT = {revogado:'Revogado / sem efeito', alterado:'Alterado / complementado', sem_registro:'Sem registro de revogação'};
+const ST_COR = {revogado:'#C0392B', alterado:'#E0AE00', sem_registro:'#1E7B54'};
+const ABREV = {ra:'resolucao administrativa', os:'ordem de servico', in:'instrucao normativa', er:'emenda regimental',
+  prov:'provimento', port:'portaria', rec:'recomendacao', nt:'nota tecnica', ac:'ato conjunto'};
+
+let D, A, META, HAY = [], CIT = [];
+let st = {q:'', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'};
+let lista = [], mostrados = 0, termos = null;
+let pilha = [], atual = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sem = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+// normaliza numeração "049/95" -> "49/1995", "07/2011" -> "7/2011" (não mexe em datas dd/mm/aaaa)
+function normNum(s){
+  return s.replace(/(^|[^\d\/])0*(\d{1,4})\s*\/\s*(\d{4}|\d{2})(?![\d\/])/g, (m, p, n, a) => {
+    if (a.length === 2) a = (+a >= 50 ? '19' : '20') + a;
+    return p + n + '/' + a;
+  });
+}
+const prep = s => normNum(sem(s)).replace(/n\s*\.?\s*[º°o]\s*\.?\s*s?\s*\.?\s*(?=\d)/g, 'n ').replace(/\s+/g,' ');
+
+function fmtData(d){
+  if (!d) return '';
+  const p = d.split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : `${p[1]}/${p[0]}`;
+}
+
+// ------------------------------------------------------------- carga
+fetch(FONTE, {cache:'no-cache'}).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(init).catch(e => { $('res').innerHTML = `<p class="falha">Falha ao carregar ${FONTE}: ${esc(e.message)}</p>`; $('carimbo').textContent = 'Dados indisponíveis'; });
+
+function init(j){
+  D = j; A = j.atos; META = j.meta;
+  CIT = new Array(A.length).fill(0);
+  A.forEach(a => {
+    const nome = prep(a.n), em = prep(a.e), no = prep((a.o || []).join(' '));
+    HAY[a.i] = {nome, em: nome + ' | ' + em, tudo: nome + ' | ' + em + ' | ' + no + ' | ' + prep(a.p || '')};
+    (a.x || []).forEach(() => CIT[a.i]++);
+  });
+  montaFiltros(); kpis(); ressalvas(); lerHash(); aplicaUI(); roda();
+  bind();
+}
+
+function montaFiltros(){
+  const cnt = (f) => { const m = new Map(); A.forEach(a => f(a).forEach(k => k && m.set(k, (m.get(k) || 0) + 1))); return m; };
+  const tipos = [...cnt(a => [a.t]).entries()].sort((x, y) => y[1] - x[1]);
+  $('f-tipo').innerHTML = '<option value="">Todos</option>' + tipos.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join('');
+  const uns = [...cnt(a => a.u || []).entries()].filter(x => x[1] >= 3).sort((x, y) => y[1] - x[1]);
+  $('f-un').innerHTML = '<option value="">Todas</option>' + uns.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join('');
+  const anos = [...new Set(A.map(a => a.a).filter(Boolean))].sort();
+  const op = anos.map(y => `<option value="${y}">${y}</option>`).join('');
+  $('f-a0').innerHTML = '<option value="">de…</option>' + op;
+  $('f-a1').innerHTML = '<option value="">até…</option>' + op;
+}
+
+function kpis(){
+  const s = META.status;
+  const anos = A.map(a => a.a).filter(Boolean);
+  $('carimbo').textContent = `Compilação oficial atualizada até ${META.atualizado_ate} · ${META.n_atos.toLocaleString('pt-BR')} atos · ${Math.min(...anos)}–${Math.max(...anos)}`;
+  const k = [
+    ['', 'n', META.n_atos, 'atos na compilação'],
+    ['sem_registro', 'sem', s.sem_registro || 0, 'sem registro de revogação'],
+    ['alterado', 'alt', s.alterado || 0, 'alterados ou complementados'],
+    ['revogado', 'rev', s.revogado || 0, 'revogados ou sem efeito'],
+  ];
+  $('kpis').innerHTML = k.map(([v, c, n, lb]) => `<button class="kpi ${c}" data-st="${v}"><div class="n">${n.toLocaleString('pt-BR')}</div><div class="lb">${lb}</div></button>`).join('');
+  $('kpis').querySelectorAll('.kpi').forEach(b => b.onclick = () => { st.s = (st.s === b.dataset.st ? '' : b.dataset.st); aplicaUI(); roda(); });
+}
+
+function ressalvas(){
+  const c = META.citacoes, pct = c.total ? (100 * c.casadas / c.total).toFixed(0) : 0;
+  $('ressalvas').innerHTML = `<strong>Como ler a situação dos atos.</strong> A situação é inferida das anotações da própria compilação
+    (ex.: “revogado pelo…”, “alterado pela…”, “cessados os efeitos…”) e, de forma complementar, da ementa de atos posteriores
+    (“Revoga a Resolução Administrativa nº…”). <b>“Sem registro de revogação” não equivale a “vigente”</b>: a compilação não anota a
+    perda de eficácia de atos temporários (designações, editais, suspensões de expediente), nem revogações tácitas.
+    Antes de fundamentar decisão, confira o texto integral no DEJT/Diário Oficial.<br><br>
+    <strong>Lacuna da fonte.</strong> O PDF de origem não traz atos publicados entre <b>maio/1997 e agosto/2006</b>; atos desse período
+    aparecem só quando citados por outros, sem vínculo navegável.<br><br>
+    <strong>Vínculos.</strong> ${c.total.toLocaleString('pt-BR')} citações a outros atos foram lidas nas notas e ementas;
+    ${c.casadas.toLocaleString('pt-BR')} (${pct}%) casaram com um ato da compilação, ${c.ambiguas} ficaram ambíguas (mais de um candidato — marcadas como tal)
+    e ${c.sem_par.toLocaleString('pt-BR')} citam atos ausentes da compilação (lacuna acima ou atos de outros órgãos).`;
+  $('meta').innerHTML = `<p><b>Fonte:</b> ${esc(META.fonte)} — compilação “Atos Normativos do TRT da 17ª Região”, por ordem cronológica, atualizada até ${esc(META.atualizado_ate)}.</p>
+    <p><b>Processamento:</b> <code>build_atos_normativos.py</code> (leitura do PDF pelos cabeçalhos em negrito) · gerado em ${esc(META.gerado_em)} · esquema v${META.schema}.</p>
+    <p><b>Atualização:</b> rodar o script com o PDF novo e publicar <code>dados_atos_normativos.json</code>. Os links de consulta guardam busca e filtros; o link direto a um ato vale enquanto a compilação não for reprocessada.</p>`;
+}
+
+// ------------------------------------------------------------- busca
+function parseQ(q){
+  q = q.trim();
+  if (!q) return null;
+  const frases = [], neg = [], pal = [];
+  q = q.replace(/-"([^"]+)"/g, (m, f) => { neg.push(prep(f)); return ' '; });
+  q = q.replace(/"([^"]+)"/g, (m, f) => { frases.push(prep(f)); return ' '; });
+  let toks = prep(q).split(/\s+/).filter(Boolean);
+  // abreviação de tipo seguida de número: "ra 49/2026" -> frase "resolucao administrativa" + número
+  const out = [];
+  for (let i = 0; i < toks.length; i++){
+    const t = toks[i];
+    if (ABREV[t] && toks[i + 1] && /^\d/.test(toks[i + 1])) { frases.push(ABREV[t]); continue; }
+    if (t === 'n' || t === 'no' || t === 'nº') continue;
+    if (t.startsWith('-') && t.length > 1) { neg.push(t.slice(1)); continue; }
+    out.push(t);
+  }
+  out.forEach(t => pal.push(t));
+  return {pal, frases, neg, todos: [...pal, ...frases]};
+}
+
+function contem(h, t){
+  // número exige fronteira: "4/2026" não casa "14/2026"
+  if (/^\d+\/\d{4}$/.test(t)) {
+    let i = -1;
+    while ((i = h.indexOf(t, i + 1)) !== -1) if (i === 0 || !/[\d\/]/.test(h[i - 1])) return true;
+    return false;
+  }
+  return h.indexOf(t) !== -1;
+}
+
+function filtra(){
+  termos = parseQ(st.q);
+  const a0 = +st.a0 || 0, a1 = +st.a1 || 9999;
+  const res = [];
+  for (const a of A){
+    if (st.tipo && a.t !== st.tipo) continue;
+    if (st.s){
+      if (st.s === 'nao_revogado'){ if (a.s === 'revogado') continue; }
+      else if (a.s !== st.s) continue;
+    }
+    if (st.un && !(a.u || []).includes(st.un)) continue;
+    if (st.veic && a.v !== st.veic) continue;
+    if ((a.a || 0) < a0 || (a.a || 9999) > a1) { if (st.a0 || st.a1) continue; }
+    let sc = 0;
+    if (termos){
+      const H = HAY[a.i], h = H[st.onde];
+      let ok = true;
+      for (const t of termos.todos){ if (!contem(h, t)) { ok = false; break; } }
+      if (!ok) continue;
+      for (const t of termos.neg){ if (h.indexOf(t) !== -1) { ok = false; break; } }
+      if (!ok) continue;
+      for (const t of termos.todos){
+        if (contem(H.nome, t)) sc += 10;
+        else if (contem(H.em, t)) sc += 4;
+        else sc += 1;
+      }
+      if (termos.todos.every(t => contem(H.nome, t))) sc += 30;
+    }
+    res.push([a, sc]);
+  }
+  const ord = st.ord === 'rel' && !termos ? 'rec' : st.ord;
+  const chave = a => (a.d || String(a.a || 0)) + String(a.i).padStart(5, '0');
+  if (ord === 'rel') res.sort((x, y) => y[1] - x[1] || (chave(y[0]) > chave(x[0]) ? 1 : -1));
+  else if (ord === 'rec') res.sort((x, y) => y[0].i - x[0].i);
+  else if (ord === 'ant') res.sort((x, y) => x[0].i - y[0].i);
+  else if (ord === 'cit') res.sort((x, y) => CIT[y[0].i] - CIT[x[0].i] || y[0].i - x[0].i);
+  return res.map(x => x[0]);
+}
+
+// realce sem quebrar acentos: mapeia posições do texto normalizado para o original
+function realca(txt){
+  if (!termos || !txt) return esc(txt);
+  const alvo = [...termos.pal.filter(t => t.length > 1 && !/^\d+\/\d{4}$/.test(t)), ...termos.frases];
+  if (!alvo.length) return esc(txt);
+  const n = sem(txt);
+  if (n.length !== txt.length) return esc(txt);
+  const marcas = [];
+  alvo.forEach(t => { let i = -1; while ((i = n.indexOf(t, i + 1)) !== -1) marcas.push([i, i + t.length]); });
+  if (!marcas.length) return esc(txt);
+  marcas.sort((x, y) => x[0] - y[0]);
+  let out = '', p = 0;
+  for (const [s, e] of marcas){ if (s < p) continue; out += esc(txt.slice(p, s)) + '<mark>' + esc(txt.slice(s, e)) + '</mark>'; p = e; }
+  return out + esc(txt.slice(p));
+}
+
+// ------------------------------------------------------------- render
+function roda(){
+  lista = filtra(); mostrados = 0;
+  $('res').innerHTML = '';
+  const n = lista.length;
+  $('count').innerHTML = n ? `<b>${n.toLocaleString('pt-BR')}</b> ato${n > 1 ? 's' : ''} encontrado${n > 1 ? 's' : ''}` : '';
+  if (!n) $('res').innerHTML = '<div class="vazio">Nenhum ato atende à busca e aos filtros. Tente menos palavras, troque “Buscar em” para incluir as notas, ou limpe os filtros.</div>';
+  mais(); hist(); chips(); escreveHash();
+}
+
+function mais(){
+  const frag = lista.slice(mostrados, mostrados + PAG).map(cartao).join('');
+  $('res').insertAdjacentHTML('beforeend', frag);
+  mostrados = Math.min(lista.length, mostrados + PAG);
+  $('more').innerHTML = mostrados < lista.length ? `<button class="btn pri" id="b-mais">Mostrar mais ${Math.min(PAG, lista.length - mostrados)} (de ${(lista.length - mostrados).toLocaleString('pt-BR')} restantes)</button>` : '';
+  const b = $('b-mais'); if (b) b.onclick = mais;
+}
+
+function cartao(a){
+  const nv = (a.x || []).length + (a.r || []).length;
+  return `<article class="ato ${a.s}" data-i="${a.i}" tabindex="0">
+    <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p)}</span></div>
+    <div class="em">${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
+    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}</div>
+  </article>`;
+}
+
+function hist(){
+  const anos = {};
+  lista.forEach(a => { if (!a.a) return; const o = anos[a.a] || (anos[a.a] = {sem_registro:0, alterado:0, revogado:0}); o[a.s]++; });
+  const todos = [...new Set(A.map(a => a.a).filter(Boolean))].sort((x, y) => x - y);
+  const y0 = todos[0], y1 = todos[todos.length - 1], N = y1 - y0 + 1;
+  const max = Math.max(1, ...Object.values(anos).map(o => o.sem_registro + o.alterado + o.revogado));
+  const W = 1000, H = 80, bw = W / N;
+  let svg = `<svg viewBox="0 0 ${W} ${H + 16}" preserveAspectRatio="none" role="img" aria-label="Atos por ano de publicação">`;
+  for (let y = y0; y <= y1; y++){
+    const o = anos[y], x = (y - y0) * bw;
+    if (o){
+      let base = H;
+      ['sem_registro', 'alterado', 'revogado'].forEach(k => {
+        const h = o[k] / max * H; if (!h) return;
+        base -= h;
+        svg += `<rect class="b" data-y="${y}" x="${x + 1}" y="${base}" width="${bw - 2}" height="${h}" fill="${ST_COR[k]}"><title>${y}: ${o.sem_registro + o.alterado + o.revogado} atos (${o.revogado} revogados, ${o.alterado} alterados)</title></rect>`;
+      });
+    } else if (y > 1997 && y < 2006){
+      svg += `<rect x="${x + 1}" y="${H - 3}" width="${bw - 2}" height="3" fill="#DDE3E9"><title>${y}: período ausente da compilação</title></rect>`;
+    }
+    if (y % 5 === 0 || y === y0 || y === y1) svg += `<text x="${x + bw / 2}" y="${H + 13}" font-size="10" text-anchor="middle" fill="#5B6B78">${y}</text>`;
+  }
+  svg += '</svg>';
+  $('hist').innerHTML = svg + `<div class="legend"><span><i style="background:${ST_COR.sem_registro}"></i>sem registro de revogação</span><span><i style="background:${ST_COR.alterado}"></i>alterado</span><span><i style="background:${ST_COR.revogado}"></i>revogado</span><span>· clique numa barra para filtrar o ano · cinza: período ausente da fonte (mai/1997–ago/2006)</span></div>`;
+  $('hist').querySelectorAll('rect.b').forEach(r => r.onclick = () => {
+    const y = r.dataset.y;
+    if (st.a0 === y && st.a1 === y){ st.a0 = st.a1 = ''; } else { st.a0 = st.a1 = y; }
+    aplicaUI(); roda();
+  });
+}
+
+function chips(){
+  const c = [];
+  if (st.tipo) c.push(['tipo', 'Tipo: ' + st.tipo]);
+  if (st.s) c.push(['s', 'Situação: ' + (ST_ROT[st.s] || 'não revogados')]);
+  if (st.un) c.push(['un', 'Unidade: ' + st.un]);
+  if (st.veic) c.push(['veic', 'Veículo: ' + st.veic]);
+  if (st.a0 || st.a1) c.push(['ano', 'Ano: ' + (st.a0 === st.a1 ? st.a0 : (st.a0 || '…') + '–' + (st.a1 || '…'))]);
+  $('ativos').innerHTML = c.map(([k, t]) => `<button data-k="${k}">${esc(t)}</button>`).join('');
+  $('ativos').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const k = b.dataset.k; if (k === 'ano') { st.a0 = st.a1 = ''; } else st[k] = '';
+    aplicaUI(); roda();
+  });
+  $('kpis').querySelectorAll('.kpi').forEach(b => b.classList.toggle('on', !!st.s && b.dataset.st === st.s));
+}
+
+// ------------------------------------------------------------- detalhe
+function linkAto(id, rot){ const a = A[id]; return `<a data-go="${id}" title="${esc(a.e.slice(0, 160))}">${esc(rot || a.n)}</a>`; }
+
+function comLinks(txt, refs){
+  // refs: [{s,e,ids,q}] com offsets no texto
+  if (!refs || !refs.length) return esc(txt);
+  refs = refs.slice().sort((x, y) => x.s - y.s);
+  let out = '', p = 0;
+  for (const r of refs){
+    if (r.s < p) continue;
+    out += esc(txt.slice(p, r.s));
+    const trecho = txt.slice(r.s, r.e);
+    out += linkAto(r.ids[0], trecho);
+    if (r.ids.length > 1) out += ` <span class="amb" title="Mais de um ato com este número na compilação">[ambíguo: ${r.ids.slice(1).map(i => linkAto(i, '' + A[i].n)).join(', ')}]</span>`;
+    p = r.e;
+  }
+  return out + esc(txt.slice(p));
+}
+
+function abre(id, empilha){
+  const a = A[id]; if (!a) return;
+  if (empilha && atual !== null && atual !== id) pilha.push(atual);
+  atual = id;
+  $('dr-t').textContent = a.n;
+  $('dr-p').textContent = [a.p, a.t].filter(Boolean).join(' · ');
+  const notasRefs = {}; const emRefs = [];
+  (a.r || []).forEach(r => { if (r.de === 'nota') (notasRefs[r.k] = notasRefs[r.k] || []).push(r); else emRefs.push(r); });
+  let h = `<h4>Situação</h4><span class="tag ${a.s}">${ST_ROT[a.s]}</span>`;
+  if (a.so === 'ementa') h += `<p class="stnote">Situação inferida da ementa de ato posterior${a.rp != null ? ': ' + linkAto(a.rp) : ''} — a compilação não anota este ato.</p>`;
+  h += `<h4>Ementa</h4><div class="em">${comLinks(a.e, emRefs) || '<i>(sem ementa na compilação)</i>'}</div>`;
+  if (a.o && a.o.length) h += `<h4>Notas da compilação</h4>` + a.o.map((n, k) => `<div class="nota">${comLinks(n, notasRefs[k])}</div>`).join('');
+  // relações, sempre redigidas do ponto de vista do ato aberto
+  const sai = [];
+  (a.r || []).forEach(r => r.ids.forEach(i => sai.push([r.de === 'ementa' ? relEmentaSai(r.rel) : relNotaSai(r.rel), i])));
+  const ent = (a.x || []).map(x => [x.rel.endsWith(' (ementa)') ? relEmentaEnt(x.rel.replace(' (ementa)', '')) : relNotaEnt(x.rel), x.id]);
+  const lst = arr => {
+    const vis = new Set();
+    return arr.filter(([r, i]) => { const k = r + '|' + i; if (vis.has(k)) return false; vis.add(k); return true; })
+      .map(([r, i]) => `<li><span class="rel">${esc(r)}</span><span>${linkAto(i)} <span class="pub">· ${esc(fmtData(A[i].d) || A[i].a || '')}</span> <span class="tag ${A[i].s}" style="font-size:.6rem">${ST_ROT[A[i].s]}</span></span></li>`).join('');
+  };
+  if (sai.length) h += `<h4>Relações anotadas neste ato</h4><ul class="vinc">${lst(sai)}</ul>`;
+  if (ent.length) h += `<h4>Relações anotadas em outros atos (${ent.length})</h4><ul class="vinc">${lst(ent)}</ul>`;
+  h += `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
+  h += `<p style="margin-top:14px"><button class="btn" id="b-copia">Copiar referência</button> <button class="btn" id="b-alink">Copiar link deste ato</button></p>`;
+  $('dr-b').innerHTML = h; $('dr-b').scrollTop = 0; $('dr').scrollTop = 0;
+  $('dr').classList.add('on'); $('ov').classList.add('on'); $('dr').setAttribute('aria-hidden', 'false');
+  $('dr-back').disabled = !pilha.length;
+  const pos = lista.indexOf(a);
+  $('dr-prev').disabled = pos <= 0; $('dr-next').disabled = pos < 0 || pos >= lista.length - 1;
+  $('b-copia').onclick = () => copia(`${a.n} (${a.p}). ${a.e}`, $('b-copia'));
+  $('b-alink').onclick = () => copia(location.href.split('#')[0] + '#ato=' + a.i, $('b-alink'));
+  history.replaceState(null, '', '#' + hashStr() + (hashStr() ? '&' : '') + 'ato=' + a.i);
+}
+const PART = /(ad|id)[oa]s?$/;
+const CORREL = r => /^normas? correlatas?$/.test(r);
+// nota deste ato: "(revogado pelo X)" -> "revogado por"
+function relNotaSai(r){ if (CORREL(r)) return 'norma correlata'; return PART.test(r) ? r + ' por' : r + ':'; }
+// nota de outro ato X: "(revogado pelo <este>)" -> X foi "revogado por este ato"
+function relNotaEnt(r){ if (CORREL(r)) return 'norma correlata'; return PART.test(r) ? r + ' por este ato' : 'nota do ato: ' + r; }
+// ementa deste ato: "Revoga X" -> "revoga"
+function relEmentaSai(v){ return v === 'cita' ? 'citado na ementa' : v; }
+// ementa de outro ato X: "Revoga <este>" -> X "revoga este ato"
+function relEmentaEnt(v){ return v === 'cita' ? 'cita este ato na ementa' : v + ' este ato'; }
+function fecha(){ $('dr').classList.remove('on'); $('ov').classList.remove('on'); $('dr').setAttribute('aria-hidden', 'true'); atual = null; pilha = []; escreveHash(); }
+function copia(t, b){ navigator.clipboard.writeText(t).then(() => { const o = b.textContent; b.textContent = 'Copiado ✓'; setTimeout(() => b.textContent = o, 1400); }); }
+
+// ------------------------------------------------------------- estado / URL
+function hashStr(){
+  const p = new URLSearchParams();
+  Object.entries(st).forEach(([k, v]) => { if (v && !(k === 'onde' && v === 'tudo') && !(k === 'ord' && v === 'rel')) p.set(k, v); });
+  return p.toString();
+}
+function escreveHash(){ const h = hashStr(); history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); }
+function lerHash(){
+  const p = new URLSearchParams(location.hash.slice(1));
+  Object.keys(st).forEach(k => { if (p.has(k)) st[k] = p.get(k); });
+  if (p.has('ato')) setTimeout(() => abre(+p.get('ato'), false), 0);
+}
+function aplicaUI(){
+  $('q').value = st.q; $('f-tipo').value = st.tipo; $('f-st').value = st.s; $('f-un').value = st.un; $('f-veic').value = st.veic;
+  $('f-a0').value = st.a0; $('f-a1').value = st.a1; $('f-onde').value = st.onde; $('ord').value = st.ord;
+}
+
+function csv(){
+  const c = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const linhas = [['Ato', 'Tipo', 'Publicação', 'Data', 'Ano', 'Situação', 'Ementa', 'Notas'].map(c).join(';')];
+  lista.forEach(a => linhas.push([a.n, a.t, a.p, fmtData(a.d), a.a, ST_ROT[a.s], a.e, (a.o || []).join(' | ')].map(c).join(';')));
+  const blob = new Blob(['﻿' + linhas.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const u = URL.createObjectURL(blob), l = document.createElement('a');
+  l.href = u; l.download = 'atos_normativos_trt17_consulta.csv'; document.body.appendChild(l); l.click(); l.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+
+function bind(){
+  let t = null;
+  $('q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { st.q = e.target.value; roda(); }, 180); });
+  [['f-tipo', 'tipo'], ['f-st', 's'], ['f-un', 'un'], ['f-veic', 'veic'], ['f-a0', 'a0'], ['f-a1', 'a1'], ['f-onde', 'onde'], ['ord', 'ord']]
+    .forEach(([id, k]) => $(id).addEventListener('change', e => { st[k] = e.target.value; roda(); }));
+  $('b-limpa').onclick = () => { st = {q:'', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'}; aplicaUI(); roda(); $('q').focus(); };
+  $('b-csv').onclick = csv;
+  $('b-link').onclick = () => copia(location.href, $('b-link'));
+  $('res').addEventListener('click', e => { const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
+  $('res').addEventListener('keydown', e => { if (e.key === 'Enter') { const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); } });
+  $('dr-b').addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) { e.preventDefault(); abre(+l.dataset.go, true); } });
+  $('dr-p').parentElement.addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) abre(+l.dataset.go, true); });
+  $('dr-x').onclick = fecha; $('ov').onclick = fecha;
+  $('dr-back').onclick = () => { if (pilha.length) { const id = pilha.pop(); abre(id, false); } };
+  const passo = d => { const pos = lista.indexOf(A[atual]); const nx = lista[pos + d]; if (nx) { if (lista.indexOf(nx) >= mostrados) mais(); abre(nx.i, false); } };
+  $('dr-prev').onclick = () => passo(-1); $('dr-next').onclick = () => passo(1);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && atual !== null) fecha();
+    else if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); }
+    else if (atual !== null && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && document.activeElement.tagName !== 'SELECT') { e.preventDefault(); passo(e.key === 'ArrowDown' ? 1 : -1); }
+  });
+}
+})();
+</script>
+</body>
+</html>

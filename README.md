@@ -153,3 +153,28 @@ não tem escopo `pages:write`, então `POST /pages/builds` retorna 403.
   jan/2022, formato `.xlsx` apesar da extensão `.pdf`).
 - **Painel 10**: a cauda da curva Kaplan-Meier chega a `n=5`, o limiar de
   supressão. Tratar com cautela em comunicação pública.
+
+---
+
+## Atos normativos (ferramenta 19)
+
+`dashboard_atos_normativos.html` lê `dados_atos_normativos.json`, gerado pelo
+`build_atos_normativos.py` a partir do PDF público "Atos Normativos do TRT da
+17ª Região" (compilação cronológica do Tribunal).
+
+Atualização, quando sair um PDF novo:
+
+```
+pip install pdfplumber
+python build_atos_normativos.py "ATOS_NORMATIVOS_DO_TRT17_-_Atualizado_até_DD-MM-AAAA.pdf"
+python deploy.py "Atos normativos: compilação até DD/MM/AAAA" dados_atos_normativos.json
+```
+
+O script imprime o total de atos, a distribuição de situações e a taxa de
+casamento das citações — compare com a rodada anterior antes de publicar. Queda
+brusca no total indica mudança de formatação no PDF (o parser depende de o
+cabeçalho de cada ato estar em negrito).
+
+Limites conhecidos: a situação é inferida das anotações da compilação ("sem
+registro de revogação" ≠ vigente); a fonte não traz atos de mai/1997 a
+ago/2006; o link direto a um ato (`#ato=N`) muda quando o PDF é reprocessado.
