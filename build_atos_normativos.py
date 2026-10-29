@@ -423,8 +423,17 @@ def parse_doc_site(d):
     m = (re.match(r"^(.*?(?<![\d/])\d{1,4}\s*/\s*\d{2,4})(?!\d)(?!\s*/\s*\d)\s*(.*)$", tit) or
          re.match(r"^(.*?\d{1,4}[-_](?:19|20)\d{2})(?!\d)\s*(.*)$", tit))
     nome, assunto = (m.group(1).strip(), re.sub(r"^[\s\-–—:]+", "", m.group(2) or "").strip()) if m else (tit, "")
+    # "Ato ... N.º 18, de 10 de julho de 2019 - altera ..." : número + data por extenso, se vier antes de qualquer "nn/aaaa"
+    md = re.search(r"n\.?\s*[º°o]?\.?\s*(\d{1,4})\s*,?\s*de\s+\d{1,2}\s*(?:º|o)?\s+de\s+(janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})", tit, re.I)
+    mpos = re.search(r"(?<![\d/])\d{1,4}\s*[/_-]\s*\d{2,4}", tit)
+    data_extenso = None
+    if md and (not mpos or md.start() < mpos.start()):
+        nome, assunto = tit[:md.end()].strip(), re.sub(r"^[\s\-–—:,]+", "", tit[md.end():]).strip()
+        data_extenso = (int(md.group(1)), int(md.group(3)))
     mn = re.search(r"(?<![\d/])(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)(?!\s*/\s*\d)", nome) or re.search(r"(\d{1,4})[-_]((?:19|20)\d{2})(?!\d)", nome)
     num, ano = (int(mn.group(1)), ano4(mn.group(2))) if mn else (None, None)
+    if data_extenso:
+        num, ano = data_extenso
     if num is not None and 1950 <= num <= 2100:     # "biênio 2003/2005" não é número de ato
         num, ano = None, None
     if ano is None:
@@ -442,9 +451,27 @@ def parse_doc_site(d):
     return fam, num, ano, serie, nome, assunto
 
 # versão compilada/consolidada do próprio ato (não confundir com "Altera o Provimento Consolidado ...")
-RX_COMPILADA = re.compile(r"\(\s*(?:texto\s+)?(?:compilad[oa]|consolidad[oa]|atualizad[oa])\s*\)"
-                          r"|[-–]\s*(?:texto\s+)?(?:compilad|consolidad)[oa]\b(?!\s+n)"
-                          r"|^\s*consolida[cç][aã]o\b|[-–]\s*ATUALIZAD[OA]\s*$", re.I)
+_CC = r"(?:compilad|consolidad)[oa]"
+RX_COMPILADA = re.compile(
+    r"\([^)]*\b" + _CC + r"\b[^)]*\)"                                   # (Compilada), (Compilada em 24/05/2023), (Republicado e consolidado)
+    r"|\b(?:texto|reda[cç][aã]o|red\.|vers[aã]o)\s+(?:" + _CC + r"|atualizad[oa])\b"   # redação consolidada, versão atualizada
+    r"|[-–]\s*" + _CC + r"\b(?!\s+n)"                                     # - Compilada -
+    r"|\d{2,4}\s+" + _CC + r"\b"                                           # 65/2010 Consolidado
+    r"|^\s*consolida[cç][aã]o\b|[-–]\s*ATUALIZAD[OA]\s*$", re.I)
+RX_MODIFICADOR = re.compile(r"\b(alter\w*|inclui|insere|acresc\w*|suspende|revoga|d[aá] nova reda\w*|modifica)\b[^()]{0,90}\b" + _CC, re.I)
+RX_DESATUALIZADO = re.compile(r"desatualizad", re.I)
+
+def eh_compilada(t):
+    t = t or ""
+    return bool(RX_COMPILADA.search(t)) and not RX_MODIFICADOR.search(t)
+
+def data_compilacao(t):
+    """Data (ou ano) da versão compilada: 'Compilada 15/09/2021', 'versão 13/3/2024', 'redação consolidada 2026'."""
+    m = re.search(r"(?:compilad|consolidad|atualizad|vers[aã]o)[^0-9()]{0,20}(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{2,4})", t or "", re.I)
+    if m:
+        return f"{ano4(m.group(3)):04d}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+    m = re.search(r"(?:compilad|consolidad)[oa]\s+(?:em\s+)?((?:19|20)\d\d)\b", t or "", re.I)
+    return f"{m.group(1)}-00-00" if m else ""
 
 # marca de revogação no título do site: "(REVOGADA)" ou "- REVOGADA -"
 RX_REV_SITE = re.compile(r"\(\s*(revogad[oa]s?|tornad[oa] sem efeito)\s*\)|[-–]\s*REVOGAD[OA]S?\s*(?:[-–]|$)", re.I)
@@ -466,13 +493,22 @@ def incorpora_site(atos, site):
     novos = []
     for chave, docs in grupos.items():
         # documento principal: o que não é anexo/errata
-        compilada = lambda x: bool(RX_COMPILADA.search(x[0]["titulo"] or ""))
+        compilada = lambda x: eh_compilada(x[0]["titulo"])
         # documento-base para nome/assunto: o original (não compilado, não anexo)
         docs.sort(key=lambda x: (compilada(x), bool(re.search(r"anexo|errata|retifica", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
         d0, nome, assunto = docs[0]
         # arquivos: texto compilado primeiro (é o que traz o conteúdo em vigor)
-        ordem = sorted(docs, key=lambda x: (not compilada(x), bool(re.search(r"anexo|errata", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
-        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] + (["c"] if compilada(x) else []) for x in ordem if x[0].get("url")]
+        # versões compiladas: a mais recente não marcada como desatualizada é a vigente ("c"); as demais, histórico ("h")
+        comp = [x for x in docs if compilada(x)]
+        comp.sort(key=lambda x: (not RX_DESATUALIZADO.search(x[0]["titulo"] or ""), data_compilacao(x[0]["titulo"]) or "0000", x[0].get("modificado") or ""), reverse=True)
+        vigente = comp[0] if comp and not RX_DESATUALIZADO.search(comp[0][0]["titulo"] or "") else None
+        outros = sorted([x for x in docs if not compilada(x)], key=lambda x: (bool(re.search(r"anexo|errata", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
+        ordem = ([vigente] if vigente else []) + [x for x in comp if x is not vigente] + outros
+        def marca(x):
+            if x is vigente: return ["c", data_compilacao(x[0]["titulo"])]
+            if compilada(x): return ["h", data_compilacao(x[0]["titulo"])]
+            return []
+        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] + marca(x) for x in ordem if x[0].get("url")]
         texto_site = max([assunto, d0.get("descricao") or ""], key=len)
         rev_site = any(RX_REV_SITE.search(x[0]["titulo"] or "") for x in docs)
         alvo = None
@@ -714,7 +750,7 @@ def main():
         o["f"] = ("cs" if a["pg"] is not None else "s") if "site" in a else "c"
         if "site" in a:
             o["pdf"] = a["site"]["arq"]
-            if any(len(x) > 2 for x in o["pdf"]): o["cp"] = 1
+            if any(len(x) > 2 and x[2] == "c" for x in o["pdf"]): o["cp"] = 1
             if a["pg"] is not None and a["site"]["txt"] and norm(a["site"]["txt"])[:60] not in norm(a["ementa"]):
                 o["ds"] = a["site"]["txt"]
             if a.get("pasta"): o["ps"] = a["pasta"]
