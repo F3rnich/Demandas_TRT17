@@ -45,6 +45,7 @@
     <ol>
       <li>Mostre a barra de favoritos do Chrome (<code>Ctrl+Shift+B</code>).</li>
       <li>Arraste este botão para a barra: <a class="bm" id="bm" href="#">Coletar legislação TRT-17</a></li>
+      <li>Arraste também o do modo assistido: <a class="bm" id="bm2" href="#">Coleta assistida TRT-17</a></li>
     </ol>
   </section>
 
@@ -58,6 +59,7 @@
 <pre>python build_atos_normativos.py "ATOS_NORMATIVOS_....pdf" --site legislacao_trt17_site.json
 python deploy.py "Atos normativos: atualização" dados_atos_normativos.json</pre></li>
     </ol>
+    <div class="note"><b>Se o portal bloquear a coleta automática</b> (o quadro para logo no início, várias vezes): use o <b>modo assistido</b>. Na página de Legislação do TRT, clique no favorito <b>Coleta assistida TRT-17</b>: um quadro lista as pastas que faltam. Abra cada uma normalmente, com calma; o favorito não faz pedidos próprios ao portal, só registra o que a página carrega quando você abre a pasta. Ao terminar, baixa <code>legislacao_trt17_site_completo.json</code>. Ao mudar de seção (ex.: Portarias), clique no favorito de novo na nova página.</div>
     <div class="note"><b>Se a coleta pausar:</b> o portal limita o número de pedidos. O coletor espera e, se o limite continuar, para com o progresso salvo. Tente mais tarde: abra a página e clique no favorito — a coleta continua de onde parou.</div>
   </section>
 </div>
@@ -119,7 +121,101 @@ python deploy.py "Atos normativos: atualização" dados_atos_normativos.json</pr
   window.__coletorAtivo = false;
 })();
 </script>
+<script type="text/plain" id="src2">
+(async () => {
+  // Modo assistido: não faz nenhum pedido ao portal. Só registra as respostas que a própria
+  // página busca quando a pessoa abre uma pasta, e junta ao progresso salvo do coletor.
+  if (!/trt17\.jus\.br$/.test(location.hostname)) { alert('Abra a seção Legislação do portal www.trt17.jus.br e clique no favorito lá.'); return; }
+  if (window.__assistidoAtivo) return; window.__assistidoAtivo = true;
+  const RAIZ = 1015014;
+  const PAGINAS = {'Atos da Presidência': 'atos-da-presidencia', 'Portarias': 'portarias', 'Resoluções Administrativas': 'resolucoes-administrativas',
+    'Provimentos': 'provimentos', 'Editais': 'editais', 'Recomendações': 'recomendacoes', 'Ordens de Serviço': 'ordens-de-servico', 'Instruções Normativas': 'instrucoes-normativas'};
+  const db = await new Promise((ok, err) => { const q = indexedDB.open('coletor_legislacao', 1); q.onupgradeneeded = () => q.result.createObjectStore('s'); q.onsuccess = () => ok(q.result); q.onerror = err; });
+  const ler = () => new Promise(ok => { const q = db.transaction('s').objectStore('s').get('estado'); q.onsuccess = () => ok(q.result); });
+  const gravar = v => new Promise(ok => { const t = db.transaction('s', 'readwrite'); t.objectStore('s').put(v, 'estado'); t.oncomplete = ok; });
+  let est = await ler();
+  if (!est || est.fim) { alert('Não há coleta em andamento salva neste navegador. Use primeiro o favorito "Coletar legislação TRT-17".'); window.__assistidoAtivo = false; return; }
+  est.parcial = est.parcial || {};
+  window.__est = est;
+  const caminhoDe = id => { if (+id === RAIZ) return ''; const p = est.pastas.find(x => x.id === +id); return p ? p.caminho : null; };
+  const docIds = new Set(est.docs.map(d => d.id));
+
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999999;background:#003A5C;color:#fff;font:12.5px/1.45 Arial;padding:12px 16px;border-radius:8px;border-bottom:4px solid #FFD040;box-shadow:0 4px 14px rgba(0,0,0,.3);width:340px;max-height:60vh;overflow:auto';
+  (document.body || document.documentElement).appendChild(box);
+  const baixar = (final) => {
+    const saida = {fonte: location.origin + '/o/headless-delivery/v1.0/document-folders/' + RAIZ, coletado_em: new Date().toISOString(), inicio: est.inicio,
+      parcial: !final, secoes_incompletas: final ? {} : est.fila.reduce((m, f) => { const s = f.caminho.split('/')[0]; m[s] = (m[s] || 0) + 1; return m; }, {}),
+      modo: 'assistido', n_pastas: est.pastas.length, n_docs: est.docs.length, pastas: est.pastas, docs: est.docs};
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(saida)], {type: 'application/json'}));
+    a.download = final ? 'legislacao_trt17_site_completo.json' : 'legislacao_trt17_site_parcial.json';
+    (document.body || document.documentElement).appendChild(a); a.click(); a.remove();
+  };
+  const desenha = () => {
+    const secao = decodeURIComponent(location.pathname.split('/w/')[1] || '');
+    const aqui = Object.keys(PAGINAS).find(k => PAGINAS[k] === secao);
+    const pend = est.fila.filter(f => f.id !== RAIZ);
+    const nesta = pend.filter(f => f.caminho.split('/')[0] === aqui);
+    const outras = [...new Set(pend.map(f => f.caminho.split('/')[0]).filter(s => s !== aqui))];
+    box.innerHTML = '<b>Coletor — modo assistido</b><br>' +
+      'Documentos: <b>' + est.docs.length + '</b> · pastas pendentes: <b>' + pend.length + '</b><br>' +
+      (pend.length ? '<span style="opacity:.85">Abra as pastas abaixo nesta página, uma de cada vez, com calma. Cada pasta aberta sai da lista.</span>' +
+        (nesta.length ? '<ol style="margin:6px 0 0 18px">' + nesta.slice(0, 12).map(f => '<li>' + f.caminho.split('/').slice(1).join(' › ') + (f.nd ? ' <span style="opacity:.7">(' + f.nd + ')</span>' : '') + '</li>').join('') + '</ol>' + (nesta.length > 12 ? '<div style="opacity:.7">+ ' + (nesta.length - 12) + ' outras</div>' : '') : '<div style="margin-top:6px">Nada pendente nesta seção.</div>') +
+        (outras.length ? '<div style="margin-top:6px">Também faltam: ' + outras.map(s => '<a style="color:#FFD040" href="/web/legislacao/w/' + PAGINAS[s] + '">' + s + '</a>').join(', ') + ' (abra a página e clique no favorito de novo)</div>' : '') +
+        '<div style="margin-top:8px"><button id="__bx" style="font:inherit;padding:3px 9px;border-radius:5px;border:0;background:#FFD040;color:#003A5C;font-weight:700;cursor:pointer">Baixar o que já tenho</button></div>'
+      : '<br><b>Coleta completa.</b> Arquivo <b>legislacao_trt17_site_completo.json</b> baixado.');
+    const bx = document.getElementById('__bx'); if (bx) bx.onclick = () => baixar(false);
+  };
+
+  const conclui = async (id) => {
+    const f = est.fila.find(x => x.id === +id); if (!f) return;
+    const p = est.parcial[id] || {};
+    if ((f.nd === 0 || p.d) && (f.nf === 0 || p.f)) {
+      est.fila = est.fila.filter(x => x.id !== +id); est.feitas.push(+id); delete est.parcial[id];
+    }
+  };
+  const registra = async (url, json) => {
+    const m = url.match(/document-folders\/(\d+)\/(documents|document-folders)(?:\?|$)/); if (!m || !json || !Array.isArray(json.items)) return;
+    const id = +m[1], tipo = m[2], base = caminhoDe(id);
+    if (base === null) return;   // pasta fora do mapa (ex.: outra árvore do portal)
+    if ((json.totalCount || 0) > json.items.length && (json.page || 1) === 1) est.avisos = (est.avisos || []).concat(base + ': ' + json.totalCount + ' itens, página parcial');
+    if (tipo === 'documents') {
+      json.items.forEach(d => { if (docIds.has(d.id)) return; docIds.add(d.id); est.docs.push({id: d.id, pasta: base, titulo: d.title, descricao: d.description || '', arquivo: d.fileName, ext: d.fileExtension,
+        url: (d.contentUrl || '').split('?')[0], bytes: d.sizeInBytes, criado: d.dateCreated, modificado: d.dateModified, kw: d.keywords || [], cat: (d.taxonomyCategoryBriefs || []).map(t => t.taxonomyCategoryName)}); });
+      (est.parcial[id] = est.parcial[id] || {}).d = true;
+    } else {
+      json.items.forEach(f => {
+        if (est.pastas.some(x => x.id === f.id)) return;
+        const c = base ? base + '/' + f.name : f.name;
+        est.pastas.push({id: f.id, caminho: c, n: f.numberOfDocuments});
+        if (!est.feitas.includes(f.id)) est.fila.push({id: f.id, caminho: c, nd: f.numberOfDocuments, nf: f.numberOfDocumentFolders});
+      });
+      (est.parcial[id] = est.parcial[id] || {}).f = true;
+    }
+    await conclui(id);
+    await gravar(est); desenha();
+    if (!est.fila.filter(f => f.id !== RAIZ).length) { est.fim = new Date().toISOString(); await gravar(est); baixar(true); desenha(); }
+  };
+
+  // escuta as respostas que a própria página recebe
+  const ofetch = window.fetch;
+  window.fetch = async function (...args) {
+    const r = await ofetch.apply(this, args);
+    try { const u = typeof args[0] === 'string' ? args[0] : args[0].url; if (/headless-delivery\/v1\.0\/document-folders\//.test(u) && r.ok) r.clone().text().then(t => { if (t) registra(u, JSON.parse(t)); }).catch(() => {}); } catch (e) {}
+    return r;
+  };
+  const oopen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (m, u, ...rest) {
+    if (/headless-delivery\/v1\.0\/document-folders\//.test(u)) this.addEventListener('load', () => { try { if (this.status === 200 && this.responseText) registra(u, JSON.parse(this.responseText)); } catch (e) {} });
+    return oopen.call(this, m, u, ...rest);
+  };
+  desenha();
+})();
+</script>
 <script>
+  document.getElementById('bm2').href = 'javascript:' + encodeURIComponent(document.getElementById('src2').textContent.trim());
+  document.getElementById('bm2').addEventListener('click', e => { e.preventDefault(); alert('Arraste este botão para a barra de favoritos e use-o na página de Legislação do TRT-17.'); });
   document.getElementById('bm').href = 'javascript:' + encodeURIComponent(document.getElementById('src').textContent.trim());
   document.getElementById('bm').addEventListener('click', e => { e.preventDefault(); alert('Arraste este botão para a barra de favoritos e use-o na página de Legislação do TRT-17.'); });
 </script>
