@@ -125,6 +125,7 @@ SIGLAS_IGNORAR = {"TRT", "DEJT", "DO", "BI", "ES", "CNJ", "CSJT", "TST", "N", "N
 
 def siglas(s):
     out = []
+    if re.search(r"O\.?\s*C\.?\s*M\.?\s*J\.?\s*T", s): out.append("OCMJT")   # Ordem Capixaba do Mérito Judiciário do Trabalho
     for m in RX_SIGLA.finditer(s.replace("/", " ").replace("-", " ")):
         t = m.group(1)
         if t in SIGLAS_IGNORAR or len(t) > 12:
@@ -395,7 +396,7 @@ SECAO_FAM = {"atos da presidencia": "ATO", "resolucoes administrativas": "RA", "
 # série (unidade) dos Atos: pasta do site -> sigla canônica; siglas do PDF -> mesma sigla
 PASTA_SERIE = {"presidencia": "PRESI", "gestao de pessoas": "SGP", "administracao": "SEADM", "diretoria-geral": "DIGER",
                "corregedoria": "SECOR", "escola judicial": "EJUD", "conciliacao": "NUPEMEC"}
-SIGLA_SERIE = {"SGP": "SGP", "SEGEP": "SGP", "SEREH": "SGP", "SGPE": "SGP", "SEDER": "SGP", "SECOR": "SECOR",
+SIGLA_SERIE = {"OCMJT": "OCMJT", "COGEP": "SGP", "SGP": "SGP", "SEGEP": "SGP", "SEREH": "SGP", "SGPE": "SGP", "SEDER": "SGP", "SECOR": "SECOR",
                "SEADM": "SEADM", "SADM": "SEADM", "DIGER": "DIGER", "DG": "DIGER", "EJUD": "EJUD", "EMATRA": "EJUD",
                "NUPEMEC": "NUPEMEC", "CEJUSC": "NUPEMEC"}
 URL_SITE = "https://www.trt17.jus.br"
@@ -405,8 +406,11 @@ def serie_pdf(a):
         if s_ in SIGLA_SERIE: return SIGLA_SERIE[s_]
     return "PRESI"
 
+VAZIAS = {"para", "pelo", "pela", "sobre", "dispoe", "tribunal", "regiao", "trabalho", "presidencia", "presidente", "anexo", "republicacao", "retificacao", "retificado", "disponibilizado", "dejt"}
+
 def palavras(t):
-    return {w for w in re.findall(r"[a-z]{4,}", norm(t))} - {"para", "pelo", "pela", "sobre", "dispoe", "tribunal", "regiao", "trabalho", "17ª"}
+    """Radicais (5 letras) das palavras significativas — tolera plural e flexão."""
+    return {w[:5] for w in re.findall(r"[a-z]{4,}", norm(t).replace("-", "")) if w not in VAZIAS}
 
 def parse_doc_site(d):
     """-> (fam, num, ano, serie, nome, assunto)"""
@@ -416,21 +420,31 @@ def parse_doc_site(d):
     tit = re.sub(r"\s+", " ", d["titulo"] or "").strip()
     # "TIPO nº 12/2024 - assunto"  |  "RA 129/2012 - assunto"
     # número do ato: "12/2024", "84-2022" (Corregedoria) ou "21_2024"; o resto do título é o assunto
-    m = (re.match(r"^(.*?\d{1,4}\s*/\s*\d{2,4})(?!\d)\s*(.*)$", tit) or
+    m = (re.match(r"^(.*?(?<![\d/])\d{1,4}\s*/\s*\d{2,4})(?!\d)(?!\s*/\s*\d)\s*(.*)$", tit) or
          re.match(r"^(.*?\d{1,4}[-_](?:19|20)\d{2})(?!\d)\s*(.*)$", tit))
     nome, assunto = (m.group(1).strip(), re.sub(r"^[\s\-–—:]+", "", m.group(2) or "").strip()) if m else (tit, "")
-    mn = re.search(r"(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)", nome) or re.search(r"(\d{1,4})[-_]((?:19|20)\d{2})(?!\d)", nome)
+    mn = re.search(r"(?<![\d/])(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)(?!\s*/\s*\d)", nome) or re.search(r"(\d{1,4})[-_]((?:19|20)\d{2})(?!\d)", nome)
     num, ano = (int(mn.group(1)), ano4(mn.group(2))) if mn else (None, None)
     if num is not None and 1950 <= num <= 2100:     # "biênio 2003/2005" não é número de ato
         num, ano = None, None
     if ano is None:
         my = re.search(r"/((?:19|20)\d\d)(?:/|$)", "/" + d["pasta"] + "/")
         ano = int(my.group(1)) if my else None
+    if num is None and ano is not None:
+        # "Ato da Presidência - 52 - Designa ..." : número sem ano; o ano vem da pasta
+        mx = re.match(r"^([^0-9]*?[-–]\s*(\d{1,4}))\s*[-–(]\s*(.*)$", tit)
+        if mx and not 1950 <= int(mx.group(2)) <= 2100:
+            num, nome, assunto = int(mx.group(2)), mx.group(1).strip(), mx.group(3).strip()
     # título com tipo diferente da pasta (ex.: Ato Conjunto dentro de Atos)
     rot, fam_t = classifica(nome)
     if fam_t not in ("OUTROS",) and fam_t != fam and not (fam == "ATO" and fam_t == "ATO"):
         fam = fam_t if fam_t in ("ATOCONJ", "RES", "PORTCONJ", "ER") else fam
     return fam, num, ano, serie, nome, assunto
+
+# versão compilada/consolidada do próprio ato (não confundir com "Altera o Provimento Consolidado ...")
+RX_COMPILADA = re.compile(r"\(\s*(?:texto\s+)?(?:compilad[oa]|consolidad[oa]|atualizad[oa])\s*\)"
+                          r"|[-–]\s*(?:texto\s+)?(?:compilad|consolidad)[oa]\b(?!\s+n)"
+                          r"|^\s*consolida[cç][aã]o\b|[-–]\s*ATUALIZAD[OA]\s*$", re.I)
 
 # marca de revogação no título do site: "(REVOGADA)" ou "- REVOGADA -"
 RX_REV_SITE = re.compile(r"\(\s*(revogad[oa]s?|tornad[oa] sem efeito)\s*\)|[-–]\s*REVOGAD[OA]S?\s*(?:[-–]|$)", re.I)
@@ -452,9 +466,13 @@ def incorpora_site(atos, site):
     novos = []
     for chave, docs in grupos.items():
         # documento principal: o que não é anexo/errata
-        docs.sort(key=lambda x: (bool(re.search(r"anexo|errata|retifica", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
+        compilada = lambda x: bool(RX_COMPILADA.search(x[0]["titulo"] or ""))
+        # documento-base para nome/assunto: o original (não compilado, não anexo)
+        docs.sort(key=lambda x: (compilada(x), bool(re.search(r"anexo|errata|retifica", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
         d0, nome, assunto = docs[0]
-        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] for x in docs if x[0].get("url")]
+        # arquivos: texto compilado primeiro (é o que traz o conteúdo em vigor)
+        ordem = sorted(docs, key=lambda x: (not compilada(x), bool(re.search(r"anexo|errata", norm(x[0]["titulo"]))), len(x[0]["titulo"])))
+        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] + (["c"] if compilada(x) else []) for x in ordem if x[0].get("url")]
         texto_site = max([assunto, d0.get("descricao") or ""], key=len)
         rev_site = any(RX_REV_SITE.search(x[0]["titulo"] or "") for x in docs)
         alvo = None
@@ -468,6 +486,11 @@ def incorpora_site(atos, site):
                 cands.sort(key=lambda a: -len(pw & palavras(a["ementa"])))
                 st["desempate_texto"] += 1
             alvo = cands[0] if cands else None
+            if alvo is not None:
+                pw, pe = palavras(texto_site + " " + " ".join(x[0]["titulo"] or "" for x in docs)), palavras(alvo["ementa"])
+                if len(pw) >= 3 and len(pe) >= 3 and not (pw & pe):
+                    st["rejeitado_assunto"] += 1   # mesmo número, assuntos sem nada em comum: atos diferentes
+                    alvo = None
         if alvo is not None:
             alvo["site"] = {"arq": arquivos, "txt": texto_site, "rev": rev_site}
             st["fundidos"] += 1
@@ -476,6 +499,11 @@ def incorpora_site(atos, site):
             rot = FAM_ROT.get(fam) or classifica(nome)[0]
             if chave[0] != "SEMNUM" and not re.search(r"[A-Za-zÀ-ú]", nome):
                 nome = f"{rot}{' ' + chave[3] if chave[0] == 'ATO' and chave[3] else ''} nº {chave[1]}/{chave[2]}"
+            if chave[0] != "SEMNUM" and re.match(r"^\s*consolida[cç][aã]o\b", nome, re.I):
+                # "CONSOLIDAÇÃO - PROV. 01-2005 - ATUALIZADO": a própria norma consolidada
+                nome = f"{rot} Consolidado nº {chave[1]:02d}/{chave[2]}"
+                arq = re.sub(r"\.(pdf|docx?|odt)$", "", d0.get("arquivo") or "", flags=re.I)
+                texto_site = "Texto consolidado e atualizado" + (f" ({arq})" if arq else "") + "."
             if chave[0] != "SEMNUM" and re.match(r"^(RA|R\.A\.)\s", nome):
                 nome = f"Resolução Administrativa nº {chave[1]}/{chave[2]}"
             un = siglas(nome)
@@ -560,6 +588,10 @@ def main():
                 except ValueError:
                     return True
             cands = [c for c in cands if perto(c)]
+        if fam == "ATO" and len(cands) == 1:
+            explicita = next((SIGLA_SERIE[x] for x in sig if x in SIGLA_SERIE), None)
+            if explicita and serie_pdf(atos[cands[0]]) != explicita:
+                return [], "nao"   # citação de Ato da unidade X não pode casar com Ato de outra unidade
         if len(cands) <= 1:
             return cands, "unico" if cands else "nao"
         if dpub:
@@ -571,10 +603,13 @@ def main():
             # sem sigla de unidade na citação, vale a unidade do ato que cita ("revoga o Ato nº X" dentro de um Ato SGP = Ato SGP)
             orig = atos[origem_id] if origem_id is not None and origem_id < len(atos) else None
             padrao = serie_pdf(orig) if orig is not None and orig["fam"] == "ATO" else "PRESI"
-            serie_cit = next((SIGLA_SERIE[x] for x in sig if x in SIGLA_SERIE), padrao)
+            explicita = next((SIGLA_SERIE[x] for x in sig if x in SIGLA_SERIE), None)
+            serie_cit = explicita or padrao
             f = [c for c in cands if serie_pdf(atos[c]) == serie_cit]
             if len(f) == 1: return f, "unidade"
             if f: cands = f
+            elif explicita:
+                return [], "nao"   # a citação nomeia a unidade e não há ato dela com esse número
         if sig:
             sc = [(len(set(sig) & set(atos[c]["un"])), c) for c in cands]
             best = max(s for s, _ in sc)
@@ -679,6 +714,7 @@ def main():
         o["f"] = ("cs" if a["pg"] is not None else "s") if "site" in a else "c"
         if "site" in a:
             o["pdf"] = a["site"]["arq"]
+            if any(len(x) > 2 for x in o["pdf"]): o["cp"] = 1
             if a["pg"] is not None and a["site"]["txt"] and norm(a["site"]["txt"])[:60] not in norm(a["ementa"]):
                 o["ds"] = a["site"]["txt"]
             if a.get("pasta"): o["ps"] = a["pasta"]
