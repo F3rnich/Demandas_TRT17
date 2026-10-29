@@ -415,10 +415,11 @@ def parse_doc_site(d):
     serie = PASTA_SERIE.get(partes[1]) if fam == "ATO" and len(partes) > 1 else None
     tit = re.sub(r"\s+", " ", d["titulo"] or "").strip()
     # "TIPO nº 12/2024 - assunto"  |  "RA 129/2012 - assunto"
-    m = re.match(r"^(.*?\d{1,4}\s*/\s*\d{2,4})\s*(?:[-–—:]\s*(.*))?$", tit) or \
-        re.match(r"^(.*?\d{1,4}-(?:19|20)\d{2})\b\s*(?:[-–—:]\s*(.*))?$", tit)   # "SECOR ATO 84-2022 - ..."
-    nome, assunto = (m.group(1).strip(), (m.group(2) or "").strip()) if m else (tit, "")
-    mn = re.search(r"(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)", nome) or re.search(r"(\d{1,4})-((?:19|20)\d{2})\b", nome)
+    # número do ato: "12/2024", "84-2022" (Corregedoria) ou "21_2024"; o resto do título é o assunto
+    m = (re.match(r"^(.*?\d{1,4}\s*/\s*\d{2,4})(?!\d)\s*(.*)$", tit) or
+         re.match(r"^(.*?\d{1,4}[-_](?:19|20)\d{2})(?!\d)\s*(.*)$", tit))
+    nome, assunto = (m.group(1).strip(), re.sub(r"^[\s\-–—:]+", "", m.group(2) or "").strip()) if m else (tit, "")
+    mn = re.search(r"(\d{1,4})\s*/\s*(\d{4}|\d{2})(?!\d)", nome) or re.search(r"(\d{1,4})[-_]((?:19|20)\d{2})(?!\d)", nome)
     num, ano = (int(mn.group(1)), ano4(mn.group(2))) if mn else (None, None)
     if num is not None and 1950 <= num <= 2100:     # "biênio 2003/2005" não é número de ato
         num, ano = None, None
@@ -473,6 +474,8 @@ def incorpora_site(atos, site):
         else:
             fam = chave[0] if chave[0] != "SEMNUM" else classifica(nome)[1]
             rot = FAM_ROT.get(fam) or classifica(nome)[0]
+            if chave[0] != "SEMNUM" and not re.search(r"[A-Za-zÀ-ú]", nome):
+                nome = f"{rot}{' ' + chave[3] if chave[0] == 'ATO' and chave[3] else ''} nº {chave[1]}/{chave[2]}"
             if chave[0] != "SEMNUM" and re.match(r"^(RA|R\.A\.)\s", nome):
                 nome = f"Resolução Administrativa nº {chave[1]}/{chave[2]}"
             un = siglas(nome)
@@ -563,6 +566,15 @@ def main():
             f = [c for c in cands if atos[c]["dpub"] and (atos[c]["dpub"] == dpub or atos[c]["dpub"][:7] == dpub[:7] and len(dpub) == 7)]
             if len(f) == 1: return f, "data"
             if f: cands = f
+        if fam == "ATO" and len(cands) > 1:
+            # cada unidade numera seus Atos: a sigla citada indica a série (sem sigla além de PRESI = Presidência)
+            # sem sigla de unidade na citação, vale a unidade do ato que cita ("revoga o Ato nº X" dentro de um Ato SGP = Ato SGP)
+            orig = atos[origem_id] if origem_id is not None and origem_id < len(atos) else None
+            padrao = serie_pdf(orig) if orig is not None and orig["fam"] == "ATO" else "PRESI"
+            serie_cit = next((SIGLA_SERIE[x] for x in sig if x in SIGLA_SERIE), padrao)
+            f = [c for c in cands if serie_pdf(atos[c]) == serie_cit]
+            if len(f) == 1: return f, "unidade"
+            if f: cands = f
         if sig:
             sc = [(len(set(sig) & set(atos[c]["un"])), c) for c in cands]
             best = max(s for s, _ in sc)
@@ -591,13 +603,16 @@ def main():
                 else:
                     faltantes.append({"fam": fam, "num": num, "ano": ano, "dpub": dpub, "sig": sig, "de": "nota",
                                       "k": k, "rel": rel, "cit": a["id"], "s": s, "e": e, "ref": refs})
+        do_site = a["pg"] is None   # ementa = resumo do portal, não texto da compilação
         for fam, num, ano, dpub, sig, s, e in citacoes(a["ementa"]):
+            if do_site and (fam, num, ano) == (a["fam"], a["num"], a["anum"]):
+                continue   # o resumo do portal cita o próprio ato
             ids, q = casa(fam, num, ano, dpub, sig, a["id"])
             stats["cit_" + ("ok" if q in ("unico", "data", "unidade") else q)] += 1
             antes = norm(a["ementa"][max(0, s - 90):s])
             verbo = None
             mv = list(re.finditer(r"\b(revoga|altera|regulamenta|referenda|prorroga|republica|retifica|suspende|torna sem efeito|faz cessar|substitui|complementa|acrescenta|homologa)\b", antes))
-            if mv:
+            if mv and not do_site:   # verbos soltos nos resumos do portal não indicam relação confiável
                 verbo = mv[-1].group(1)
             if not ids:
                 faltantes.append({"fam": fam, "num": num, "ano": ano, "dpub": dpub, "sig": sig, "de": "ementa",
@@ -606,9 +621,10 @@ def main():
             refs.append({"de": "ementa", "rel": verbo or "cita", "ids": ids, "q": q, "s": s, "e": e})
             for t in ids:
                 entrada_rel[t].append({"rel": (verbo or "cita") + " (ementa)", "id": a["id"], "inv": True})
-                if verbo in ("revoga", "torna sem efeito", "faz cessar") and q != "ambiguo" and atos[t]["id"] < a["id"] + 50:
-                    # só revoga atos anteriores (lista é cronológica)
-                    if t < a["id"]:
+                if verbo in ("revoga", "torna sem efeito", "faz cessar") and q != "ambiguo":
+                    # só revoga atos anteriores (ordem da compilação; para atos do portal, pelo ano)
+                    anterior = t < a["id"] if atos[t]["pg"] is not None else (atos[t]["ano"] or 0) <= (a["ano"] or 0)
+                    if anterior:
                         trecho = norm(a["ementa"][s - 40:s])
                         if not re.search(r"\b(art|arts|inciso|incisos|§|paragrafo|alinea|item|anexo|dispositivo)", trecho):
                             revog_por_ementa.setdefault(t, a["id"])
