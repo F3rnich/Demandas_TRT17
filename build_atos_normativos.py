@@ -608,6 +608,12 @@ def carrega_temas(caminho="temas_atos.json"):
             lista.append({"grupo": g["grupo"], "tema": t["tema"]})
             ign = re.compile("|".join(re.escape(norm(x)) for x in t.get("ignorar", []))) if t.get("ignorar") else None
             regras.append((rx(pos), rx(neg), ign))
+    # características transversais (ex.: Colegiados): mesma regra, gravadas como marca do ato
+    carac = []
+    for c in T.get("caracteristicas", []):
+        ign = re.compile("|".join(re.escape(norm(x)) for x in c.get("ignorar", []))) if c.get("ignorar") else None
+        carac.append((c["nome"], rx(c["termos"]), ign))
+    carrega_temas.caracteristicas = carac
     return lista, regras
 
 def temas_do_texto(texto, regras):
@@ -840,6 +846,10 @@ def main():
             tx = o["n"] + " | " + (o["e"] or "")[:300] + " | " + " | ".join(x[1] for x in (o.get("pdf") or [])[:2])
             tm = temas_do_texto(tx, temas_regras)
             if tm: o["tm"] = tm
+            t_ = norm(tx)
+            for nome_c, rx_c, ign_c in getattr(carrega_temas, "caracteristicas", []):
+                if nome_c == "Colegiados" and rx_c and rx_c.search(ign_c.sub(" ", t_) if ign_c else t_):
+                    o["cl"] = 1
         for o in enx:
             if "tm" in o: continue
             herd = set()

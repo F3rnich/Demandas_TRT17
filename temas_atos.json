@@ -1,6 +1,6 @@
 {
  "_como_editar": "Cada tema tem 'termos': trechos procurados no início das palavras do nome, da ementa e do assunto do ato, sem acento e em minúsculas ('ferias' casa com 'férias'). Um ato pode ter vários temas. Termos com espaço exigem a expressão inteira. Termos iniciados por '!' excluem o tema quando presentes. 'ignorar' (opcional): expressões apagadas do texto antes de testar aquele tema (ex.: 'cargo em comissao' não é comissão/colegiado).",
- "versao": 2,
+ "versao": 3,
  "grupos": [
   {
    "grupo": "Gestão de Pessoas",
@@ -103,6 +103,33 @@
       "nomeacao de aprovados",
       "provimento de cargos",
       "vagas para o cargo"
+     ]
+    },
+    {
+     "tema": "Substituições",
+     "termos": [
+      "substituicao em funcao",
+      "substituicao em funcoes",
+      "substituicao em cargo",
+      "substituicao em cargos",
+      "substituicao de ocupantes",
+      "substituicao dos ocupantes",
+      "substituicao dos titulares",
+      "substituicao de titulares",
+      "substituicao de servidores",
+      "substituicao em fc",
+      "substituicao fc",
+      "instituto da substituicao",
+      "pagamento de substituicao",
+      "retribuicao por substituicao",
+      "retribuicao pela substituicao",
+      "substituto eventual",
+      "substitutos eventuais",
+      "indicacao de servidores para substituicao",
+      "indicacao de substitutos",
+      "exercicio de funcao comissionada e cargo em comissao, em substituicao",
+      "em substituicao, de funcao",
+      "em substituicao de funcao"
      ]
     },
     {
@@ -225,32 +252,7 @@
      ]
     },
     {
-     "tema": "Comitês, comissões e grupos de trabalho",
-     "termos": [
-      "comite",
-      "comites",
-      "comissao",
-      "comissoes",
-      "grupo de trabalho",
-      "grupos de trabalho",
-      "grupo gestor",
-      "conselho",
-      "subcomite",
-      "colegiado",
-      "colegiados",
-      "equipe de"
-     ],
-     "ignorar": [
-      "cargo em comissao",
-      "cargos em comissao",
-      "funcao comissionada",
-      "funcoes comissionadas",
-      "em comissao",
-      "comissionad"
-     ]
-    },
-    {
-     "tema": "Planejamento, governança e riscos",
+     "tema": "Planejamento, governança, riscos e proteção de dados",
      "termos": [
       "planejamento estrategico",
       "plano estrategico",
@@ -274,7 +276,12 @@
       "tomada de contas",
       "contas anuais",
       "socioambiental",
-      "responsabilidade social"
+      "responsabilidade social",
+      "dados pessoais",
+      "protecao de dados",
+      "lgpd",
+      "privacidade",
+      "encarregado pelo tratamento"
      ]
     },
     {
@@ -287,16 +294,6 @@
       "ordenadora de despesas",
       "fixa competencia",
       "subdelega"
-     ]
-    },
-    {
-     "tema": "Proteção de dados (LGPD)",
-     "termos": [
-      "dados pessoais",
-      "protecao de dados",
-      "lgpd",
-      "privacidade",
-      "encarregado pelo tratamento"
      ]
     }
    ]
@@ -443,7 +440,7 @@
    "grupo": "Atividade judicial",
    "temas": [
     {
-     "tema": "Funcionamento, prazos e expediente forense",
+     "tema": "Prazos e expediente forense",
      "termos": [
       "prazos processuais",
       "prazos judiciais",
@@ -458,26 +455,31 @@
       "ponto facultativo",
       "feriado",
       "plantao judiciario",
+      "calendario",
+      "atendimento ao publico"
+     ]
+    },
+    {
+     "tema": "Distribuição, audiências e sessões",
+     "termos": [
       "distribuicao",
       "redistribuicao de processos",
+      "audiencia",
       "audiencias",
+      "sessao",
       "sessoes",
       "pauta",
-      "atendimento ao publico",
-      "audiencia",
+      "turma",
+      "turmas",
+      "tribunal pleno",
       "peticoes",
       "peticao",
       "intimacoes",
       "intimacao",
       "protocolo",
-      "calendario",
-      "turma",
-      "turmas",
-      "tribunal pleno",
-      "sessao",
-      "feitos",
       "autuacao",
-      "tramitacao"
+      "tramitacao",
+      "feitos"
      ]
     },
     {
@@ -527,7 +529,6 @@
       "corregedoria",
       "correicao",
       "correicoes",
-      "provimento",
       "oficial de justica",
       "oficiais de justica",
       "central de mandados",
@@ -582,6 +583,34 @@
       "primeira infancia"
      ]
     }
+   ]
+  }
+ ],
+ "caracteristicas": [
+  {
+   "nome": "Colegiados",
+   "descricao": "Atos que instituem, compõem ou regulam comitês, comissões, grupos de trabalho e conselhos",
+   "termos": [
+    "comite",
+    "comites",
+    "comissao",
+    "comissoes",
+    "grupo de trabalho",
+    "grupos de trabalho",
+    "grupo gestor",
+    "conselho",
+    "subcomite",
+    "colegiado",
+    "colegiados",
+    "equipe de"
+   ],
+   "ignorar": [
+    "cargo em comissao",
+    "cargos em comissao",
+    "funcao comissionada",
+    "funcoes comissionadas",
+    "em comissao",
+    "comissionad"
    ]
   }
  ]
