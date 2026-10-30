@@ -101,6 +101,19 @@
   .tag.pdf:hover{background:#E8F1F7}
   .arqs{list-style:none;font-size:.84rem} .arqs li{padding:5px 0;border-bottom:1px dashed var(--line)}
   .arqs a{color:var(--navy-2);font-weight:600}
+  .vig{margin-top:10px;background:#E8F4EE;border:1px solid #9CCFB4;border-left:4px solid var(--green);border-radius:6px;padding:9px 12px;font-size:.86rem}
+  .vig b{color:var(--green)} .vig a{color:var(--navy-2);font-weight:700;text-decoration:underline;cursor:pointer}
+  .vig.cad{background:#FBF3E3;border-color:#E8CF9A;border-left-color:var(--amber)}
+  .linha{list-style:none;position:relative;margin:4px 0 0 6px;padding-left:18px;border-left:2px solid var(--line)}
+  .linha li{position:relative;padding:4px 0 8px;font-size:.84rem}
+  .linha li::before{content:"";position:absolute;left:-25px;top:8px;width:10px;height:10px;border-radius:50%;background:#9AA8B4;border:2px solid #fff;box-shadow:0 0 0 1px #9AA8B4}
+  .linha li.pub::before{background:var(--navy);box-shadow:0 0 0 1px var(--navy)}
+  .linha li.alt::before{background:var(--yellow-dk);box-shadow:0 0 0 1px var(--yellow-dk)}
+  .linha li.comp::before{background:#FFD040;box-shadow:0 0 0 1px var(--yellow-dk)}
+  .linha li.rev::before{background:var(--red);box-shadow:0 0 0 1px var(--red)}
+  .linha .qd{display:inline-block;min-width:78px;font-weight:700;color:var(--txt-2);font-size:.76rem}
+  .linha a{color:var(--navy-2);font-weight:600;text-decoration:underline;text-decoration-style:dotted;cursor:pointer}
+  .emvig{display:block;margin-top:6px;font-size:.78rem;color:var(--green)} .emvig a{color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer}
   .tag.cpl{background:#FFF2CC;color:#6B5200;border:1px solid var(--yellow-dk)}
   .cplbox{background:#FFFBEC;border:1px solid var(--yellow-dk);border-radius:6px;padding:10px 12px}
   .tag.tp{background:#EEF1F4;color:var(--txt-2)}
@@ -470,6 +483,7 @@ function cartao(a){
   return `<article class="ato ${a.s}" data-i="${a.i}" tabindex="0">
     <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p || (a.f === 's' ? 'publicação: ' + (a.a || 's/ano') : ''))}</span></div>
     <div class="em">${a.s === 'citado' ? '<span style="color:var(--txt-2)">Ementa não disponível. Citações: </span>' : ''}${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
+    ${(() => { const v = a.s === 'revogado' ? emVigor(a) : null; return v && v.ato ? `<span class="emvig">→ em vigor: <a data-go="${v.ato.i}">${esc(v.ato.n)}</a>${v.ato.cp ? ' (texto compilado)' : ''}</span>` : ''; })()}
     <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}${a.k === 'e' && st.nat !== 'e' ? `<span class="tag tp">efeito concreto</span>` : ''}${a.cp ? `<span class="tag cpl">Texto compilado</span>` : ''}${a.pdf ? `<a class="tag pdf" href="${esc(a.pdf[0][0])}" target="_blank" rel="noopener" data-pdf="1">${a.pdf[0][2] === 'c' ? 'PDF compilado ↗' : 'PDF ↗'}</a>` : ''}</div>
   </article>`;
 }
@@ -524,6 +538,60 @@ function chips(){
 }
 
 // ------------------------------------------------------------- detalhe
+// ---- vigência e linha do tempo
+const RX_REVOGADOR = /^(revogad|suprimid|cessad|tornad)/;          // nota "(revogado pelo X)": X revogou este ato
+const RX_ALTERADOR = /^(alterad|rerratific|retificad|acrescid|complementad|modificad|prorrogad|republicad|regulamentad)/;
+const RX_ALT_EMENTA = /^(altera|acrescenta|complementa|retifica|prorroga|republica|regulamenta)$/;
+const dataDe = x => x.d ? (x.d.length === 7 ? x.d + '-00' : x.d) : (x.a ? x.a + '-00-00' : '');
+function revogadores(a){
+  const ids = (a.r || []).filter(r => r.de === 'nota' && RX_REVOGADOR.test(r.rel) && !/parcial/.test(r.rel)).flatMap(r => r.ids);
+  if (a.rp != null) ids.push(a.rp);
+  return [...new Set(ids)].filter(i => i !== a.i).sort((x, y) => dataDe(A[x]) < dataDe(A[y]) ? -1 : 1);
+}
+// devolve [{id, d}] — d: data citada na nota da compilação (mais precisa) ou a data do ato
+function alteradores(a){
+  const m = new Map();
+  (a.r || []).filter(r => r.de === 'nota' && RX_ALTERADOR.test(r.rel) && !/^revog/.test(r.rel)).forEach(r => r.ids.forEach(i => { if (!m.has(i) || r.dp) m.set(i, r.dp || ''); }));
+  (a.x || []).forEach(x => { const mm = x.rel.match(/^(\S+) \(ementa\)$/); if (mm && RX_ALT_EMENTA.test(mm[1]) && !m.has(x.id)) m.set(x.id, ''); });
+  m.delete(a.i);
+  return [...m].map(([id, d]) => ({id, d: d ? (d.length === 7 ? d + '-00' : d) : dataDe(A[id])}));
+}
+function dataRevogacao(a, i){
+  const r = (a.r || []).find(r => r.de === 'nota' && RX_REVOGADOR.test(r.rel) && r.ids.includes(i) && r.dp);
+  return r ? (r.dp.length === 7 ? r.dp + '-00' : r.dp) : dataDe(A[i]);
+}
+// segue a cadeia de revogações até um ato não revogado; devolve {ato, cadeia} ou null
+function emVigor(a){
+  if (a.s !== 'revogado') return null;
+  let cur = a; const cadeia = [], vis = new Set([a.i]);
+  for (let n = 0; n < 12; n++){
+    const rs = revogadores(cur); if (!rs.length) break;
+    const prox = A[rs[rs.length - 1]];            // o revogador mais recente
+    if (vis.has(prox.i)) break; vis.add(prox.i); cadeia.push(prox);
+    if (prox.s !== 'revogado') return {ato: prox, cadeia};
+    cur = prox;
+  }
+  return cadeia.length ? {ato: null, cadeia} : null;
+}
+function linhaDoTempo(a){
+  const ev = [];
+  const orig = (a.pdf || []).find(x => !x[2]);
+  ev.push({d: dataDe(a), c: 'pub', h: `<b>Publicação</b>${a.p ? ' · ' + esc(a.p) : ''}${orig ? ` · <a href="${esc(orig[0])}" target="_blank" rel="noopener">texto original ↗</a>` : ''}`});
+  alteradores(a).forEach(x => ev.push({d: x.d, c: 'alt', h: `Alterado por ${linkAto(x.id)}`}));
+  (a.pdf || []).filter(x => x[2]).forEach(x => ev.push({d: x[3] || 'sd', c: 'comp', h: `${x[2] === 'c' ? (a.s === 'revogado' ? '<b>Última versão compilada</b>' : '<b>Texto compilado vigente</b>') : 'Versão compilada'} · <a href="${esc(x[0])}" target="_blank" rel="noopener">abrir ↗</a>`}));
+  revogadores(a).forEach(i => ev.push({d: dataRevogacao(a, i), c: 'rev', h: `<b>Revogado</b> por ${linkAto(i)}`}));
+  if (a.s === 'revogado' && !revogadores(a).length) ev.push({d: '9999', c: 'rev', h: '<b>Revogado</b> (ato revogador não identificado na fonte)'});
+  const fmt = d => d === 'sd' ? 'sem data' : !d || d === '9999' ? '—' : d.endsWith('-00-00') ? d.slice(0, 4) : d.endsWith('-00') ? d.slice(5, 7) + '/' + d.slice(0, 4) : d.split('-').reverse().join('/');
+  const ord = d => !d ? '0' : d === 'sd' ? '9998' : d.replace(/-00-00$/, '-99-99').replace(/-00$/, '-99');   // só o ano: fim do ano; sem data: no fim
+  ev.sort((x, y) => ord(x.d) < ord(y.d) ? -1 : ord(x.d) > ord(y.d) ? 1 : 0);
+  return ev.length > 1 ? `<h4>Linha do tempo</h4><ul class="linha">${ev.map(e => `<li class="${e.c}"><span class="qd">${fmt(e.d)}</span> ${e.h}</li>`).join('')}</ul>` : '';
+}
+function avisoVigor(a){
+  const v = emVigor(a); if (!v) return '';
+  const passos = v.cadeia.map(x => linkAto(x.i)).join(' → ');
+  if (v.ato) return `<div class="vig"><b>Em vigor hoje sobre o assunto:</b> ${linkAto(v.ato.i)}${v.ato.cp ? ' <span class="tag cpl" style="font-size:.6rem">texto compilado</span>' : ''}${v.cadeia.length > 1 ? `<br><span class="pub">Cadeia de revogações: ${passos}</span>` : ''}</div>`;
+  return `<div class="vig cad">Revogado por ${passos}, que também foi revogado sem ato sucessor identificado na fonte.</div>`;
+}
 function linkAto(id, rot){ const a = A[id]; return `<a data-go="${id}" title="${esc(a.e.slice(0, 160))}">${esc(rot || a.n)}</a>`; }
 
 function comLinks(txt, refs){
@@ -550,12 +618,13 @@ function abre(id, empilha){
   $('dr-p').textContent = [a.p, a.t].filter(Boolean).join(' · ');
   const notasRefs = {}; const emRefs = [];
   (a.r || []).forEach(r => { if (r.de === 'nota') (notasRefs[r.k] = notasRefs[r.k] || []).push(r); else emRefs.push(r); });
-  let h = `<h4>Situação</h4><span class="tag ${a.s}">${ST_ROT[a.s]}</span>`;
+  let h = `<h4>Situação</h4><span class="tag ${a.s}">${ST_ROT[a.s]}</span>` + avisoVigor(a);
   if (a.s === 'citado') h += `<div class="aviso">Este ato <b>não tem verbete</b> na compilação. Tipo, número e data foram extraídos de citações em outros atos; a ementa e a situação (vigente, alterado, revogado) não constam da fonte. Confira o texto no DEJT/Diário Oficial.</div>`;
   if (a.so === 'site') h += `<p class="stnote">Situação indicada pelo site do TRT-17, que marca o título deste ato como “revogado”.</p>`;
   if (a.so === 'ementa') h += `<p class="stnote">Situação inferida da ementa de ato posterior${a.rp != null ? ': ' + linkAto(a.rp) : ''} — a compilação não anota este ato.</p>`;
   if (a.s !== 'citado') h += `<h4>Ementa</h4><div class="em">${comLinks(a.e, emRefs) || '<i>(sem ementa na compilação)</i>'}</div>`;
   if (a.o && a.o.length) h += `<h4>Notas da compilação</h4>` + a.o.map((n, k) => `<div class="nota">${comLinks(n, notasRefs[k])}</div>`).join('');
+  if (a.s !== 'citado') h += linhaDoTempo(a);
   // relações, sempre redigidas do ponto de vista do ato aberto
   const sai = [];
   (a.r || []).forEach(r => r.ids.forEach(i => sai.push([r.de === 'ementa' ? relEmentaSai(r.rel) : relNotaSai(r.rel), i])));
@@ -660,7 +729,7 @@ function bind(){
   $('b-limpa').onclick = () => { st = {q:'', nat:'g', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'}; aplicaUI(); roda(); $('q').focus(); };
   $('b-csv').onclick = csv;
   $('b-link').onclick = () => copia(location.href, $('b-link'));
-  $('res').addEventListener('click', e => { if (e.target.closest('[data-pdf]')) return; const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
+  $('res').addEventListener('click', e => { if (e.target.closest('[data-pdf]')) return; const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); abre(+g.dataset.go, false); return; } const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
   $('res').addEventListener('keydown', e => { if (e.key === 'Enter') { const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); } });
   $('dr-b').addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) { e.preventDefault(); abre(+l.dataset.go, true); } });
   $('dr-p').parentElement.addEventListener('click', e => { const l = e.target.closest('[data-go]'); if (l) abre(+l.dataset.go, true); });

@@ -380,7 +380,7 @@ def constroi_citados(atos, faltantes):
             if (rel_ent, f["cit"]) not in {(e["rel"], e["id"]) for e in ent}:
                 ent.append({"rel": rel_ent, "id": f["cit"]})
             # liga a citação, no ato que cita, a este registro
-            r_ = {"de": f["de"], "rel": f["rel"], "ids": [prox], "q": "citado", "s": f["s"], "e": f["e"]}
+            r_ = {"de": f["de"], "rel": f["rel"], "ids": [prox], "q": "citado", "s": f["s"], "e": f["e"], **({"dp": f["dpub"]} if f.get("dpub") else {})}
             if f["de"] == "nota": r_["k"] = f["k"]
             f["ref"].append(r_)
         citados.append({"id": prox, "tipo": rot, "nome": nome, "dpub": dpub,
@@ -705,7 +705,7 @@ def main():
                 ids, q = casa(fam, num, ano, dpub, sig, a["id"])
                 stats["cit_" + ("ok" if q in ("unico", "data", "unidade") else q)] += 1
                 if ids:
-                    refs.append({"de": "nota", "k": k, "rel": rel, "ids": ids, "q": q, "s": s, "e": e})
+                    refs.append({"de": "nota", "k": k, "rel": rel, "ids": ids, "q": q, "s": s, "e": e, **({"dp": dpub} if dpub else {})})
                     for t in ids:
                         entrada_rel[t].append({"rel": rel, "id": a["id"], "inv": True})
                 else:

@@ -552,7 +552,9 @@
       "Texto compilado — conteúdo em vigor",
       "noindex",
       "f-nat",
-      "Referência para despacho"
+      "Referência para despacho",
+      "Linha do tempo",
+      "Em vigor hoje sobre o assunto"
     ],
     "must_not_contain": [
       "CPF",
