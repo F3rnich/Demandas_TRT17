@@ -448,10 +448,12 @@ function filtra(){
     if (usaNat && (a.k || 'g') !== st.nat) { ocultos++; continue; }
     res.push([a, sc]);
   }
-  const ord = st.ord === 'rel' && !termos ? 'rec' : st.ord;
+  // sem termos de busca, "mais relevantes" = textos compilados em vigor primeiro, depois os mais recentes
+  const ord = st.ord === 'rel' && !termos ? 'rel0' : st.ord;
   // data de publicação; sem data, o ano; desempate pela ordem da compilação (citados depois)
   const chave = a => (a.d ? a.d.padEnd(10, '-00') : String(a.a || 0) + '-00-00') + (a.s === 'citado' ? '1' : '0') + String(a.i).padStart(5, '0');
   if (ord === 'rel') res.sort((x, y) => y[1] - x[1] || (chave(y[0]) > chave(x[0]) ? 1 : -1));
+  else if (ord === 'rel0') { const vig = a => a.cp && a.s !== 'revogado' ? 1 : 0; res.sort((x, y) => vig(y[0]) - vig(x[0]) || (chave(y[0]) > chave(x[0]) ? 1 : chave(y[0]) < chave(x[0]) ? -1 : 0)); }
   else if (ord === 'rec') res.sort((x, y) => (chave(y[0]) > chave(x[0]) ? 1 : chave(y[0]) < chave(x[0]) ? -1 : 0));
   else if (ord === 'ant') res.sort((x, y) => (chave(x[0]) > chave(y[0]) ? 1 : chave(x[0]) < chave(y[0]) ? -1 : 0));
   else if (ord === 'cit') res.sort((x, y) => CIT[y[0].i] - CIT[x[0].i] || y[0].i - x[0].i);
