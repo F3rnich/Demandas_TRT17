@@ -196,3 +196,10 @@ Não entram nos totais da compilação.
 Limites conhecidos: a situação é inferida das anotações da compilação ("sem
 registro de revogação" ≠ vigente); a fonte não traz atos de mai/1997 a
 ago/2006; o link direto a um ato (`#ato=N`) muda quando o PDF é reprocessado.
+
+### Temas
+
+Os temas vêm de `temas_atos.json` (grupos → temas → termos). Para corrigir ou
+acrescentar, edite os termos e rode o `build_atos_normativos.py` de novo: o
+painel lê os temas do JSON gerado. Ato sem tema próprio herda o tema do ato que
+revoga ou altera.

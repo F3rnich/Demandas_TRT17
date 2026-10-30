@@ -1,0 +1,580 @@
+{
+ "_como_editar": "Cada tema tem 'termos': trechos procurados no início das palavras do nome, da ementa e do assunto do ato, sem acento e em minúsculas ('ferias' casa com 'férias'). Um ato pode ter vários temas. Termos com espaço exigem a expressão inteira. Termos iniciados por '!' excluem o tema quando presentes.",
+ "versao": 1,
+ "grupos": [
+  {
+   "grupo": "Gestão de Pessoas",
+   "temas": [
+    {
+     "tema": "Férias, licenças e afastamentos",
+     "termos": [
+      "ferias",
+      "licenca",
+      "afastamento",
+      "abono de falta",
+      "ausencia ao servico",
+      "licenca-premio",
+      "licenca paternidade",
+      "licenca maternidade",
+      "licenca-paternidade",
+      "licenca-maternidade",
+      "gestante",
+      "adotante"
+     ]
+    },
+    {
+     "tema": "Jornada, frequência e teletrabalho",
+     "termos": [
+      "teletrabalho",
+      "trabalho remoto",
+      "jornada",
+      "horario de trabalho",
+      "frequencia",
+      "registro eletronico de ponto",
+      "controle de ponto",
+      "banco de horas",
+      "servico extraordinario",
+      "horas extras",
+      "horas extraordinarias",
+      "compensacao de horas",
+      "compensacao de expediente",
+      "sobreaviso",
+      "plantao de servidores",
+      "trabalho durante o periodo do recesso",
+      "trabalho no recesso"
+     ]
+    },
+    {
+     "tema": "Remuneração e benefícios",
+     "termos": [
+      "auxilio",
+      "assistencia a saude",
+      "assistencia medica",
+      "assistencia pre-escolar",
+      "pre-escolar",
+      "mae nutriz",
+      "diarias",
+      "ajuda de custo",
+      "indenizacao de transporte",
+      "ressarcimento de transporte",
+      "gratificacao",
+      "adicional de qualificacao",
+      "adicional",
+      "retribuicao",
+      "consignac",
+      "remuneracao",
+      "subsidio",
+      "beneficio",
+      "restituicao ao erario",
+      "reposicao ao erario",
+      "pagamento de",
+      "substituicao em fc",
+      "substituicao de ocupantes",
+      "encargo de curso"
+     ]
+    },
+    {
+     "tema": "Cargos, funções, concursos e lotação",
+     "termos": [
+      "funcao comissionada",
+      "funcoes comissionadas",
+      "funcao gratificada",
+      "funcoes gratificadas",
+      "cargo em comissao",
+      "cargos em comissao",
+      "cargos efetivos",
+      "quadro de pessoal",
+      "quadro permanente",
+      "lotacao",
+      "movimentacao de servidores",
+      "movimentacao interna",
+      "remocao de servidores",
+      "concurso de remocao",
+      "processo seletivo de lotacao",
+      "transformacao de cargo",
+      "transformacao da area",
+      "cria funcoes",
+      "extingue e institui as funcoes",
+      "remaneja",
+      "concurso publico",
+      "concursos publicos",
+      "reenquadra",
+      "enquadramento",
+      "nomeacao de aprovados",
+      "provimento de cargos",
+      "vagas para o cargo"
+     ]
+    },
+    {
+     "tema": "Capacitação, desempenho e carreira",
+     "termos": [
+      "capacitacao",
+      "treinamento",
+      "aperfeicoamento",
+      "desenvolvimento de pessoas",
+      "plano anual de capacitacao",
+      "gestao por competencias",
+      "competencias",
+      "avaliacao de desempenho",
+      "gestao de desempenho",
+      "estagio probatorio",
+      "progressao",
+      "promocao funcional",
+      "reconhecimento",
+      "valorizacao",
+      "pontos de valorizacao",
+      "banco de talentos",
+      "inovacao",
+      "escola judicial",
+      "ejud",
+      "congressos",
+      "cursos",
+      "escola de magistratura",
+      "ematra",
+      "formacao de magistrados"
+     ]
+    },
+    {
+     "tema": "Saúde e qualidade de vida",
+     "termos": [
+      "saude",
+      "pericia medica",
+      "exame periodico",
+      "exames periodicos",
+      "avaliacao medica",
+      "qualidade de vida",
+      "ergonomia",
+      "doenca",
+      "acidente em servico",
+      "readaptacao"
+     ]
+    },
+    {
+     "tema": "Estágio",
+     "termos": [
+      "estagio supervisionado",
+      "estagiario",
+      "estagiarios",
+      "programa de estagio",
+      "estagio de estudantes"
+     ]
+    },
+    {
+     "tema": "Ética, disciplina e assédio",
+     "termos": [
+      "etica",
+      "disciplinar",
+      "sindicancia",
+      "processo administrativo disciplinar",
+      "assedio",
+      "discriminacao",
+      "conduta",
+      "correicional de servidores",
+      "integridade"
+     ]
+    },
+    {
+     "tema": "Magistratura",
+     "termos": [
+      "magistrado",
+      "magistrados",
+      "juiz substituto",
+      "juizes substitutos",
+      "vitaliciamento",
+      "promocao de juizes",
+      "promocao para o cargo de juiz",
+      "antiguidade dos magistrados",
+      "convocacao de juizes",
+      "juiz convocado",
+      "residirem fora",
+      "residencia do magistrado",
+      "auxiliar da presidencia",
+      "quinto constitucional",
+      "desembargadores"
+     ]
+    }
+   ]
+  },
+  {
+   "grupo": "Governança e estrutura",
+   "temas": [
+    {
+     "tema": "Estrutura organizacional e competências",
+     "termos": [
+      "estrutura administrativa",
+      "estrutura organizacional",
+      "organograma",
+      "regimento interno",
+      "regulamento geral",
+      "emenda regimental",
+      "atribuicoes",
+      "cria o nucleo",
+      "cria a secretaria",
+      "cria a coordenadoria",
+      "cria a divisao",
+      "cria a secao",
+      "cria o setor",
+      "unidades administrativas",
+      "denominacao",
+      "vincula a unidade",
+      "subordinacao",
+      "nomenclatura",
+      "altera a denominacao",
+      "fluxo permanente",
+      "protocolo integrado"
+     ]
+    },
+    {
+     "tema": "Comitês, comissões e grupos de trabalho",
+     "termos": [
+      "comite",
+      "comites",
+      "comissao",
+      "comissoes",
+      "grupo de trabalho",
+      "grupos de trabalho",
+      "grupo gestor",
+      "conselho",
+      "subcomite",
+      "colegiado",
+      "colegiados",
+      "equipe de"
+     ]
+    },
+    {
+     "tema": "Planejamento, governança e riscos",
+     "termos": [
+      "planejamento estrategico",
+      "plano estrategico",
+      "governanca",
+      "gestao de riscos",
+      "riscos",
+      "plano de gestao",
+      "metas",
+      "indicadores",
+      "relatorio de gestao",
+      "relatorio de atividades",
+      "prestacao de contas",
+      "auditoria",
+      "controle interno",
+      "transparencia",
+      "ouvidoria",
+      "sustentabilidade",
+      "logistica sustentavel",
+      "descarbonizacao",
+      "programa de integridade",
+      "tomada de contas",
+      "contas anuais",
+      "socioambiental",
+      "responsabilidade social"
+     ]
+    },
+    {
+     "tema": "Delegação de competências",
+     "termos": [
+      "delega competencia",
+      "delegacao de competencia",
+      "delega competencias",
+      "ordenador de despesas",
+      "ordenadora de despesas",
+      "fixa competencia",
+      "subdelega"
+     ]
+    },
+    {
+     "tema": "Proteção de dados (LGPD)",
+     "termos": [
+      "dados pessoais",
+      "protecao de dados",
+      "lgpd",
+      "privacidade",
+      "encarregado pelo tratamento"
+     ]
+    }
+   ]
+  },
+  {
+   "grupo": "Administração e orçamento",
+   "temas": [
+    {
+     "tema": "Orçamento, finanças e contabilidade",
+     "termos": [
+      "orcamento",
+      "orcamentaria",
+      "orcamentario",
+      "despesa",
+      "despesas",
+      "financeira",
+      "financeiro",
+      "contabil",
+      "contabilidade",
+      "suprimento de fundos",
+      "empenho",
+      "custos",
+      "custeio"
+     ]
+    },
+    {
+     "tema": "Licitações e contratos",
+     "termos": [
+      "licitacao",
+      "licitacoes",
+      "contrato",
+      "contratos",
+      "contratacao",
+      "contratacoes",
+      "aquisicao",
+      "aquisicoes",
+      "compras",
+      "pregao",
+      "fiscalizacao de contratos",
+      "gestao de contratos",
+      "fornecedor",
+      "terceirizad"
+     ]
+    },
+    {
+     "tema": "Patrimônio, logística e segurança",
+     "termos": [
+      "patrimonio",
+      "patrimonial",
+      "bens moveis",
+      "bens permanentes",
+      "inventario",
+      "almoxarifado",
+      "material",
+      "veiculo",
+      "veiculos",
+      "garagem",
+      "estacionamento",
+      "imovel",
+      "imoveis",
+      "obras",
+      "edificio",
+      "predio",
+      "seguranca institucional",
+      "policia judicial",
+      "agentes de seguranca",
+      "agentes de policia",
+      "passagens aereas",
+      "cracha",
+      "acesso as dependencias",
+      "telefonia",
+      "celular",
+      "telefone",
+      "transporte oficial",
+      "frota",
+      "servico de transporte"
+     ]
+    },
+    {
+     "tema": "Gestão documental e comunicação",
+     "termos": [
+      "gestao documental",
+      "documentos",
+      "arquivo",
+      "arquivamento",
+      "eliminacao de autos",
+      "autos findos",
+      "memoria",
+      "biblioteca",
+      "comunicacao",
+      "publicacao",
+      "diario oficial",
+      "diario eletronico",
+      "dejt",
+      "boletim interno",
+      "identidade visual",
+      "imprensa",
+      "cerimonial",
+      "linguagem simples",
+      "padronizacao de documentos"
+     ]
+    }
+   ]
+  },
+  {
+   "grupo": "Tecnologia da informação",
+   "temas": [
+    {
+     "tema": "TI e segurança da informação",
+     "termos": [
+      "tecnologia da informacao",
+      "tic",
+      "seguranca da informacao",
+      "sistema",
+      "sistemas",
+      "informatica",
+      "pje",
+      "processo judicial eletronico",
+      "processo administrativo eletronico",
+      "pae",
+      "e-doc",
+      "peticionamento eletronico",
+      "assinatura digital",
+      "assinatura eletronica",
+      "certificado digital",
+      "certificacao digital",
+      "correio eletronico",
+      "internet",
+      "copias de seguranca",
+      "backup",
+      "controle de acesso logico",
+      "identidades",
+      "videoconferencia",
+      "inteligencia artificial",
+      "software",
+      "dados abertos",
+      "ciberseguranca",
+      "incidentes"
+     ]
+    }
+   ]
+  },
+  {
+   "grupo": "Atividade judicial",
+   "temas": [
+    {
+     "tema": "Funcionamento, prazos e expediente forense",
+     "termos": [
+      "prazos processuais",
+      "prazos judiciais",
+      "suspensao dos prazos",
+      "suspende os prazos",
+      "expediente forense",
+      "expediente interno",
+      "expediente externo",
+      "horario de funcionamento",
+      "horario de atendimento",
+      "recesso forense",
+      "ponto facultativo",
+      "feriado",
+      "plantao judiciario",
+      "distribuicao",
+      "redistribuicao de processos",
+      "audiencias",
+      "sessoes",
+      "pauta",
+      "atendimento ao publico",
+      "audiencia",
+      "peticoes",
+      "peticao",
+      "intimacoes",
+      "intimacao",
+      "protocolo",
+      "calendario",
+      "turma",
+      "turmas",
+      "tribunal pleno",
+      "sessao",
+      "feitos",
+      "autuacao",
+      "tramitacao"
+     ]
+    },
+    {
+     "tema": "Execução, precatórios e perícias",
+     "termos": [
+      "execucao",
+      "precatorio",
+      "precatorios",
+      "rpv",
+      "requisicoes de pequeno valor",
+      "pesquisa patrimonial",
+      "leilao",
+      "hasta publica",
+      "calculos",
+      "calculista",
+      "pericia",
+      "pericias",
+      "perito",
+      "peritos",
+      "honorarios periciais",
+      "deposito recursal",
+      "depositos judiciais",
+      "custas",
+      "sentencas liquidas",
+      "bacenjud",
+      "sisbajud",
+      "renajud",
+      "penhora"
+     ]
+    },
+    {
+     "tema": "Conciliação e métodos consensuais",
+     "termos": [
+      "conciliacao",
+      "cejusc",
+      "nupemec",
+      "mediacao",
+      "metodos consensuais",
+      "solucao de disputas",
+      "semana nacional da conciliacao",
+      "acordos"
+     ]
+    },
+    {
+     "tema": "Corregedoria, varas e oficiais de justiça",
+     "termos": [
+      "corregedoria",
+      "correicao",
+      "correicoes",
+      "provimento",
+      "oficial de justica",
+      "oficiais de justica",
+      "central de mandados",
+      "mandados",
+      "cartas precatorias",
+      "vara do trabalho",
+      "varas do trabalho",
+      "postos avancados",
+      "foro",
+      "forum",
+      "jurisdicao",
+      "competencia territorial",
+      "vinculacao de processos",
+      "suspeicao",
+      "impedimento"
+     ]
+    },
+    {
+     "tema": "Jurisprudência e precedentes",
+     "termos": [
+      "sumula",
+      "sumulas",
+      "jurisprudencia",
+      "uniformizacao",
+      "irdr",
+      "precedentes",
+      "incidente de resolucao",
+      "tese juridica",
+      "centro de inteligencia",
+      "nota tecnica"
+     ]
+    }
+   ]
+  },
+  {
+   "grupo": "Inclusão e equidade",
+   "temas": [
+    {
+     "tema": "Acessibilidade, inclusão e equidade",
+     "termos": [
+      "acessibilidade",
+      "inclusao",
+      "pessoa com deficiencia",
+      "pessoas com deficiencia",
+      "equidade",
+      "genero",
+      "racial",
+      "raca",
+      "diversidade",
+      "antidiscriminatoria",
+      "participacao feminina",
+      "primeira infancia"
+     ]
+    }
+   ]
+  }
+ ]
+}

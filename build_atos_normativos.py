@@ -568,7 +568,7 @@ RX_CONCRETO = re.compile(r"^\W*(?:"
     r"referenda\w*|aceita\w*|averba\w*|declara\w* (?:vag|vac)|vac[aâ]ncia|promo(?:ve|[cç][aã]o)\b|abono|"
     r"gabarito|resultado|calend[aá]rio de correi|edital|lista d|rela[cç][aã]o d[oe]s|autoriza a elimina|aprova (?:a|o) (?:escala|relat[oó]rio|calend|lista)|"
     r"retifica\w*|republica\w*|torna sem efeito|faz cessar|cessa\w*|exclui\w*|inclui\w* (?:o|a|os|as)? ?(?:servidor|magistrad|ju[ií]z)|"
-    r"determina\w*\s+(?:a\s+)?redistribui|participa\w*|estabelece\w*\s+a\s+escala|comunica\w*|lista tr[ií]plice|licen[cç]a (?:para|m[eé]dica|capacita)|afastamento d"
+    r"determina\w*\s+(?:a\s+)?redistribui|participa\w*|estabelece\w*\s+a\s+escala|comunica\w*|aprova\w*\s+(?:a|as|o|os)\s+(?:remo[cç]|promo[cç]|lota[cç]|indica[cç]|designa)|lista tr[ií]plice|licen[cç]a (?:para|m[eé]dica|capacita)|afastamento d"
     r")", re.I)
 # termos de norma geral (para descrições do portal, onde o verbo não abre o texto)
 RX_GERAL = re.compile(r"\b(?:regulament\w*|institu\w*|disp[oõ]e(?:m)? sobre|disciplin\w*|normatiz\w*|estabelece\w*\s+(?:normas|crit[eé]rios|regras|diretrizes|procedimentos)|"
@@ -592,6 +592,26 @@ def natureza(tipo, texto, livre=False):
     t = re.sub(r"^\s*(?:ad referendum[^,]*,\s*)", "", t, flags=re.I)
     t = re.sub(r"^\s*(?:republica[cç][aã]o|retifica[cç][aã]o|errata)\s*[-–:]\s*", "", t, flags=re.I)   # "Republicação - Altera o Ato..."
     return "e" if RX_CONCRETO.search(t[:220]) else "g"
+
+# ---------------------------------------------------------------- temas (dicionário editável em temas_atos.json)
+def carrega_temas(caminho="temas_atos.json"):
+    if not os.path.exists(caminho):
+        return [], []
+    T = json.load(open(caminho, encoding="utf-8"))
+    lista, regras = [], []
+    def rx(xs):
+        return re.compile("|".join(r"(?<![a-z0-9])" + re.escape(norm(x)) + (r"(?![a-z0-9])" if len(x) <= 5 else "") for x in xs)) if xs else None
+    for g in T["grupos"]:
+        for t in g["temas"]:
+            pos = [x for x in t["termos"] if not x.startswith("!")]
+            neg = [x[1:] for x in t["termos"] if x.startswith("!")]
+            lista.append({"grupo": g["grupo"], "tema": t["tema"]})
+            regras.append((rx(pos), rx(neg)))
+    return lista, regras
+
+def temas_do_texto(texto, regras):
+    t = norm(texto)
+    return [i for i, (pos, neg) in enumerate(regras) if pos and pos.search(t) and not (neg and neg.search(t))]
 
 # ---------------------------------------------------------------- principal
 def main():
@@ -807,6 +827,24 @@ def main():
         # citado: norma geral se modifica/complementa uma norma geral (ex.: altera o ato do teletrabalho)
         o["k"] = "g" if any(re.match(r"(alterad|revogad|altera|revoga|norma|regulament|complement|acrescent|retific|rerratific|referend|prorrog)", norm(x["rel"])) and enx[x["id"]].get("k") == "g" for x in c["ent"]) else "e"
         enx.append(o)
+    # temas: nome + ementa (300 car.) + títulos dos arquivos no portal; sem tema próprio, herda do ato que revoga/altera
+    temas_lista, temas_regras = carrega_temas(os.path.join(os.path.dirname(os.path.abspath(__file__)), "temas_atos.json"))
+    if temas_regras:
+        for o in enx:
+            tx = o["n"] + " | " + (o["e"] or "")[:300] + " | " + " | ".join(x[1] for x in (o.get("pdf") or [])[:2])
+            tm = temas_do_texto(tx, temas_regras)
+            if tm: o["tm"] = tm
+        for o in enx:
+            if "tm" in o: continue
+            herd = set()
+            for r in o.get("r", []):
+                if re.match(r"(revoga|altera|alterad|revogad|prorroga|regulament|complement|acrescent|norma)", norm(r["rel"])):
+                    for i in r["ids"]:
+                        herd.update(enx[i].get("tm", []))
+            if herd: o["tm"] = sorted(herd); o["th"] = 1   # tema herdado
+        meta["temas"] = temas_lista
+        meta["temas_cobertura"] = {"normas_gerais": sum(1 for o in enx if o.get("k") == "g"),
+                                   "com_tema": sum(1 for o in enx if o.get("k") == "g" and o.get("tm"))}
     with open(SAIDA, "w", encoding="utf-8") as f:
         json.dump({"meta": meta, "atos": enx}, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{n_compilacao} atos da compilação · {len(atos) - n_compilacao} só no site · {len(citados)} citados sem verbete · atualizado até {atualizado}")

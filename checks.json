@@ -554,7 +554,8 @@
       "f-nat",
       "Referência para despacho",
       "Linha do tempo",
-      "Em vigor hoje sobre o assunto"
+      "Em vigor hoje sobre o assunto",
+      "f-tema"
     ],
     "must_not_contain": [
       "CPF",
@@ -598,6 +599,16 @@
     "must_not_contain": [
       "github_pat_",
       "iframe"
+    ]
+  },
+  "temas_atos.json": {
+    "must_contain": [
+      "grupos",
+      "termos",
+      "Jornada, frequência e teletrabalho"
+    ],
+    "must_not_contain": [
+      "github_pat_"
     ]
   }
 }
