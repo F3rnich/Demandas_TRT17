@@ -549,7 +549,10 @@
       "sem verbete na compilação",
       "Só no site",
       "coletor_legislacao.html",
-      "Texto compilado — conteúdo em vigor"
+      "Texto compilado — conteúdo em vigor",
+      "noindex",
+      "f-nat",
+      "Referência para despacho"
     ],
     "must_not_contain": [
       "CPF",
@@ -587,7 +590,8 @@
       "sgp-hub-back",
       "coletor_legislacao",
       "legislacao_trt17_site.json",
-      "PAUSA = 6000"
+      "PAUSA = 6000",
+      "noindex"
     ],
     "must_not_contain": [
       "github_pat_",

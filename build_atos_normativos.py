@@ -547,7 +547,7 @@ def incorpora_site(atos, site):
             novos.append({"tipo": rot, "fam": fam, "nome": nome, "pub": "", "veic": "", "dpub": None,
                           "ano": chave[2], "num": chave[1] if chave[0] != "SEMNUM" else None,
                           "anum": chave[2] if chave[0] != "SEMNUM" else None, "un": un, "ementa": texto_site,
-                          "notas": [], "pg": None, "site": {"arq": arquivos, "txt": texto_site, "rev": rev_site}, "pasta": d0["pasta"]})
+                          "notas": [], "pg": None, "site": {"arq": arquivos, "txt": texto_site, "rev": rev_site}, "pasta": d0["pasta"], "assunto": assunto})
             st["so_site"] += 1
         st["arquivos"] += len(docs)
     base = len(atos)
@@ -555,6 +555,43 @@ def incorpora_site(atos, site):
         n["id"] = base + k
         atos.append(n)
     return st
+
+# ---------------------------------------------------------------- natureza: norma geral × efeito concreto
+# Efeito concreto = ato que se esgota num caso (designação, aposentadoria, escala, suspensão de prazo pontual, edital…).
+# Na dúvida, norma geral: é melhor mostrar um ato a mais do que esconder uma norma.
+RX_CONCRETO = re.compile(r"^\W*(?:"
+    r"design\w*|dispens\w*|nome(?:ia|a[cç][aã]o)|exonera\w*|aposent\w*|pens[aã]o|concede\w*|concess[aã]o d[eao] (?:aposent|pens|licen|abono|f[eé]rias|di[aá]ria|ajuda)|"
+    r"convoca\w*|remov\w*|remo[cç][aã]o|lota\w*|cede\b|cess[aã]o d[eao]|redistribu\w*|vincula\w*|desvincula\w*|reconduz\w*|substitui[cç][aã]o d[eoa]|"
+    r"homologa\w*|torna p[uú]blic\w*|publica (?:a|o) (?:lista|resultado|rela[cç])|indica\w*|elege\w*|elei[cç][aã]o|escala\b|escala de|"
+    r"suspen(?:de|s[aã]o)\b.{0,60}\b(?:prazo|expediente|atividade|distribui)|prorroga\w*\b.{0,60}\b(?:prazo|suspens|expediente)|"
+    r"(?:decreta|declara)\b.{0,30}ponto facultativo|ponto facultativo|altera,?\s+excepcionalmente|altera a composi[cç][aã]o|comp[oõ]e\b|"
+    r"referenda\w*|aceita\w*|averba\w*|declara\w* (?:vag|vac)|vac[aâ]ncia|promo(?:ve|[cç][aã]o)\b|abono|"
+    r"gabarito|resultado|calend[aá]rio de correi|edital|lista d|rela[cç][aã]o d[oe]s|autoriza a elimina|aprova (?:a|o) (?:escala|relat[oó]rio|calend|lista)|"
+    r"retifica\w*|republica\w*|torna sem efeito|faz cessar|cessa\w*|exclui\w*|inclui\w* (?:o|a|os|as)? ?(?:servidor|magistrad|ju[ií]z)|"
+    r"determina\w*\s+(?:a\s+)?redistribui|participa\w*|estabelece\w*\s+a\s+escala|comunica\w*|lista tr[ií]plice|licen[cç]a (?:para|m[eé]dica|capacita)|afastamento d"
+    r")", re.I)
+# termos de norma geral (para descrições do portal, onde o verbo não abre o texto)
+RX_GERAL = re.compile(r"\b(?:regulament\w*|institu\w*|disp[oõ]e(?:m)? sobre|disciplin\w*|normatiz\w*|estabelece\w*\s+(?:normas|crit[eé]rios|regras|diretrizes|procedimentos)|"
+                      r"pol[ií]tica|regimento|norma de|cria\w*\b|fixa\w*\s+(?:o valor|crit|normas)|delega\w* compet|define\w*|aprova\w* (?:o regulamento|a pol[ií]tica|o plano|a norma))", re.I)
+RX_CONCRETO_LIVRE = re.compile(r"\b(?:design\w*|aposent\w*|pens[aã]o|convoca\w*|redistribu\w*|remo[cç][aã]o|lista tr[ií]plice|elei[cç][aã]o|escala de f[eé]rias|"
+                      r"suspen\w*\s+(?:dos\s+|os\s+)?prazos|prorroga\w*\s+(?:dos\s+|os\s+)?prazos|ponto facultativo|vincula\w*|homologa\w*|nomea\w*|exonera\w*|"
+                      r"concede\w*|concess[aã]o de (?:aposent|pens|licen|abono)|vac[aâ]ncia|promo[cç][aã]o|participa[cç][aã]o (?:no|na|em)|recondu\w*|substitui[cç][aã]o d)", re.I)
+TIPOS_CONCRETOS = {"Edital", "Apostila", "Escala / Lista / Resultado", "Despacho", "Ata", "Extrato", "Acórdão", "Decisão administrativa", "Aviso", "Comunicado"}
+
+def natureza(tipo, texto, livre=False):
+    """livre=True: descrição do portal ('O Tribunal publicou a RA nº X, que designa...'): vale o 1º termo encontrado."""
+    if tipo in TIPOS_CONCRETOS:
+        return "e"
+    if livre:
+        t = (texto or "")[:300]
+        mc, mg = RX_CONCRETO_LIVRE.search(t), RX_GERAL.search(t)
+        if mc and (not mg or mc.start() < mg.start()):
+            return "e"
+        return "g"
+    t = re.sub(r"^\s*(?:o|a)\s+(?:presidente|desembargador\w*|tribunal)[^,]{0,120},\s*", "", texto or "", flags=re.I)  # "O Presidente..., no uso..., resolve"
+    t = re.sub(r"^\s*(?:ad referendum[^,]*,\s*)", "", t, flags=re.I)
+    t = re.sub(r"^\s*(?:republica[cç][aã]o|retifica[cç][aã]o|errata)\s*[-–:]\s*", "", t, flags=re.I)   # "Republicação - Altera o Ato..."
+    return "e" if RX_CONCRETO.search(t[:220]) else "g"
 
 # ---------------------------------------------------------------- principal
 def main():
@@ -747,6 +784,12 @@ def main():
         o = {"i": a["id"], "t": a["tipo"], "n": a["nome"], "p": a["pub"], "v": a["veic"], "d": a["dpub"],
              "a": a["ano"], "u": a["un"], "e": a["ementa"], "o": a["notas"], "pg": a["pg"], "s": a["st"]}
         if a["st_origem"] in ("ementa", "site"): o["so"] = a["st_origem"]
+        if len(a.get("assunto") or "") >= 8:
+            o["k"] = natureza(a["tipo"], a["assunto"])                        # assunto do título no portal
+        elif a["pg"] is not None:
+            o["k"] = natureza(a["tipo"], a["ementa"] or a["nome"])           # ementa oficial da compilação
+        else:
+            o["k"] = natureza(a["tipo"], a["ementa"] or a["nome"], livre=True)  # descrição longa do portal
         o["f"] = ("cs" if a["pg"] is not None else "s") if "site" in a else "c"
         if "site" in a:
             o["pdf"] = a["site"]["arq"]
@@ -761,6 +804,8 @@ def main():
     for c in citados:
         o = {"i": c["id"], "t": c["tipo"], "n": c["nome"], "p": c["pub"], "v": "", "d": c["dpub"], "a": c["ano"],
              "u": c["un"], "e": c["ementa"], "o": [], "pg": None, "s": "citado", "x": c["ent"], "f": "x"}
+        # citado: norma geral se modifica/complementa uma norma geral (ex.: altera o ato do teletrabalho)
+        o["k"] = "g" if any(re.match(r"(alterad|revogad|altera|revoga|norma|regulament|complement|acrescent|retific|rerratific|referend|prorrog)", norm(x["rel"])) and enx[x["id"]].get("k") == "g" for x in c["ent"]) else "e"
         enx.append(o)
     with open(SAIDA, "w", encoding="utf-8") as f:
         json.dump({"meta": meta, "atos": enx}, f, ensure_ascii=False, separators=(",", ":"))

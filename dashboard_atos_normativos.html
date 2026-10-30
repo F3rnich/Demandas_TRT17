@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>Atos Normativos — TRT-17</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -175,6 +176,11 @@
           <option value="site">Só no site do TRT</option>
         </select></div>
         <div><label for="f-un">Unidade emissora (sigla)</label><select id="f-un"></select></div>
+        <div><label for="f-nat">Natureza</label><select id="f-nat">
+          <option value="g">Normas gerais</option>
+          <option value="e">Atos de efeito concreto</option>
+          <option value="t">Todos</option>
+        </select></div>
         <div><label for="f-veic">Fonte</label><select id="f-veic">
           <option value="">Todas</option>
           <option value="cp">Com texto compilado (não revogados)</option>
@@ -245,7 +251,8 @@ const ABREV = {ra:'resolucao administrativa', os:'ordem de servico', in:'instruc
   prov:'provimento', port:'portaria', rec:'recomendacao', nt:'nota tecnica', ac:'ato conjunto'};
 
 let D, A, META, HAY = [], CIT = [];
-let st = {q:'', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'};
+let st = {q:'', nat:'g', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'};
+let ocultos = 0;
 let lista = [], mostrados = 0, termos = null;
 let pilha = [], atual = null;
 
@@ -374,6 +381,10 @@ function filtra(){
   termos = parseQ(st.q);
   const a0 = +st.a0 || 0, a1 = +st.a1 || 9999;
   const res = [];
+  // busca por número ("RA 49/2026") encontra o ato qualquer que seja a natureza
+  const porNumero = !!termos && termos.todos.some(t => /^\d+\/\d{4}$/.test(t));
+  const usaNat = st.nat !== 't' && !porNumero;
+  ocultos = 0;
   for (const a of A){
     if (st.tipo && a.t !== st.tipo) continue;
     if (st.s){
@@ -405,6 +416,7 @@ function filtra(){
       // norma com texto compilado e não revogada: reúne as alterações e traz o conteúdo em vigor
       if (a.cp && a.s !== 'revogado') sc += 60;   // preferência: supera o peso de ter os termos no título
     }
+    if (usaNat && (a.k || 'g') !== st.nat) { ocultos++; continue; }
     res.push([a, sc]);
   }
   const ord = st.ord === 'rel' && !termos ? 'rec' : st.ord;
@@ -438,7 +450,9 @@ function roda(){
   lista = filtra(); mostrados = 0;
   $('res').innerHTML = '';
   const n = lista.length;
-  $('count').innerHTML = n ? `<b>${n.toLocaleString('pt-BR')}</b> ato${n > 1 ? 's' : ''} encontrado${n > 1 ? 's' : ''}` : '';
+  $('count').innerHTML = (n ? `<b>${n.toLocaleString('pt-BR')}</b> ato${n > 1 ? 's' : ''} encontrado${n > 1 ? 's' : ''}` : '') +
+    (ocultos && st.nat === 'g' ? ` · <a href="#" id="ver-todos" title="Designações, aposentadorias, escalas, suspensões de prazo, editais…">+ ${ocultos.toLocaleString('pt-BR')} de efeito concreto</a>` : '');
+  const vt = $('ver-todos'); if (vt) vt.onclick = e => { e.preventDefault(); st.nat = 't'; aplicaUI(); roda(); };
   if (!n) $('res').innerHTML = '<div class="vazio">Nenhum ato atende à busca e aos filtros. Tente menos palavras, troque “Buscar em” para incluir as notas, ou limpe os filtros.</div>';
   mais(); hist(); chips(); escreveHash();
 }
@@ -456,7 +470,7 @@ function cartao(a){
   return `<article class="ato ${a.s}" data-i="${a.i}" tabindex="0">
     <div class="top"><span class="ttl">${realca(a.n)}</span><span class="pub">${esc(a.p || (a.f === 's' ? 'publicação: ' + (a.a || 's/ano') : ''))}</span></div>
     <div class="em">${a.s === 'citado' ? '<span style="color:var(--txt-2)">Ementa não disponível. Citações: </span>' : ''}${realca(a.e) || '<i style="color:var(--txt-2)">(sem ementa na compilação)</i>'}</div>
-    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}${a.cp ? `<span class="tag cpl">Texto compilado</span>` : ''}${a.pdf ? `<a class="tag pdf" href="${esc(a.pdf[0][0])}" target="_blank" rel="noopener" data-pdf="1">${a.pdf[0][2] === 'c' ? 'PDF compilado ↗' : 'PDF ↗'}</a>` : ''}</div>
+    <div class="mt"><span class="tag ${a.s}">${ST_ROT[a.s]}</span><span class="tag tp">${esc(a.t)}</span>${a.s === 'citado' ? '' : ''}${nv ? `<span class="tag lk">${nv} vínculo${nv > 1 ? 's' : ''}</span>` : ''}${a.o && a.o.length ? `<span class="tag tp">${a.o.length} nota${a.o.length > 1 ? 's' : ''}</span>` : ''}${a.k === 'e' && st.nat !== 'e' ? `<span class="tag tp">efeito concreto</span>` : ''}${a.cp ? `<span class="tag cpl">Texto compilado</span>` : ''}${a.pdf ? `<a class="tag pdf" href="${esc(a.pdf[0][0])}" target="_blank" rel="noopener" data-pdf="1">${a.pdf[0][2] === 'c' ? 'PDF compilado ↗' : 'PDF ↗'}</a>` : ''}</div>
   </article>`;
 }
 
@@ -497,11 +511,13 @@ function chips(){
   if (st.tipo) c.push(['tipo', 'Tipo: ' + st.tipo]);
   if (st.s) c.push(['s', 'Situação: ' + (ST_ROT[st.s] || ST_FILTRO[st.s] || st.s)]);
   if (st.un) c.push(['un', 'Unidade: ' + st.un]);
+  if (st.nat === 'e') c.push(['nat', 'Natureza: efeito concreto']);
+  if (st.nat === 't') c.push(['nat', 'Natureza: todos']);
   if (st.veic) c.push(['veic', 'Fonte: ' + ({cp:'com texto compilado', pdf:'com PDF no site', cs:'compilação e site', c:'só compilação', s:'só no site'}[st.veic] || st.veic)]);
   if (st.a0 || st.a1) c.push(['ano', 'Ano: ' + (st.a0 === st.a1 ? st.a0 : (st.a0 || '…') + '–' + (st.a1 || '…'))]);
   $('ativos').innerHTML = c.map(([k, t]) => `<button data-k="${k}">${esc(t)}</button>`).join('');
   $('ativos').querySelectorAll('button').forEach(b => b.onclick = () => {
-    const k = b.dataset.k; if (k === 'ano') { st.a0 = st.a1 = ''; } else st[k] = '';
+    const k = b.dataset.k; if (k === 'ano') { st.a0 = st.a1 = ''; } else if (k === 'nat') { st.nat = 'g'; } else st[k] = '';
     aplicaUI(); roda();
   });
   $('kpis').querySelectorAll('.kpi').forEach(b => b.classList.toggle('on', !!st.s && b.dataset.st === st.s));
@@ -562,13 +578,15 @@ function abre(id, empilha){
   if (ent.length) h += `<h4>Relações anotadas em outros atos (${ent.length})</h4><ul class="vinc">${lst(ent)}</ul>`;
   if (a.f === 's') h += `<div class="aviso" style="margin-top:14px">Este ato está no site do TRT-17 (pasta <b>${esc(a.ps || '')}</b>), mas não tem verbete na compilação em PDF. Por isso não há notas de alteração ou revogação; a situação só é indicada quando o próprio site ou a ementa de outro ato a registra.</div>`;
   h += a.f === 's' ? '' : a.s === 'citado' ? `<h4>Localização</h4><p class="pub">Sem verbete no PDF da compilação · ${esc(a.p)}</p>` : `<h4>Localização</h4><p class="pub">Página ${a.pg} do PDF da compilação · veículo: ${esc(a.v || '—')} · data: ${esc(fmtData(a.d) || '—')}</p>`;
-  h += `<p style="margin-top:14px"><button class="btn" id="b-copia">Copiar referência</button> <button class="btn" id="b-alink">Copiar link deste ato</button></p>`;
+  h += `<h4>Referência para despacho</h4><div class="nota" id="ref-txt" style="white-space:pre-wrap">${esc(referencia(a))}</div>`;
+  h += `<p style="margin-top:10px"><button class="btn pri" id="b-copia">Copiar referência</button> <button class="btn" id="b-copia2">Copiar com ementa</button> <button class="btn" id="b-alink">Copiar link deste ato</button></p>`;
   $('dr-b').innerHTML = h; $('dr-b').scrollTop = 0; $('dr').scrollTop = 0;
   $('dr').classList.add('on'); $('ov').classList.add('on'); $('dr').setAttribute('aria-hidden', 'false');
   $('dr-back').disabled = !pilha.length;
   const pos = lista.indexOf(a);
   $('dr-prev').disabled = pos <= 0; $('dr-next').disabled = pos < 0 || pos >= lista.length - 1;
-  $('b-copia').onclick = () => copia(a.s === 'citado' ? `${a.n} (${a.p})` : `${a.n} (${a.p}). ${a.e}`, $('b-copia'));
+  $('b-copia').onclick = () => copia(referencia(a), $('b-copia'));
+  $('b-copia2').onclick = () => copia(referencia(a, true), $('b-copia2'));
   $('b-alink').onclick = () => copia(location.href.split('#')[0] + '#ato=' + a.i, $('b-alink'));
   history.replaceState(null, '', '#' + hashStr() + (hashStr() ? '&' : '') + 'ato=' + a.i);
 }
@@ -583,12 +601,34 @@ function relEmentaSai(v){ return v === 'cita' ? 'citado na ementa' : v; }
 // ementa de outro ato X: "Revoga <este>" -> X "revoga este ato"
 function relEmentaEnt(v){ return v === 'cita' ? 'cita este ato na ementa' : v + ' este ato'; }
 function fecha(){ $('dr').classList.remove('on'); $('ov').classList.remove('on'); $('dr').setAttribute('aria-hidden', 'true'); atual = null; pilha = []; escreveHash(); }
+// "Ato TRT 17ª PRESI Nº 21/2026, publicado no DEJT de 12/03/2026, alterado pelos Atos ... Texto compilado (26/01/2026): URL"
+function referencia(a, comEmenta){
+  const fem = /^(Resolu|Portaria|Instru|Ordem|Recomenda|Nota|Emenda|Ata|Apostila|Decis|Escala)/.test(a.t || '');
+  const o_a = fem ? 'a' : 'o';
+  const pub = (() => {
+    const m = (a.p || '').match(/(DEJT|D\.\s*O\.(?:\s*TRT\s*17\S*)?|B\.\s*I\.(?:\s*TRT\s*17\S*)?(?:\s*n\S*\s*[\d\/]+)?)\s*(?:de\s*)?[-–]?\s*(\d{1,2}\/\d{1,2}\/\d{2,4}|[a-zç]+\/\d{2,4})/i);
+    if (m) return `publicad${o_a} no ${m[1].replace(/\s+/g, ' ').trim()} de ${m[2]}`;
+    if (a.d) return `publicad${o_a} em ` + fmtData(a.d);
+    return a.a ? 'de ' + a.a : '';
+  })();
+  const alt = [...new Set((a.r || []).filter(r => r.de === 'nota' && /^alterad|^rerratific|^retificad/.test(r.rel)).flatMap(r => r.ids))].map(i => A[i].n);
+  const lista = xs => xs.length <= 1 ? xs.join('') : xs.slice(0, -1).join(', ') + ' e ' + xs[xs.length - 1];
+  let t = a.n + (pub ? ', ' + pub : '');
+  if (alt.length) t += `; alterad${o_a} por ${lista(alt.slice(0, 6))}${alt.length > 6 ? ' e outros' : ''}`;
+  if (a.s === 'revogado') t += a.rp != null ? ` (revogad${o_a} por ${A[a.rp].n})` : ` (revogad${o_a})`;
+  t += '.';
+  if (comEmenta && a.e && a.s !== 'citado') t += ' ' + a.e.replace(/\s+/g, ' ').trim() + (/[.!?]$/.test(a.e.trim()) ? '' : '.');
+  const c = (a.pdf || []).find(x => x[2] === 'c');
+  if (c) t += ` Texto compilado${c[3] ? ' (' + (c[3].endsWith('-00-00') ? c[3].slice(0, 4) : c[3].split('-').reverse().join('/')) + ')' : ''}: ${c[0]}`;
+  else if (a.pdf && a.pdf[0]) t += ` Texto: ${a.pdf[0][0]}`;
+  return t;
+}
 function copia(t, b){ navigator.clipboard.writeText(t).then(() => { const o = b.textContent; b.textContent = 'Copiado ✓'; setTimeout(() => b.textContent = o, 1400); }); }
 
 // ------------------------------------------------------------- estado / URL
 function hashStr(){
   const p = new URLSearchParams();
-  Object.entries(st).forEach(([k, v]) => { if (v && !(k === 'onde' && v === 'tudo') && !(k === 'ord' && v === 'rel')) p.set(k, v); });
+  Object.entries(st).forEach(([k, v]) => { if (v && !(k === 'onde' && v === 'tudo') && !(k === 'ord' && v === 'rel') && !(k === 'nat' && v === 'g')) p.set(k, v); });
   return p.toString();
 }
 function escreveHash(){ const h = hashStr(); history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); }
@@ -598,7 +638,7 @@ function lerHash(){
   if (p.has('ato')) setTimeout(() => abre(+p.get('ato'), false), 0);
 }
 function aplicaUI(){
-  $('q').value = st.q; $('f-tipo').value = st.tipo; $('f-st').value = st.s; $('f-un').value = st.un; $('f-veic').value = st.veic;
+  $('q').value = st.q; $('f-tipo').value = st.tipo; $('f-st').value = st.s; $('f-un').value = st.un; $('f-veic').value = st.veic; $('f-nat').value = st.nat;
   $('f-a0').value = st.a0; $('f-a1').value = st.a1; $('f-onde').value = st.onde; $('ord').value = st.ord;
 }
 
@@ -615,9 +655,9 @@ function csv(){
 function bind(){
   let t = null;
   $('q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { st.q = e.target.value; roda(); }, 180); });
-  [['f-tipo', 'tipo'], ['f-st', 's'], ['f-un', 'un'], ['f-veic', 'veic'], ['f-a0', 'a0'], ['f-a1', 'a1'], ['f-onde', 'onde'], ['ord', 'ord']]
+  [['f-nat', 'nat'], ['f-tipo', 'tipo'], ['f-st', 's'], ['f-un', 'un'], ['f-veic', 'veic'], ['f-a0', 'a0'], ['f-a1', 'a1'], ['f-onde', 'onde'], ['ord', 'ord']]
     .forEach(([id, k]) => $(id).addEventListener('change', e => { st[k] = e.target.value; roda(); }));
-  $('b-limpa').onclick = () => { st = {q:'', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'}; aplicaUI(); roda(); $('q').focus(); };
+  $('b-limpa').onclick = () => { st = {q:'', nat:'g', tipo:'', s:'', un:'', veic:'', a0:'', a1:'', onde:'tudo', ord:'rel'}; aplicaUI(); roda(); $('q').focus(); };
   $('b-csv').onclick = csv;
   $('b-link').onclick = () => copia(location.href, $('b-link'));
   $('res').addEventListener('click', e => { if (e.target.closest('[data-pdf]')) return; const c = e.target.closest('.ato'); if (c) abre(+c.dataset.i, false); });
