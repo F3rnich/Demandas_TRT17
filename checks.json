@@ -551,11 +551,15 @@
       "coletor_legislacao.html",
       "Texto compilado — conteúdo em vigor",
       "noindex",
-      "f-nat",
+      "data-k=\"nat\"",
       "Referência para despacho",
       "Linha do tempo",
       "Em vigor hoje sobre o assunto",
-      "f-tema"
+      "f-tema",
+      "data-k=\"sit\"",
+      "Mais filtros",
+      "Norma em vigor mais relevante",
+      "Texto a usar hoje"
     ],
     "must_not_contain": [
       "CPF",
