@@ -606,12 +606,18 @@ def carrega_temas(caminho="temas_atos.json"):
             pos = [x for x in t["termos"] if not x.startswith("!")]
             neg = [x[1:] for x in t["termos"] if x.startswith("!")]
             lista.append({"grupo": g["grupo"], "tema": t["tema"]})
-            regras.append((rx(pos), rx(neg)))
+            ign = re.compile("|".join(re.escape(norm(x)) for x in t.get("ignorar", []))) if t.get("ignorar") else None
+            regras.append((rx(pos), rx(neg), ign))
     return lista, regras
 
 def temas_do_texto(texto, regras):
     t = norm(texto)
-    return [i for i, (pos, neg) in enumerate(regras) if pos and pos.search(t) and not (neg and neg.search(t))]
+    out = []
+    for i, (pos, neg, ign) in enumerate(regras):
+        tt = ign.sub(" ", t) if ign else t      # expressões que não contam para este tema
+        if pos and pos.search(tt) and not (neg and neg.search(tt)):
+            out.append(i)
+    return out
 
 # ---------------------------------------------------------------- principal
 def main():

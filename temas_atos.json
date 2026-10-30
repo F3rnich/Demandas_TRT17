@@ -1,6 +1,6 @@
 {
- "_como_editar": "Cada tema tem 'termos': trechos procurados no início das palavras do nome, da ementa e do assunto do ato, sem acento e em minúsculas ('ferias' casa com 'férias'). Um ato pode ter vários temas. Termos com espaço exigem a expressão inteira. Termos iniciados por '!' excluem o tema quando presentes.",
- "versao": 1,
+ "_como_editar": "Cada tema tem 'termos': trechos procurados no início das palavras do nome, da ementa e do assunto do ato, sem acento e em minúsculas ('ferias' casa com 'férias'). Um ato pode ter vários temas. Termos com espaço exigem a expressão inteira. Termos iniciados por '!' excluem o tema quando presentes. 'ignorar' (opcional): expressões apagadas do texto antes de testar aquele tema (ex.: 'cargo em comissao' não é comissão/colegiado).",
+ "versao": 2,
  "grupos": [
   {
    "grupo": "Gestão de Pessoas",
@@ -239,6 +239,14 @@
       "colegiado",
       "colegiados",
       "equipe de"
+     ],
+     "ignorar": [
+      "cargo em comissao",
+      "cargos em comissao",
+      "funcao comissionada",
+      "funcoes comissionadas",
+      "em comissao",
+      "comissionad"
      ]
     },
     {
