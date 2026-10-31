@@ -8,7 +8,18 @@
 > Roteiro do modo assistido: passo 1 e 2 abaixo; passo 3 para saber quais pastas abrir (`_rotulos` de `/tmp/alvos.json`: as pastas de 2026
 > e as seções sem subpasta por ano, e as pastas-mãe para ver se surgiu pasta nova); o Leo abre uma por vez e avisa; o Claude extrai os
 > documentos novos da aba e monta `/tmp/resultado.json` no formato do coletor (`pastas`, `novos`, `paginas_incompletas`, `bloqueado`);
-> depois seguem os passos 5 a 8. O jeito exato de extrair da aba (DOM ou respostas de rede) fica registrado aqui após a 1ª execução.
+> depois seguem os passos 5 a 8. Inclua em `/tmp/resultado.json` a lista `"visitadas"` (ids das pastas de anos anteriores que o Leo abriu),
+> para o rodízio saber o que já foi revisto.
+>
+> **Pastas de anos anteriores** (lista `antigas` dos alvos, com o motivo de cada uma). Compilados/consolidados e marcações de "Revogada"
+> entram na pasta do ano do ato ORIGINAL (em 2026: ~5 por mês; metade no mesmo dia da alteração, o resto em até 9 meses). Dois gatilhos,
+> estado em `fontes/atos_normativos/acompanhamento_pastas_antigas.json`:
+> - *pendência*: ato novo que altera/revoga ato antigo -> a pasta do original entra toda semana (até 6 por semana) até aparecer o
+>   compilado/consolidado/marcação, ou por 365 dias. Recalculadas a cada `incorpora` (ou `incorpora_coleta_site.py pendencias`).
+> - *rodízio*: 3 pastas antigas "ativas" (já receberam documento tardio desde 2026; ~26 pastas, ciclo de ~2 meses) + 1 "quieta" por semana.
+> - A confirmar na 1ª coleta assistida: se a página da pasta-mãe mostra o nº de documentos de cada pasta de ano. Se mostrar, comparar com
+>   `n` da base e abrir também as pastas cujo número mudou.
+> - Não detecta arquivo trocado em documento existente (contagem não muda): a coleta completa ocasional cobre. O jeito exato de extrair da aba (DOM ou respostas de rede) fica registrado aqui após a 1ª execução.
 
 Objetivo: trazer para o painel `dashboard_atos_normativos.html` os atos publicados na seção Legislação do portal do TRT-17
 na última semana e, quando o Leo tiver baixado um PDF novo da compilação oficial, reprocessar a compilação.
