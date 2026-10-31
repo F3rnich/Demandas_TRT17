@@ -1,4 +1,14 @@
-# Rotina semanal — atualização dos atos normativos (sábados, ~8h47 de Brasília)
+# Rotina semanal — atualização dos atos normativos (modo assistido, sábados)
+
+> **Desde 31/10/2026 a coleta é ASSISTIDA.** Na execução automática de 31/10 o firewall do portal bloqueou o 1º pedido (HTTP 202).
+> A tarefa agendada (sábados ~9h53) agora só manda um lembrete ao Leo; ela não acessa o portal.
+> A coleta acontece numa conversa com o Leo presente: ele navega pelas pastas no Chrome dele, no ritmo de uma pessoa, e o Claude
+> lê o que já está carregado na aba (texto da página, DOM, respostas que a própria página buscou), **sem disparar pedidos próprios ao portal**
+> (nada de `coletor_semanal.js` em série nem `fetch` à API). Se o portal mostrar desafio/CAPTCHA, quem resolve é o Leo; o Claude não.
+> Roteiro do modo assistido: passo 1 e 2 abaixo; passo 3 para saber quais pastas abrir (`_rotulos` de `/tmp/alvos.json`: as pastas de 2026
+> e as seções sem subpasta por ano, e as pastas-mãe para ver se surgiu pasta nova); o Leo abre uma por vez e avisa; o Claude extrai os
+> documentos novos da aba e monta `/tmp/resultado.json` no formato do coletor (`pastas`, `novos`, `paginas_incompletas`, `bloqueado`);
+> depois seguem os passos 5 a 8. O jeito exato de extrair da aba (DOM ou respostas de rede) fica registrado aqui após a 1ª execução.
 
 Objetivo: trazer para o painel `dashboard_atos_normativos.html` os atos publicados na seção Legislação do portal do TRT-17
 na última semana e, quando o Leo tiver baixado um PDF novo da compilação oficial, reprocessar a compilação.
