@@ -203,3 +203,12 @@ Os temas vêm de `temas_atos.json` (grupos → temas → termos). Para corrigir 
 acrescentar, edite os termos e rode o `build_atos_normativos.py` de novo: o
 painel lê os temas do JSON gerado. Ato sem tema próprio herda o tema do ato que
 revoga ou altera.
+
+### Atualização semanal automática (sábados)
+
+Uma tarefa agendada roda todo sábado (~8h47) seguindo `rotinas/atualizacao_atos_normativos.md`:
+coleta incremental no Chrome do Leo (`rotinas/coletor_semanal.js`, ~30 pedidos espaçados de 6 s; para no primeiro
+bloqueio do firewall), junta os documentos novos à base (`incorpora_coleta_site.py`), reprocessa o painel e publica.
+As fontes ficam em `fontes/atos_normativos/` (`compilacao.pdf` e `legislacao_trt17_site.json`). Para atualizar o PDF da
+compilação, basta salvar a versão nova na pasta Downloads do computador do Leo: a rotina pega o arquivo se a data
+"atualizado até" for mais recente.

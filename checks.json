@@ -614,5 +614,26 @@
     "must_not_contain": [
       "github_pat_"
     ]
+  },
+  "incorpora_coleta_site.py": {
+    "must_contain": [
+      "alvos",
+      "incorpora",
+      "fontes/atos_normativos/legislacao_trt17_site.json"
+    ],
+    "must_not_contain": [
+      "github_pat_"
+    ]
+  },
+  "rotinas/coletor_semanal.js": {
+    "must_contain": [
+      "__coletaSemanal",
+      "202",
+      "PAUSA = 6000"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "aws-waf-token"
+    ]
   }
 }
