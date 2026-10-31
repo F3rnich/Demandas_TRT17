@@ -50,5 +50,6 @@ fechar_pendencias.py
 rbc_src/casos/
 node_modules
 
-# Coleta bruta do portal (entra só o JSON processado)
-legislacao_trt17_site.json
+# Coleta bruta do portal: só a base versionada da rotina semanal (fontes/atos_normativos/) entra
+legislacao_trt17_site*.json
+!fontes/atos_normativos/legislacao_trt17_site.json
