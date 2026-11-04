@@ -73,6 +73,18 @@ input[type=text],input[type=date],input[type=number],select{background:var(--pap
 .linha .rm{position:absolute;top:4px;right:4px}
 .linha .info{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
 .linha .flags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px}
+.vinc{display:flex;flex-direction:column;gap:16px}
+.vinc .campo{display:flex;flex-direction:column;gap:4px}
+.vinc .campo > label input{max-width:220px}
+.vinc .dica{margin:0;font-size:12.5px;color:var(--mute);font-weight:400}
+.opc{font-weight:400;font-size:12px;color:var(--mute);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0 7px;margin-left:4px}
+.vinc label{flex-direction:column}
+.vinc label.chk{flex-direction:row}
+.vinc .rot{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.vinc .rot .opc{margin:0}
+details.ex{font-size:12.5px}
+details.ex > summary{cursor:pointer;color:var(--navy);font-weight:600;width:max-content}
+details.ex ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .marcos{display:flex;flex-direction:column;gap:4px;background:var(--navy-soft);border-radius:8px;padding:10px 12px;font-size:13px}
 .marcos .m{display:flex;gap:8px;align-items:baseline}
 .marcos .m b{min-width:28px}
@@ -195,14 +207,43 @@ td.dt{white-space:nowrap;font-weight:700}
 
   <section class="bloco">
     <h2><span class="n">2</span>Vínculo e marcos de ingresso</h2>
-    <p class="intro">Em ordem cronológica. Só o exercício no Tribunal é obrigatório: campo vazio usa a data do campo seguinte.</p>
-    <div class="campos">
-      <label>1º · Ingresso no serviço público <input type="date" name="ingressoSP"><span class="dica">Primeira posse em cargo público (município, estado ou União), sem nenhum dia de interrupção até hoje. <span data-auto="ingressoSP"></span></span></label>
-      <label>2º · Ingresso na carreira <input type="date" name="ingressoCarreira"><span class="dica">Só pesa em regras anteriores a 2019, que exigem 10 ou 15 anos de carreira. <span data-auto="ingressoCarreira"></span></span></label>
-      <label>3º · Ingresso no cargo atual <input type="date" name="ingressoCargo"><span class="dica">Cargo em que vai se aposentar; conta os 5 anos no cargo. Muda se houve novo concurso ou redistribuição. <span data-auto="ingressoCargo"></span></span></label>
-      <label>4º · Exercício no Tribunal <input type="date" name="exercicio" required><span class="dica">Primeiro dia de trabalho no TRT-17. Vínculos anteriores vão no bloco 3.</span></label>
-      <div class="full" id="marcos" aria-live="polite"></div>
-      <label class="chk full" id="wrapRPC"><input type="checkbox" name="migrouRPC"> <span>Fez a opção formal de migrar para o regime complementar (Funpresp-Jud)<br><span class="dica">Só para quem ingressou antes de 14/10/2013 e assinou a migração. Efeito: sem integralidade e provento limitado ao teto do RGPS (mais o benefício especial).</span></span></label>
+    <p class="intro">Só a primeira data é obrigatória. As outras só precisam ser preenchidas quando forem diferentes — a tela mostra a data que está sendo usada.</p>
+    <div class="vinc">
+      <div class="campo">
+        <label>Exercício no TRT-17 <input type="date" name="exercicio" required></label>
+        <p class="dica">Primeiro dia de trabalho neste Tribunal.</p>
+      </div>
+      <div class="campo">
+        <label><span class="rot">Ingresso no cargo atual <span class="opc">se diferente</span></span> <input type="date" name="ingressoCargo"></label>
+        <p class="dica">Cargo em que a pessoa vai se aposentar. Conta os 5 anos no cargo. <span data-auto="ingressoCargo"></span></p>
+        <details class="ex"><summary>Quando é diferente?</summary>
+          <ul>
+            <li><b>Mudou de cargo no TRT-17.</b> Técnica desde 10/03/2010, tomou posse como analista em 05/08/2018 → exercício 10/03/2010; cargo atual 05/08/2018.</li>
+            <li><b>Chegou por redistribuição</b> (o cargo veio junto). Analista no TRT-1 desde 02/04/2012, redistribuída em 01/02/2020 → cargo atual 02/04/2012; exercício 01/02/2020; o período no TRT-1 vai no bloco 3.</li>
+            <li><b>Não muda</b> quando a pessoa veio de outro órgão por <b>novo concurso</b>: o cargo começa na posse no TRT-17.</li>
+          </ul>
+        </details>
+      </div>
+      <div class="campo">
+        <label><span class="rot">Ingresso no serviço público <span class="opc">se veio de outro órgão</span></span> <input type="date" name="ingressoSP"></label>
+        <p class="dica">Primeira posse em cargo público — município, estado ou União — sem nenhum dia de intervalo até hoje. Define integralidade, transição e teto. <span data-auto="ingressoSP"></span></p>
+        <details class="ex"><summary>Exemplos</summary>
+          <ul>
+            <li><b>Veio do MPF sem intervalo.</b> Posse no MPF em 25/11/2011, exercício no TRT-17 em 16/01/2016 → serviço público 25/11/2011. Informe o período do MPF no bloco 3.</li>
+            <li><b>Houve intervalo.</b> Professora municipal até 2008, ficou na iniciativa privada e tomou posse no TRT-17 em 2012 → serviço público 2012. O tempo de 2008 para trás entra no bloco 3, mas não antecipa este marco.</li>
+            <li><b>Primeiro emprego público é o TRT-17</b> → deixe vazio.</li>
+          </ul>
+        </details>
+      </div>
+      <div class="campo" id="wrapCarreira" hidden>
+        <label><span class="rot">Ingresso na carreira <span class="opc">se diferente do cargo</span></span> <input type="date" name="ingressoCarreira"></label>
+        <p class="dica">Aparece só porque o ingresso no serviço público é até 31/12/2003: duas regras antigas (EC 41, art. 6º; EC 47, art. 3º) exigem 10 ou 15 anos na carreira. No Judiciário da União, Analista Judiciário e Técnico Judiciário são carreiras distintas (Lei 11.416/2006, art. 2º). <span data-auto="ingressoCarreira"></span></p>
+        <details class="ex"><summary>Exemplo</summary>
+          <ul><li>Analista no TRF-2 desde 1997 e analista no TRT-17 desde 2005, sem intervalo → carreira 1997 (mesma carreira de Analista Judiciário); cargo atual 2005, salvo redistribuição.</li></ul>
+        </details>
+      </div>
+      <div id="marcos" aria-live="polite"></div>
+      <label class="chk" id="wrapRPC" hidden><input type="checkbox" name="migrouRPC"> <span>Fez a opção formal de migrar para o regime complementar (Funpresp-Jud)<br><span class="dica">Aparece porque o ingresso é anterior a 14/10/2013. Marque só se a pessoa assinou a migração. Efeito: sem integralidade e provento limitado ao teto do RGPS, mais o benefício especial.</span></span></label>
     </div>
   </section>
 
@@ -819,8 +860,8 @@ function ler() {
     sexo: f.querySelector('[name=sexo]:checked')?.value || 'M',
     nasc: v('nasc'), ref: v('ref') || hoje, cargo: v('cargo'),
     magistrado: v('cargo') === 'magistrado', policiaJudicial: v('cargo') === 'policia',
-    exercicio: v('exercicio'), ingressoCargo: v('ingressoCargo') || v('exercicio'), ingressoCarreira: v('ingressoCarreira') || v('ingressoCargo') || v('exercicio'), ingressoSP: v('ingressoSP') || v('ingressoCarreira') || v('ingressoCargo') || v('exercicio'),
-    migrouRPC: c('migrouRPC') && (M.d2n(v('ingressoSP') || v('ingressoCarreira') || v('ingressoCargo') || v('exercicio')) ?? 0) < M.MARCOS.RPC,
+    exercicio: v('exercicio'), ingressoCargo: datas().cg, ingressoCarreira: datas().cr, ingressoSP: datas().sp,
+    migrouRPC: c('migrouRPC') && (M.d2n(datas().sp) ?? Infinity) < M.MARCOS.RPC,
     periodos: lerLista('per'), deducoes: lerLista('ded').map(d => Object.assign(d, { dias: +d.dias || 0 })),
     lpDias: +v('lpDias') || 0, lpData: v('lpData'),
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
@@ -989,23 +1030,33 @@ function alternar(tr) {
 }
 
 let tm = null, ultimo = null;
+/* Datas efetivas: vazio herda do campo de referência */
+function datas() {
+  const v = k => f.elements[k].value;
+  const ex = v('exercicio'), cg = v('ingressoCargo') || ex;
+  const menor = [cg, ex].filter(Boolean).sort()[0] || '';
+  const sp = v('ingressoSP') || menor;
+  const carreiraVisivel = !!sp && M.d2n(sp) <= M.MARCOS.EC41;
+  const cr = (carreiraVisivel && v('ingressoCarreira')) || cg;
+  return { ex, cg, sp, cr, carreiraVisivel, menor };
+}
 function marcos() {
   const v = k => f.elements[k].value;
-  const ex = v('exercicio'), cg = v('ingressoCargo') || ex, cr = v('ingressoCarreira') || cg, sp = v('ingressoSP') || cr;
-  const auto = { ingressoCargo: [v('ingressoCargo'), ex, 'exercício'], ingressoCarreira: [v('ingressoCarreira'), cg, v('ingressoCargo') ? 'cargo' : 'exercício'],
-    ingressoSP: [v('ingressoSP'), cr, v('ingressoCarreira') ? 'carreira' : v('ingressoCargo') ? 'cargo' : 'exercício'] };
-  for (const k in auto) {
-    const [proprio, herdado, de] = auto[k], el = f.querySelector(`[data-auto="${k}"]`);
-    el.textContent = !proprio && herdado ? `Vazio: usando ${br(M.d2n(herdado))} (${de}).` : '';
-  }
+  const { ex, cg, sp, carreiraVisivel, menor } = datas();
+  const txt = (proprio, herdado, de) => !proprio && herdado ? `Vazio: usando ${br(M.d2n(herdado))} (${de}).` : '';
+  f.querySelector('[data-auto="ingressoCargo"]').textContent = txt(v('ingressoCargo'), ex, 'exercício no TRT-17');
+  f.querySelector('[data-auto="ingressoSP"]').textContent = txt(v('ingressoSP'), menor, menor === ex ? 'exercício no TRT-17' : 'cargo atual');
+  f.querySelector('[data-auto="ingressoCarreira"]').textContent = txt(v('ingressoCarreira'), cg, 'cargo atual');
+  $('#wrapCarreira').hidden = !carreiraVisivel;
+  if (!carreiraVisivel) f.elements.ingressoCarreira.value = '';
   const d = M.d2n(sp), box = $('#marcos'), wrap = $('#wrapRPC');
-  if (d == null) { box.innerHTML = ''; box.className = 'full'; wrap.hidden = false; return; }
+  if (d == null) { box.innerHTML = ''; box.className = ''; wrap.hidden = true; return; }
   const linha = (ok, txt) => `<div class="m"><b class="${ok ? 's' : 'n'}">${ok ? 'Sim' : 'Não'}</b><span>${txt}</span></div>`;
   const preRPC = d < M.MARCOS.RPC;
   wrap.hidden = !preRPC;
   if (!preRPC) f.elements.migrouRPC.checked = false;
   const mig = preRPC && f.elements.migrouRPC.checked;
-  box.className = 'full marcos';
+  box.className = 'marcos';
   box.innerHTML = `<div style="font-weight:700;margin-bottom:2px">Com ingresso no serviço público em ${br(d)}:</div>`
     + linha(d <= M.MARCOS.EC20, 'Regras antigas da EC 47 e do art. 2º da EC 41 (ingresso até 16/12/1998)')
     + linha(d <= M.MARCOS.EC41 && !mig, 'Integralidade e paridade (ingresso até 31/12/2003' + (mig ? '; perdida pela migração' : '') + ')')
