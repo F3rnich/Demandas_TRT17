@@ -415,8 +415,8 @@ function validar(x) {
   const erros = [], avisos = [];
   if (x.nasc == null) erros.push('Informe a data de nascimento.');
   if (x.exercicio == null) erros.push('Informe a data de início de exercício no Tribunal.');
-  if (x.ingressoCargo == null) erros.push('Informe a data de ingresso no cargo atual.');
-  if (x.ingressoSP == null) erros.push('Informe a data mais remota de ingresso no serviço público sem interrupção.');
+  if (x.exercicio != null && x.ingressoCargo == null) erros.push('Informe a data de ingresso no cargo atual.');
+  if (x.exercicio != null && x.ingressoSP == null) erros.push('Informe a data mais remota de ingresso no serviço público sem interrupção.');
   if (erros.length) return { erros, avisos };
   if (x.ingressoCargo < x.exercicio && !x.periodos.some(q => q.publico && q.ini <= x.ingressoCargo))
     avisos.push('O ingresso no cargo é anterior ao exercício no Tribunal e não há período público averbado que o cubra. Confira se o cargo é o mesmo (ex.: redistribuição).');
