@@ -13,7 +13,8 @@
       "dashboard_governanca_tcu.html",
       "dashboard_risco_sucessorio.html",
       "calculadora_rbc.html",
-      "dashboard_atos_normativos.html"
+      "dashboard_atos_normativos.html",
+      "calculadora_aposentadoria.html"
     ],
     "must_not_contain": [
       "dashboard_acoes_reestruturacao_2026.html",
@@ -634,6 +635,63 @@
     "must_not_contain": [
       "github_pat_",
       "aws-waf-token"
+    ]
+  },
+  "calculadora_aposentadoria.html": {
+    "must_contain": [
+      "<html",
+      "</html>",
+      "favicon.svg",
+      "sgp-hub-back",
+      "Calculadora de aposentadoria",
+      "MotorApos",
+      "pontosExigidos",
+      "noindex"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CPF",
+      "firebaseConfig",
+      "localStorage"
+    ]
+  },
+  "apos_src/motor.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "apos_src/template.html": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "apos_src/testes.js": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "apos_src/build.py": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
     ]
   }
 }

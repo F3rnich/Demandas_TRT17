@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Calculadora de aposentadoria</title>
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#003A5C;--navy2:#00466E;--navy-soft:#E4EDF3;--yellow:#FFD040;
+  --bg:#EEF2F5;--paper:#FFFFFF;--ink:#17242C;--mute:#55666F;--line:#D3DDE3;
+  --ok:#1E7A4C;--ok-soft:#DDF0E5;--att:#A3620A;--att-soft:#FBEBD2;--err:#A32A2A;--err-soft:#F7DEDE;--inbd:#A9B9C3;--larg:1360px;
+  --s-int:#1E7A4C;--s-med:#00669E;--s-adq:#7A4E9C;--s-comp:#55666F;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;
+  --ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--err:#E68A8A;--err-soft:#3A1A1A;--inbd:#56697A;
+  --s-int:#5CC18B;--s-med:#6CB4E4;--s-adq:#B99BD6;--s-comp:#9AABB4;color-scheme:dark}}
+:root[data-theme="dark"]{--navy:#7DB6DA;--navy2:#9CC8E4;--navy-soft:#1C2E3A;--bg:#11181D;--paper:#1A242B;--ink:#E5ECF0;--mute:#9AABB4;--line:#2F3E47;
+  --ok:#5CC18B;--ok-soft:#163327;--att:#E7A84C;--att-soft:#3A2A12;--err:#E68A8A;--err-soft:#3A1A1A;--inbd:#56697A;
+  --s-int:#5CC18B;--s-med:#6CB4E4;--s-adq:#B99BD6;--s-comp:#9AABB4;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 "Public Sans",system-ui,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums}
+a{color:var(--navy)}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.topo{background:#003A5C;border-bottom:4px solid #FFD040}
+.topo-in{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:8px 20px;display:flex;justify-content:space-between;gap:12px;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.08em;color:#BFD6E2}
+.topo-in b{color:#FFD040}
+.head{background:#003A5C;color:#fff;padding:22px 20px 24px}
+.head-in{max-width:var(--larg);margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em}
+.head p{margin:6px 0 0;color:#C9DCE8;max-width:760px}
+.acoes{display:flex;gap:8px;flex-wrap:wrap}
+.acoes .btn{background:#FFD040;color:#003A5C}
+.acoes .btn.sec{background:transparent;color:#fff;border:1.5px solid #9FBCCE}
+.acoes .btn.sec:hover{background:#00466E}
+main{max-width:calc(var(--larg) + 40px);margin:0 auto;padding:24px 20px 110px;display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:22px;align-items:start}
+.col-form,.col-res{min-width:0}
+.col-res{}
+.bloco{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px;margin:0 0 14px}
+.bloco > h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:10px}
+.bloco > h2 .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--paper);font-size:12.5px;flex:none}
+.bloco > .intro{margin:0 0 12px;color:var(--mute);font-size:13.5px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.campos .full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;font-weight:600}
+label .dica{font-weight:400;color:var(--mute);font-size:12px}
+input,select,button,textarea{font:inherit;color:var(--ink)}
+input[type=text],input[type=date],input[type=number],select{background:var(--paper);border:1px solid var(--inbd);border-radius:6px;padding:0 9px;height:38px;min-width:0;width:100%;font-weight:400}
+.chk{flex-direction:row;align-items:flex-start;gap:8px;font-weight:500}
+.chk input{width:17px;height:17px;margin-top:2px;flex:none}
+.seg{display:inline-flex;border:1px solid var(--inbd);border-radius:7px;overflow:hidden;height:38px}
+.seg label{flex-direction:row;align-items:center;padding:0 14px;cursor:pointer;font-weight:600;gap:6px}
+.seg label:has(input:checked){background:var(--navy);color:var(--paper)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:focus-visible){outline:3px solid var(--yellow);outline-offset:-3px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:7px;padding:9px 15px;font-weight:700;cursor:pointer;font-size:14px}
+:root[data-theme="dark"] .btn:not(.sec):not(.link){color:#0E1A21}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.sec):not(.link){color:#0E1A21}}
+.btn:hover{background:var(--navy2)}
+.btn.sec{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.sec:hover{background:var(--navy-soft)}
+.btn.peq{padding:5px 11px;font-size:13px}
+.btn.x{background:none;color:var(--mute);border:0;padding:4px 6px;font-size:18px;line-height:1}
+.btn.x:hover{color:var(--err);background:none}
+.lista{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}
+.linha{position:relative;border:1px solid var(--line);border-radius:8px;padding:10px 38px 10px 12px;display:grid;gap:8px 10px;grid-template-columns:1fr 1fr;align-items:end;background:var(--bg)}
+.linha .full{grid-column:1/-1}
+.linha .rm{position:absolute;top:4px;right:4px}
+.linha .info{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
+.linha .flags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px}
+.vazio{color:var(--mute);font-size:13.5px;font-style:italic;margin:0 0 10px}
+details.params > summary{cursor:pointer;font-weight:700;color:var(--navy)}
+details.params[open] > summary{margin-bottom:10px}
+.aviso{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;margin:0 0 8px;font-size:13.5px}
+.aviso .ic{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff}
+.aviso.att{background:var(--att-soft)}.aviso.att .ic{background:var(--att)}
+.aviso.err{background:var(--err-soft)}.aviso.err .ic{background:var(--err)}
+.aviso.info{background:var(--navy-soft)}.aviso.info .ic{background:var(--navy)}
+.resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;border-top:4px solid var(--navy)}
+.card.int{border-top-color:var(--s-int)}.card.ab{border-top-color:var(--yellow)}
+.card span{display:block;font-size:12.5px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.card b{display:block;font-size:24px;line-height:1.2;margin:4px 0 2px}
+.card small{display:block;color:var(--mute);font-size:13px;line-height:1.35}
+.tempos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tempos div{background:var(--bg);border-radius:6px;padding:9px 11px}
+.tempos span{display:block;font-size:12px;color:var(--mute)}
+.tempos b{font-size:14.5px}
+.res h3{margin:0 0 10px;font-size:16px}
+.tl{width:100%;height:auto;display:block}
+.tl text{font-family:inherit;fill:var(--ink)}
+.tl .mute{fill:var(--mute)}
+.tl .eixo{stroke:var(--line)}
+.tl .hoje{stroke:var(--att);stroke-dasharray:4 3}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--mute);margin:8px 0 0}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--navy-soft);font-size:12.5px;font-weight:700}
+tr.grp td{background:var(--bg);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+tr.regra{cursor:pointer}
+tr.regra:hover td,tr.regra:focus-visible td{background:var(--navy-soft)}
+tr.regra.off td{color:var(--mute)}
+tr.regra td:first-child{font-weight:600}
+tr.regra td:first-child::before{content:"▸";display:inline-block;width:14px;color:var(--mute);transition:transform .15s}
+tr.regra.aberta td:first-child::before{transform:rotate(90deg)}
+.fund{display:block;font-weight:400;font-size:12px;color:var(--mute)}
+td.dt{white-space:nowrap;font-weight:700}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.prev{background:var(--navy-soft);color:var(--navy)}
+.tag.no{background:var(--bg);color:var(--mute);border:1px solid var(--line)}
+.det td{background:var(--bg);padding:10px 12px 12px 30px}
+.det table{background:var(--paper);border:1px solid var(--line);border-radius:6px}
+.det th{background:transparent}
+.det .nota{font-size:12.5px;color:var(--mute);margin:8px 0 0}
+.tw{overflow-x:auto}
+.rodape{font-size:12px;color:var(--mute);margin-top:14px;line-height:1.5}
+.sgp-hub-back{position:fixed;left:16px;bottom:16px;z-index:99;display:inline-flex;align-items:center;gap:8px;background:#003A5C;color:#FFD040;text-decoration:none;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:11px;letter-spacing:.1em;padding:9px 14px;border:1px solid #00466E}
+.sgp-hub-back:hover{background:#00466E}
+.so-imp{display:none}
+@media (max-width:1050px){main{grid-template-columns:1fr}.col-res{position:static;max-height:none;overflow:visible}}
+@media (max-width:620px){
+  .resumo{grid-template-columns:1fr}.tempos{grid-template-columns:1fr 1fr}
+  .campos{grid-template-columns:1fr}.head h1{font-size:24px}
+  td.prov,th.prov{display:none}
+  .tw thead{display:none}
+  tr.regra{display:grid;grid-template-columns:1fr auto;border-bottom:1px solid var(--line)}
+  tr.regra td{border:0}
+  tr.regra td:first-child{grid-column:1/-1;padding-bottom:2px}
+  tr.grp td,tr.det td{display:block}
+  .det td{padding-left:10px}
+  .tlw{overflow-x:auto}.tl{min-width:640px}
+}
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;color:#000;font-size:11pt}
+  .topo,.head .acoes,.col-form,.sgp-hub-back,.nao-imp{display:none!important}
+  .head{background:#fff;color:#000;padding:0 0 8px;border-bottom:2px solid #000}
+  .head p{color:#333}
+  main{display:block;padding:10px 0}
+  .col-res{position:static;max-height:none;overflow:visible}
+  .so-imp{display:block}
+  .bloco,.card{break-inside:avoid;border-color:#999}
+  tr.det{display:table-row!important}
+  tr.regra td:first-child::before{content:none}
+}
+</style>
+</head>
+<body>
+<div class="topo"><div class="topo-in"><span><b>SGP</b> · TRT-17 · FERRAMENTA INTERNA</span><span>CÁLCULO LOCAL — NENHUM DADO SAI DO NAVEGADOR</span></div></div>
+<header class="head"><div class="head-in">
+  <div>
+    <h1>Calculadora de aposentadoria</h1>
+    <p>Servidores e magistrados da União. Regras da EC 103/2019, de transição e de direito adquirido, com datas de cada requisito, abono de permanência e tipo de provento.</p>
+  </div>
+  <div class="acoes">
+    <button class="btn" id="bImprimir" type="button">Imprimir relatório</button>
+    <button class="btn sec" id="bSalvar" type="button">Salvar simulação</button>
+    <button class="btn sec" id="bAbrir" type="button">Abrir simulação</button>
+    <button class="btn sec" id="bLimpar" type="button">Limpar</button>
+    <input type="file" id="arq" accept=".json,application/json" hidden>
+  </div>
+</div></header>
+
+<main>
+<form class="col-form" id="f" autocomplete="off" onsubmit="return false">
+  <section class="bloco">
+    <h2><span class="n">1</span>Interessado</h2>
+    <p class="intro">Nome e processo aparecem só no relatório impresso.</p>
+    <div class="campos">
+      <label class="full">Nome <input type="text" name="nome" placeholder="Opcional"></label>
+      <label>Processo SEI <input type="text" name="processo" placeholder="Opcional"></label>
+      <label>Data de referência <input type="date" name="ref"><span class="dica">Padrão: hoje</span></label>
+      <div><span style="font-size:13.5px;font-weight:600;display:block;margin-bottom:4px">Sexo</span>
+        <div class="seg" role="radiogroup" aria-label="Sexo"><label><input type="radio" name="sexo" value="F">Feminino</label><label><input type="radio" name="sexo" value="M" checked>Masculino</label></div></div>
+      <label>Data de nascimento <input type="date" name="nasc" required></label>
+      <label class="full">Cargo
+        <select name="cargo">
+          <option value="servidor">Servidor — regras gerais</option>
+          <option value="policia">Técnico/Analista — agente/inspetor de polícia judicial</option>
+          <option value="magistrado">Magistrado</option>
+        </select></label>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <h2><span class="n">2</span>Vínculo e marcos de ingresso</h2>
+    <p class="intro">As datas de ingresso definem quais regras de transição e de integralidade se aplicam.</p>
+    <div class="campos">
+      <label>Exercício no Tribunal <input type="date" name="exercicio" required></label>
+      <label>Ingresso no cargo atual <input type="date" name="ingressoCargo" required><span class="dica">Conta os 5 anos no cargo</span></label>
+      <label>Ingresso na carreira <input type="date" name="ingressoCarreira"><span class="dica">Regras anteriores (EC 41 e EC 47). Vazio = cargo</span></label>
+      <label>Ingresso no serviço público <input type="date" name="ingressoSP" required><span class="dica">Data mais remota, sem interrupção, em qualquer ente</span></label>
+      <label class="chk full"><input type="checkbox" name="migrouRPC"> <span>Migrou para o regime de previdência complementar (Funpresp-Jud)<br><span class="dica">Sem integralidade; provento limitado ao teto do RGPS</span></span></label>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <h2><span class="n">3</span>Tempo averbado</h2>
+    <p class="intro">Períodos de outros vínculos, conforme CTC ou certidão. Sobreposições são detectadas e contadas uma vez só.</p>
+    <div class="lista" id="lPer"></div>
+    <button class="btn sec peq" type="button" data-add="per">+ Período</button>
+  </section>
+
+  <section class="bloco">
+    <h2><span class="n">4</span>Ajustes de tempo</h2>
+    <p class="intro">Faltas, licenças sem remuneração e outros descontos; licença-prêmio contada em dobro.</p>
+    <div class="lista" id="lDed"></div>
+    <button class="btn sec peq" type="button" data-add="ded">+ Desconto</button>
+    <div class="campos" style="margin-top:14px">
+      <label>Licença-prêmio não gozada <input type="number" name="lpDias" min="0" step="1" placeholder="0"><span class="dica">Dias a acrescer, já em dobro</span></label>
+      <label>Data de aquisição <input type="date" name="lpData"><span class="dica">Vazio = 16/12/1998</span></label>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <h2><span class="n">5</span>Condições especiais</h2>
+    <p class="intro">Exposição a agentes nocivos (com laudo) e deficiência (avaliação biopsicossocial).</p>
+    <h3 style="font-size:14px;margin:0 0 8px">Efetiva exposição a agentes nocivos</h3>
+    <div class="lista" id="lExp"></div>
+    <button class="btn sec peq" type="button" data-add="exp">+ Período de exposição</button>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" name="exposicaoContinua"> <span>A exposição continua após a data de referência</span></label>
+    <h3 style="font-size:14px;margin:16px 0 8px">Deficiência</h3>
+    <div class="campos">
+      <label>Grau <select name="defGrau"><option value="">Sem deficiência</option><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="grave">Grave</option></select></label>
+      <label>Desde <input type="date" name="defInicio"></label>
+    </div>
+  </section>
+
+  <section class="bloco">
+    <details class="params">
+      <summary>Parâmetros de interpretação</summary>
+      <div class="campos">
+        <label>Data-corte da EC 103 <input type="date" name="corteEC103"><span class="dica">Inclusiva. Direito adquirido e cálculo do pedágio</span></label>
+        <div></div>
+        <label class="chk full"><input type="checkbox" name="lpNosPontos"> <span>Licença-prêmio em dobro entra no tempo de contribuição dos pontos (art. 4º)</span></label>
+        <label class="chk full"><input type="checkbox" name="converteEspecial"> <span>Converter tempo especial em comum até a EC 103 (fator 1,4 H / 1,2 M — STF, Tema 942)</span></label>
+        <label class="chk full"><input type="checkbox" name="acrescimoMulher15"> <span>Servidora: acréscimo de 2% a partir de 15 anos de contribuição, e não de 20 (tese discutida em ADIs contra a EC 103)</span></label>
+      </div>
+    </details>
+  </section>
+</form>
+
+<section class="col-res res" id="res" aria-live="polite">
+  <div class="so-imp" id="impCab"></div>
+  <div id="avisos"></div>
+  <div id="corpo"></div>
+</section>
+</main>
+
+<a href="index.html" class="sgp-hub-back" aria-label="Voltar ao hub de painéis"><span>&#9666;</span><span>HUB</span></a>
+
+<template id="tPer">
+  <div class="linha">
+    <label class="full">Órgão ou empresa <input type="text" data-k="orgao"></label>
+    <button class="btn x rm" type="button" title="Remover" aria-label="Remover período">×</button>
+    <label>Regime <select data-k="regime"><option value="RGPS">RGPS (INSS)</option><option value="RPPS">RPPS (outro ente)</option><option value="MILITAR">Militar</option></select></label>
+    <label class="chk" style="align-self:center;padding-bottom:9px"><input type="checkbox" data-k="publico"> <span>Conta como serviço público</span></label>
+    <label>Início <input type="date" data-k="inicio"></label>
+    <label>Fim <input type="date" data-k="fim"></label>
+    <div class="info"></div>
+  </div>
+</template>
+<template id="tDed">
+  <div class="linha">
+    <label class="full">Descrição <input type="text" data-k="desc" placeholder="Faltas, LSV, suspensão…"></label>
+    <button class="btn x rm" type="button" title="Remover" aria-label="Remover desconto">×</button>
+    <label>Dias <input type="number" min="0" step="1" data-k="dias"></label>
+    <label>Data <input type="date" data-k="data"></label>
+    <div class="flags">
+      <label class="chk"><input type="checkbox" data-k="contrib" checked> <span>Contribuição</span></label>
+      <label class="chk"><input type="checkbox" data-k="sp" checked> <span>Serviço público</span></label>
+      <label class="chk"><input type="checkbox" data-k="cargo" checked> <span>Cargo/carreira</span></label>
+    </div>
+  </div>
+</template>
+<template id="tExp">
+  <div class="linha">
+    <label>Início <input type="date" data-k="inicio"></label>
+    <label>Fim <input type="date" data-k="fim"></label>
+    <button class="btn x rm" type="button" title="Remover" aria-label="Remover período de exposição">×</button>
+    <div class="info"></div>
+  </div>
+</template>
+
+<script>
+/* ============================================================================
+ * Motor de regras — Calculadora de aposentadoria (servidores e magistrados da União)
+ * SGP · TRT-17. Processamento 100% local. Nenhum dado sai do navegador.
+ *
+ * Convenções
+ *  - Tempo contado em dias; ano = 365 dias (Lei 8.112/1990, art. 101).
+ *  - Todos os períodos são inclusivos (início e fim contam).
+ *  - Idade: aniversário civil (29/02 → 01/03 em ano não bissexto).
+ *  - Após a data de referência, presume-se exercício contínuo no Tribunal.
+ * ==========================================================================*/
+(function (raiz) {
+'use strict';
+
+const DIA = 86400000;
+const ANO = 365;
+
+/* ---------- datas como inteiros (dias desde 1970-01-01, UTC) ---------- */
+function d2n(s) {
+  if (s == null || s === '') return null;
+  if (typeof s === 'number') return s;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+  if (!m) return null;
+  return Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / DIA);
+}
+function n2d(n) {
+  if (n == null) return null;
+  return new Date(n * DIA).toISOString().slice(0, 10);
+}
+function n2br(n) {
+  if (n == null) return '—';
+  const s = n2d(n); return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4);
+}
+function anoDe(n) { return new Date(n * DIA).getUTCFullYear(); }
+/** Data em que se completam `anos` de idade (aniversário civil). */
+function aniversario(nasc, anos) {
+  const dt = new Date(nasc * DIA);
+  const y = dt.getUTCFullYear() + anos, m = dt.getUTCMonth(), d = dt.getUTCDate();
+  if (m === 1 && d === 29) {
+    const bis = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    if (!bis) return Math.round(Date.UTC(y, 2, 1) / DIA);
+  }
+  return Math.round(Date.UTC(y, m, d) / DIA);
+}
+function idadeAnos(nasc, dia) {
+  let a = anoDe(dia) - anoDe(nasc);
+  if (aniversario(nasc, a) > dia) a--;
+  return a;
+}
+/** "x anos, y meses e z dias" no padrão de 365/30 dias usado nos mapas de tempo. */
+function fmtTempo(dias) {
+  if (dias == null) return '—';
+  const neg = dias < 0; let r = Math.round(Math.abs(dias));
+  const a = Math.floor(r / ANO); r -= a * ANO;
+  const m = Math.floor(r / 30); const d = r - m * 30;
+  const p = [];
+  if (a) p.push(a + (a === 1 ? ' ano' : ' anos'));
+  if (m) p.push(m + (m === 1 ? ' mês' : ' meses'));
+  if (d || !p.length) p.push(d + (d === 1 ? ' dia' : ' dias'));
+  return (neg ? '−' : '') + p.join(', ');
+}
+
+/* ---------- parâmetros normativos ---------- */
+const MARCOS = {
+  EC20: d2n('1998-12-16'),   // publicação EC 20/1998
+  EC41: d2n('2003-12-31'),   // publicação EC 41/2003
+  RPC:  d2n('2013-10-14'),   // início do RPC no Judiciário da União (Funpresp-Jud)
+  EC103: d2n('2019-11-13'),  // publicação/vigência EC 103/2019
+  IDADE4: d2n('2022-01-01')  // art. 4º, §1º: idades mínimas sobem
+};
+const PADRAO_PARAM = {
+  corteEC103: '2019-11-13',     // data-limite (inclusiva) para direito adquirido e pedágio
+  lpNosPontos: true,            // licença-prêmio em dobro integra o tempo de contribuição dos pontos
+  converteEspecial: true,       // conversão de tempo especial em comum até a EC 103 (STF Tema 942)
+  acrescimoMulher15: false,     // 2% a partir de 15 anos (em vez de 20) para servidoras — tese em ADI
+  idadeCompulsoria: 75          // LC 152/2015
+};
+function pontosExigidos(sexo, ano) {
+  const inc = Math.max(0, ano - 2019);
+  return sexo === 'F' ? Math.min(100, 86 + inc) : Math.min(105, 96 + inc);
+}
+
+/* ---------- leitura e validação da entrada ---------- */
+function normalizar(e) {
+  const p = Object.assign({}, PADRAO_PARAM, e.param || {});
+  const x = {
+    sexo: e.sexo === 'F' ? 'F' : 'M',
+    nasc: d2n(e.nasc),
+    ref: d2n(e.ref) ?? d2n(new Date().toISOString().slice(0, 10)),
+    ingressoSP: d2n(e.ingressoSP),
+    ingressoCarreira: d2n(e.ingressoCarreira) ?? d2n(e.ingressoCargo),
+    ingressoCargo: d2n(e.ingressoCargo),
+    exercicio: d2n(e.exercicio),
+    migrouRPC: !!e.migrouRPC,
+    magistrado: !!e.magistrado,
+    policiaJudicial: !!e.policiaJudicial,
+    periodos: (e.periodos || []).map((q, i) => ({
+      i, orgao: q.orgao || '', regime: q.regime || 'RGPS',
+      publico: q.publico != null ? !!q.publico : (q.regime === 'RPPS' || q.regime === 'MILITAR'),
+      ini: d2n(q.inicio), fim: d2n(q.fim)
+    })).filter(q => q.ini != null && q.fim != null),
+    deducoes: (e.deducoes || []).map(q => ({
+      desc: q.desc || '', data: d2n(q.data), dias: Math.max(0, +q.dias || 0),
+      contrib: q.contrib !== false, sp: q.sp !== false, cargo: q.cargo !== false
+    })).filter(q => q.dias > 0),
+    lpDias: Math.max(0, +e.lpDias || 0),
+    lpData: d2n(e.lpData) ?? MARCOS.EC20,
+    exposicoes: (e.exposicoes || []).map(q => ({ ini: d2n(q.inicio), fim: d2n(q.fim) }))
+      .filter(q => q.ini != null && q.fim != null),
+    exposicaoContinua: !!e.exposicaoContinua,
+    deficiencia: e.deficiencia && e.deficiencia.grau ? {
+      grau: e.deficiencia.grau, ini: d2n(e.deficiencia.inicio), fim: d2n(e.deficiencia.fim)
+    } : null,
+    p, corte: d2n(p.corteEC103)
+  };
+  return x;
+}
+function validar(x) {
+  const erros = [], avisos = [];
+  if (x.nasc == null) erros.push('Informe a data de nascimento.');
+  if (x.exercicio == null) erros.push('Informe a data de início de exercício no Tribunal.');
+  if (x.ingressoCargo == null) erros.push('Informe a data de ingresso no cargo atual.');
+  if (x.ingressoSP == null) erros.push('Informe a data mais remota de ingresso no serviço público sem interrupção.');
+  if (erros.length) return { erros, avisos };
+  if (x.ingressoCargo < x.exercicio && !x.periodos.some(q => q.publico && q.ini <= x.ingressoCargo))
+    avisos.push('O ingresso no cargo é anterior ao exercício no Tribunal e não há período público averbado que o cubra. Confira se o cargo é o mesmo (ex.: redistribuição).');
+  if (x.ingressoSP > x.exercicio)
+    avisos.push('O ingresso no serviço público está depois do exercício no Tribunal. Ajuste: ele deve ser igual ou anterior.');
+  if (x.ingressoCarreira != null && x.ingressoCarreira > x.ingressoCargo)
+    avisos.push('O ingresso na carreira está depois do ingresso no cargo. Em regra, a carreira começa antes ou junto com o cargo.');
+  x.periodos.forEach(q => {
+    if (q.fim < q.ini) erros.push(`Período ${q.i + 1} (${q.orgao || 'sem nome'}): data final anterior à inicial.`);
+    if (q.fim >= x.exercicio && q.ini <= x.exercicio) avisos.push(`Período ${q.i + 1} (${q.orgao || 'sem nome'}) termina depois do início no Tribunal. A sobreposição não é contada em dobro.`);
+    if (q.fim > x.ref) avisos.push(`Período ${q.i + 1} (${q.orgao || 'sem nome'}) termina depois da data de referência.`);
+  });
+  if (x.nasc && aniversario(x.nasc, 18) > x.exercicio) avisos.push('Exercício no Tribunal antes dos 18 anos de idade: confira as datas.');
+  // continuidade do serviço público: a partir de ingressoSP, deve haver vínculo público sem lacuna até o Tribunal
+  const pub = x.periodos.filter(q => q.publico).map(q => [q.ini, q.fim]).concat([[x.exercicio, x.exercicio]]);
+  pub.sort((a, b) => a[0] - b[0]);
+  let cursor = x.ingressoSP - 1, lacuna = null;
+  for (const [a, b] of pub) {
+    if (b < x.ingressoSP) continue;
+    if (a > cursor + 1) { lacuna = [cursor + 1, a - 1]; break; }
+    cursor = Math.max(cursor, b);
+    if (cursor >= x.exercicio) break;
+  }
+  if (lacuna) avisos.push(`Há intervalo sem vínculo público entre ${n2br(lacuna[0])} e ${n2br(lacuna[1])}. As datas-corte de ingresso (16/12/1998, 31/12/2003, 13/11/2019) dependem de vínculo sem interrupção — confira a data de ingresso informada.`);
+  if (x.policiaJudicial) avisos.push('Agente/inspetor de polícia judicial: sem regra especial vigente (art. 5º da EC 103/2019 não inclui o cargo; MI 844/STF). Aplicadas as regras gerais.');
+  return { erros, avisos };
+}
+
+/* ---------- linha do tempo diária ---------- */
+function construirSeries(x) {
+  const fimSim = aniversario(x.nasc, x.p.idadeCompulsoria) + 1;
+  const ini0 = Math.min(x.exercicio, x.ingressoSP, x.ingressoCargo,
+    ...x.periodos.map(q => q.ini), ...x.exposicoes.map(q => q.ini)) - 1;
+  const N = fimSim - ini0 + 1;
+  const idx = n => Math.min(N - 1, Math.max(0, n - ini0));
+  const cont = new Int16Array(N + 1), pub = new Int16Array(N + 1), exp = new Int16Array(N + 1);
+  const marca = (arr, a, b) => { if (b < ini0) return; arr[idx(a)]++; arr[idx(b) + 1]--; };
+  for (const q of x.periodos) { marca(cont, q.ini, q.fim); if (q.publico) marca(pub, q.ini, q.fim); }
+  marca(cont, x.exercicio, fimSim); marca(pub, x.exercicio, fimSim);
+  for (const q of x.exposicoes) marca(exp, q.ini, Math.min(q.fim, x.exposicaoContinua ? fimSim : x.ref));
+  if (x.exposicaoContinua) {
+    const ult = x.exposicoes.reduce((m, q) => Math.max(m, q.fim), -Infinity);
+    if (ult >= x.ref - 1) marca(exp, x.ref + 1, fimSim);
+  }
+  // deduções/acréscimos pontuais
+  const dedC = new Float64Array(N), dedS = new Float64Array(N), dedG = new Float64Array(N);
+  for (const d of x.deducoes) {
+    const k = idx(d.data ?? x.exercicio);
+    if (d.contrib) dedC[k] += d.dias; if (d.sp) dedS[k] += d.dias; if (d.cargo) dedG[k] += d.dias;
+  }
+  const lpK = idx(x.lpData);
+  const fator = x.sexo === 'F' ? 1.2 : 1.4;     // atividade de 25 anos → comum (30 F / 35 M)
+  const def = x.deficiencia;
+  const reqDef = { grave: x.sexo === 'F' ? 20 : 25, moderada: x.sexo === 'F' ? 24 : 29, leve: x.sexo === 'F' ? 28 : 33 };
+  const reqSem = x.sexo === 'F' ? 30 : 35;
+
+  const S = {
+    ini0, N, idx, dia: k => ini0 + k,
+    C: new Float64Array(N),      // contribuição (com LP e conversão)
+    Cp: new Float64Array(N),     // contribuição para pontos
+    Cbruto: new Float64Array(N), // contribuição sem LP e sem conversão
+    SP: new Float64Array(N), CG: new Float64Array(N), CR: new Float64Array(N),
+    EXP: new Float64Array(N), CONV: new Float64Array(N),
+    PCDf: new Float64Array(N),   // fração acumulada (LC 142, art. 7º)
+    PCDd: new Float64Array(N),   // dias de contribuição na condição de PcD
+    sobreposicao: 0
+  };
+  let c = 0, s = 0, e = 0, ac = 0, as = 0, ag = 0, ar = 0, ae = 0, conv = 0, lp = 0, pf = 0, pd = 0, dc = 0, ds = 0, dg = 0;
+  let somaBruta = 0;
+  for (let k = 0; k < N; k++) {
+    c += cont[k]; s += pub[k]; e += exp[k];
+    const d = ini0 + k;
+    const ativo = c > 0;
+    if (c > 1) S.sobreposicao += (d <= x.ref ? c - 1 : 0);
+    if (ativo) {
+      ac++;
+      if (e > 0) { ae++; if (x.p.converteEspecial && d <= x.corte) conv += fator - 1; }
+      if (def && def.ini != null && d >= def.ini && (def.fim == null || d <= def.fim)) { pd++; pf += 1 / (reqDef[def.grau] * ANO); }
+      else pf += 1 / (reqSem * ANO);
+    }
+    if (s > 0) as++;
+    if (d >= x.ingressoCargo) ag++;
+    if (x.ingressoCarreira != null && d >= x.ingressoCarreira) ar++;
+    if (k === lpK) lp = x.lpDias;
+    dc += dedC[k]; ds += dedS[k]; dg += dedG[k];
+    S.Cbruto[k] = ac - dc;
+    S.C[k] = ac - dc + lp + conv;
+    S.Cp[k] = ac - dc + (x.p.lpNosPontos ? lp : 0) + conv;
+    S.SP[k] = as - ds; S.CG[k] = ag - dg; S.CR[k] = ar - dg;
+    S.EXP[k] = ae; S.CONV[k] = conv;
+    S.PCDf[k] = pf - (dc / ((reqSem) * ANO)); S.PCDd[k] = pd;
+  }
+  // mínimo do sufixo: primeiro dia a partir do qual a série não cai mais abaixo do limiar
+  S.suf = {};
+  S.primeiro = (nome, limiar, desde) => {
+    let suf = S.suf[nome];
+    if (!suf) {
+      const a = S[nome]; suf = new Float64Array(N); let m = Infinity;
+      for (let k = N - 1; k >= 0; k--) { m = Math.min(m, a[k]); suf[k] = m; }
+      S.suf[nome] = suf;
+    }
+    let k0 = desde != null ? idx(desde) : 0;
+    for (let k = k0; k < N; k++) if (suf[k] >= limiar - 1e-9) return ini0 + k;
+    return null;
+  };
+  S.v = (nome, dia) => S[nome][idx(dia)];
+  S.fim = fimSim;
+  return S;
+}
+
+/* ---------- avaliação de regras ---------- */
+function req(rotulo, exigido, data, extra) { return Object.assign({ rotulo, exigido, data }, extra || {}); }
+
+/** Percentual da média — art. 26, §2º, EC 103 (60% + 2% por ano que exceder 20). */
+function pctArt26(x, S, dia, base) {
+  const anos = Math.floor(S.v('C', dia) / ANO);
+  const lim = base != null ? base : (x.sexo === 'F' && x.p.acrescimoMulher15 ? 15 : 20);
+  return Math.min(100, 60 + 2 * Math.max(0, anos - lim));
+}
+
+function avaliar(entrada) {
+  const x = normalizar(entrada);
+  const val = validar(x);
+  if (val.erros.length) return { ok: false, erros: val.erros, avisos: val.avisos };
+  const S = construirSeries(x);
+  const F = x.sexo === 'F';
+  const comp = aniversario(x.nasc, x.p.idadeCompulsoria);
+  const idade = n => aniversario(x.nasc, n);
+  const T = (anos) => anos * ANO;
+  const tempo = (serie, anos, desde) => S.primeiro(serie, T(anos), desde);
+  const max = (...ds) => ds.some(d => d == null) ? null : Math.max(...ds);
+  const ingr2003 = x.ingressoSP != null && x.ingressoSP <= MARCOS.EC41 && !x.migrouRPC;
+  const tetoRGPS = x.migrouRPC || x.ingressoSP >= MARCOS.RPC;
+  const regras = [];
+  const add = r => {
+    r.data = r.aplicavel === false ? null : (r.data ?? max(...r.requisitos.map(q => q.data)));
+    if (r.aplicavel === false) r.status = 'inaplicavel';
+    else if (r.adquirido) r.status = (r.data != null && r.data <= x.corte) ? 'cumprida' : 'nao_cumprida';
+    else if (r.data == null || r.data > comp) r.status = 'inalcancavel';
+    else r.status = r.data <= x.ref ? 'cumprida' : 'prevista';
+    if (r.status === 'cumprida' || r.status === 'prevista') {
+      if (typeof r.provento === 'function') r.provento = r.provento(r.data);
+    } else if (typeof r.provento === 'function') r.provento = r.provento(null);
+    r.abonoDesde = (r.abono && (r.status === 'cumprida' || r.status === 'prevista')) ? r.data : null;
+    regras.push(r);
+  };
+  const prov = (tipo, pct, extra) => Object.assign({ tipo, pct }, extra || {});
+  const media = (d, pctF, extra) => prov('media', d != null ? pctF(d) : null, extra);
+
+  const cargo5 = req('5 anos no cargo efetivo', '5 anos', tempo('CG', 5));
+  const sp = n => req(`${n} anos de serviço público`, n + ' anos', tempo('SP', n));
+  const contrib = n => req(`${n} anos de contribuição`, n + ' anos', tempo('C', n));
+  const idd = n => req(`Idade de ${n} anos`, n + ' anos', idade(n));
+
+  /* ===== 1. Direito adquirido até a EC 103 (art. 3º) ===== */
+  // EC 47, art. 3º
+  {
+    const r = { id: 'ec47', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Integral com redução de idade',
+      fund: 'Art. 3º da EC 47/2005', adquirido: true, abono: true,
+      aplicavel: x.ingressoSP <= MARCOS.EC20,
+      motivo: 'Exige ingresso no serviço público até 16/12/1998.' };
+    const base = F ? 55 : 60, cmin = F ? 30 : 35;
+    const rc = contrib(cmin), rs = sp(25), rcr = req('15 anos de carreira', '15 anos', tempo('CR', 15));
+    // idade mínima reduzida em 1 ano para cada ano de contribuição acima do mínimo
+    let dIdade = null;
+    const d0 = max(rc.data, rs.data, rcr.data, cargo5.data);
+    if (d0 != null) for (let d = d0; d <= Math.min(S.fim - 1, x.corte); d++) {
+      const exc = Math.floor((S.v('C', d) - T(cmin)) / ANO);
+      if (idadeAnos(x.nasc, d) >= base - Math.max(0, exc)) { dIdade = d; break; }
+    }
+    r.requisitos = [rc, rs, rcr, cargo5, req(`Idade de ${base} anos, reduzida 1 ano por ano de contribuição acima de ${cmin}`, `${base} − excedente`, dIdade)];
+    r.data = dIdade;
+    r.provento = () => prov('integral', 100, { paridade: true });
+    add(r);
+  }
+  // EC 41, art. 6º
+  add({ id: 'ec41a6', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Integral com paridade',
+    fund: 'Art. 6º da EC 41/2003', adquirido: true, abono: true,
+    aplicavel: x.ingressoSP <= MARCOS.EC41, motivo: 'Exige ingresso no serviço público até 31/12/2003.',
+    requisitos: [idd(F ? 55 : 60), contrib(F ? 30 : 35), sp(20), req('10 anos de carreira', '10 anos', tempo('CR', 10)), cargo5],
+    provento: () => prov('integral', 100, { paridade: true }) });
+  // CF art. 40, §1º, III, a (redação EC 41)
+  add({ id: 'cf40a', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Voluntária por idade e contribuição (regra anterior)',
+    fund: 'Art. 40, §1º, III, "a", da CF (redação da EC 41/2003)', adquirido: true, abono: true,
+    requisitos: [idd(F ? 55 : 60), contrib(F ? 30 : 35), sp(10), cargo5],
+    provento: () => prov('media80', 100, { nota: 'Média das 80% maiores remunerações (Lei 10.887/2004)' }) });
+  // CF art. 40, §1º, III, b
+  add({ id: 'cf40b', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Voluntária por idade (regra anterior)',
+    fund: 'Art. 40, §1º, III, "b", da CF (redação da EC 41/2003)', adquirido: true, abono: false,
+    requisitos: [idd(F ? 60 : 65), sp(10), cargo5],
+    provento: () => prov('media80', Math.min(100, Math.round(1000 * S.v('C', x.corte) / T(F ? 30 : 35)) / 10),
+      { nota: 'Proporcional ao tempo de contribuição sobre a média das 80% maiores' }) });
+  // EC 41, art. 2º (pedágio de 20% e redutor)
+  {
+    const cmin = F ? 30 : 35;
+    const falta98 = Math.max(0, T(cmin) - S.v('C', MARCOS.EC20));
+    const alvo = T(cmin) + 0.2 * falta98;
+    const rc = req(`${cmin} anos de contribuição + pedágio de 20% (${fmtTempo(0.2 * falta98)})`, fmtTempo(alvo), S.primeiro('C', alvo));
+    add({ id: 'ec41a2', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Antecipada com redutor',
+      fund: 'Art. 2º da EC 41/2003', adquirido: true, abono: true,
+      aplicavel: x.ingressoSP <= MARCOS.EC20, motivo: 'Exige ingresso em cargo efetivo até 16/12/1998.',
+      requisitos: [idd(F ? 48 : 53), rc, cargo5],
+      provento: d => {
+        if (d == null) return prov('media80', null);
+        const antecip = Math.max(0, (F ? 55 : 60) - idadeAnos(x.nasc, d));
+        return prov('media80', Math.max(0, 100 - 5 * antecip), { nota: `Redutor de 5% por ano antecipado (${antecip} ano(s))` });
+      } });
+  }
+  // Especial (SV 33) adquirida
+  if (x.exposicoes.length) add({ id: 'sv33', grupo: 'Direito adquirido (antes da EC 103)', nome: 'Especial por agentes nocivos (regra anterior)',
+    fund: 'Art. 40, §4º, III, da CF (redação anterior) c/c Súmula Vinculante 33 e art. 57 da Lei 8.213/1991', adquirido: true, abono: true,
+    requisitos: [req('25 anos de efetiva exposição', '25 anos', tempo('EXP', 25)), sp(10), cargo5],
+    provento: () => prov('media80', 100, { nota: 'Média, sem paridade' }) });
+
+  /* ===== 2. Transição (EC 103) ===== */
+  const ate103 = x.ingressoSP <= x.corte;
+  const idade4 = d => (d < MARCOS.IDADE4 ? (F ? 56 : 61) : (F ? 57 : 62));
+  // Art. 4º — pontos
+  {
+    const cmin = F ? 30 : 35;
+    const base = [contrib(cmin), sp(20), cargo5];
+    const dBase = max(...base.map(q => q.data));
+    let dIdade = null, dPontos = null, dTudo = null;
+    if (dBase != null) {
+      const ini = Math.max(dBase, x.corte);
+      for (let d = Math.max(x.corte, x.nasc); d < S.fim; d++) {
+        const okI = idadeAnos(x.nasc, d) >= idade4(d);
+        const pts = (d - x.nasc + 1) + S.v('Cp', d);
+        const okP = pts >= pontosExigidos(x.sexo, anoDe(d)) * ANO;
+        if (okI && dIdade == null) dIdade = d;
+        if (okP && dPontos == null) dPontos = d;
+        if (d >= ini && okI && okP) { dTudo = d; break; }
+      }
+    }
+    const reqs = base.concat([
+      req(`Idade mínima (${F ? '56/57' : '61/62'} anos)`, `${idade4(dTudo ?? x.ref)} anos`, dIdade),
+      req('Pontos (idade + contribuição, em dias)', dTudo ? `${pontosExigidos(x.sexo, anoDe(dTudo))} pontos em ${anoDe(dTudo)}` : 'tabela anual', dPontos)
+    ]);
+    const intIdade = idade(F ? 62 : 65);
+    add({ id: 'art4i', grupo: 'Transição da EC 103', nome: 'Pontos — integralidade e paridade',
+      fund: 'Art. 4º, §6º, I, da EC 103/2019', abono: true,
+      aplicavel: ate103 && ingr2003,
+      motivo: x.migrouRPC ? 'Quem migrou para o regime complementar não tem integralidade.' : 'Exige ingresso no serviço público até 31/12/2003 (e ingresso até 13/11/2019).',
+      requisitos: reqs.concat([req(`Idade de ${F ? 62 : 65} anos (para integralidade)`, `${F ? 62 : 65} anos`, intIdade)]),
+      data: dTudo != null ? Math.max(dTudo, intIdade) : null,
+      provento: () => prov('integral', 100, { paridade: true }) });
+    add({ id: 'art4m', grupo: 'Transição da EC 103', nome: 'Pontos — média',
+      fund: 'Art. 4º, §6º, II, da EC 103/2019 c/c art. 26', abono: true,
+      aplicavel: ate103, motivo: 'Exige ingresso no serviço público até 13/11/2019.',
+      requisitos: reqs, data: dTudo,
+      provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
+  }
+  // Art. 20 — pedágio de 100%
+  {
+    const cmin = F ? 30 : 35;
+    const falta = Math.max(0, T(cmin) - S.v('C', x.corte));
+    const alvo = T(cmin) + falta;
+    const reqs = [idd(F ? 57 : 60),
+      req(`${cmin} anos de contribuição + pedágio (${fmtTempo(falta)})`, fmtTempo(alvo), S.primeiro('C', alvo), { pedagio: falta }),
+      sp(20), cargo5];
+    add({ id: 'art20i', grupo: 'Transição da EC 103', nome: 'Pedágio — integralidade e paridade',
+      fund: 'Art. 20, §2º, I, da EC 103/2019', abono: true,
+      aplicavel: ate103 && ingr2003,
+      motivo: x.migrouRPC ? 'Quem migrou para o regime complementar não tem integralidade.' : 'Exige ingresso no serviço público até 31/12/2003 (e ingresso até 13/11/2019).',
+      requisitos: reqs, provento: () => prov('integral', 100, { paridade: true }) });
+    add({ id: 'art20m', grupo: 'Transição da EC 103', nome: 'Pedágio — 100% da média',
+      fund: 'Art. 20, §2º, II, da EC 103/2019', abono: true,
+      aplicavel: ate103, motivo: 'Exige ingresso no serviço público até 13/11/2019.',
+      requisitos: reqs, provento: d => media(d, () => 100, { teto: tetoRGPS }) });
+  }
+  // Art. 21 — especial (transição)
+  if (x.exposicoes.length) {
+    const opcoes = [[25, 86]];
+    for (const [anosExp, pts] of opcoes) {
+      let dP = null;
+      const dExp = tempo('EXP', anosExp);
+      for (let d = Math.max(x.corte, x.nasc); d < S.fim; d++) {
+        if ((d - x.nasc + 1) + S.v('C', d) - S.v('CONV', d) >= pts * ANO) { dP = d; break; }
+      }
+      add({ id: 'art21_' + anosExp, grupo: 'Transição da EC 103', nome: `Especial por agentes nocivos — ${pts} pontos`,
+        fund: `Art. 21, ${anosExp === 25 ? 'III' : anosExp === 20 ? 'II' : 'I'}, da EC 103/2019`, abono: true,
+        aplicavel: ate103, motivo: 'Exige ingresso no serviço público até 13/11/2019.',
+        requisitos: [req(`${anosExp} anos de efetiva exposição`, anosExp + ' anos', dExp),
+          req(`${pts} pontos (idade + contribuição, sem conversão)`, pts + ' pontos', dP), sp(20), cargo5],
+        provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
+    }
+  }
+
+  /* ===== 3. Regras permanentes (art. 10 da EC 103) ===== */
+  add({ id: 'art10', grupo: 'Regra permanente (EC 103)', nome: 'Voluntária comum',
+    fund: 'Art. 10, §1º, I, da EC 103/2019', abono: true,
+    requisitos: [idd(F ? 62 : 65), contrib(25), sp(10), cargo5],
+    provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
+  if (x.exposicoes.length) add({ id: 'art10esp', grupo: 'Regra permanente (EC 103)', nome: 'Especial por agentes nocivos',
+    fund: 'Art. 10, §2º, II, da EC 103/2019', abono: false,
+    notaAbono: 'O art. 10, §5º, prevê abono só para a regra do §1º, I; confirme o entendimento do órgão.',
+    requisitos: [idd(60), req('25 anos de efetiva exposição', '25 anos', tempo('EXP', 25)), req('25 anos de contribuição (sem conversão)', '25 anos', S.primeiro('Cbruto', T(25))), sp(10), cargo5],
+    provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
+  // PcD — art. 22 c/c LC 142
+  if (x.deficiencia) {
+    const g = x.deficiencia.grau;
+    const anosG = { grave: F ? 20 : 25, moderada: F ? 24 : 29, leve: F ? 28 : 33 }[g];
+    const inc = { grave: 'I', moderada: 'II', leve: 'III' }[g];
+    add({ id: 'pcdT', grupo: 'Pessoa com deficiência (LC 142/2013)', nome: `Por tempo — deficiência ${g}`,
+      fund: `Art. 22 da EC 103/2019 c/c art. 3º, ${inc}, da LC 142/2013`, abono: true,
+      requisitos: [req(`${anosG} anos de contribuição como PcD (tempo misto convertido — art. 7º)`, anosG + ' anos', S.primeiro('PCDf', 1)), sp(10), cargo5],
+      provento: () => prov('media', 100, { teto: tetoRGPS, nota: '100% da média (art. 8º, I, LC 142)' }) });
+    add({ id: 'pcdI', grupo: 'Pessoa com deficiência (LC 142/2013)', nome: 'Por idade',
+      fund: 'Art. 22 da EC 103/2019 c/c art. 3º, IV, da LC 142/2013', abono: true,
+      requisitos: [idd(F ? 55 : 60), contrib(15), req('15 anos de contribuição na condição de PcD', '15 anos', tempo('PCDd', 15)), sp(10), cargo5],
+      provento: d => media(d, dd => Math.min(100, 70 + Math.floor(S.v('C', dd) / ANO)), { teto: tetoRGPS, nota: '70% + 1% por ano de contribuição (art. 8º, IV, LC 142)' }) });
+  }
+  // Compulsória
+  add({ id: 'comp', grupo: 'Regra permanente (EC 103)', nome: 'Compulsória',
+    fund: 'Art. 40, §1º, II, da CF c/c LC 152/2015 e art. 26, §4º, da EC 103/2019', abono: false,
+    requisitos: [idd(x.p.idadeCompulsoria)], data: comp,
+    provento: d => media(d, dd => Math.round(Math.min(1, S.v('C', dd) / T(20)) * pctArt26(x, S, dd) * 10) / 10,
+      { teto: tetoRGPS, nota: 'Tempo/20 anos (limitado a 1) × percentual do art. 26, §2º' }) });
+
+  /* ---------- síntese ---------- */
+  const validas = regras.filter(r => r.status === 'cumprida' || r.status === 'prevista');
+  const ordemProv = r => r.provento && r.provento.tipo === 'integral' ? 300 : (r.provento && r.provento.pct != null ? 100 + r.provento.pct : 0);
+  const primeira = validas.filter(r => r.id !== 'comp').sort((a, b) => a.data - b.data)[0] || null;
+  const melhor = validas.slice().sort((a, b) => ordemProv(b) - ordemProv(a) || a.data - b.data)[0] || null;
+  const abonos = validas.filter(r => r.abonoDesde != null).sort((a, b) => a.abonoDesde - b.abonoDesde);
+  const k = S.idx(x.ref);
+  const situacao = {
+    ref: x.ref, idadeAnos: idadeAnos(x.nasc, x.ref), idadeDias: x.ref - x.nasc + 1,
+    contribuicao: S.C[k], contribuicaoBruta: S.Cbruto[k], lp: x.ref >= x.lpData ? x.lpDias : 0,
+    conversao: S.CONV[k], servicoPublico: S.SP[k], cargo: S.CG[k], carreira: x.ingressoCarreira != null ? S.CR[k] : null,
+    exposicao: S.EXP[k], pontos: (x.ref - x.nasc + 1 + S.Cp[k]) / ANO,
+    pontosExigidos: pontosExigidos(x.sexo, anoDe(x.ref)),
+    contribNoCorte: S.v('C', x.corte), sobreposicao: S.sobreposicao,
+    compulsoria: comp, tetoRGPS, ingr2003, ate103,
+    pcdFracao: x.deficiencia ? S.PCDf[k] : null
+  };
+  return { ok: true, avisos: val.avisos, regras, primeira, melhor, abono: abonos[0] || null, situacao, x };
+}
+
+const API = { avaliar, d2n, n2d, n2br, fmtTempo, aniversario, idadeAnos, pontosExigidos, PADRAO_PARAM, MARCOS, ANO };
+if (typeof module !== 'undefined' && module.exports) module.exports = API;
+else raiz.MotorApos = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+const M = window.MotorApos;
+const $ = s => document.querySelector(s);
+const f = $('#f');
+const hoje = M.n2d(M.d2n(new Date().toISOString().slice(0,10)));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const br = M.n2br;
+
+/* ---------- listas dinâmicas ---------- */
+const LISTAS = { per: ['#lPer', '#tPer', 'Nenhum período averbado.'], ded: ['#lDed', '#tDed', 'Nenhum desconto.'], exp: ['#lExp', '#tExp', 'Nenhum período de exposição.'] };
+function addLinha(tipo, dados) {
+  const [lsel, tsel] = LISTAS[tipo];
+  const node = $(tsel).content.firstElementChild.cloneNode(true);
+  node.dataset.tipo = tipo;
+  if (dados) node.querySelectorAll('[data-k]').forEach(el => {
+    const v = dados[el.dataset.k]; if (v === undefined) return;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+  });
+  if (tipo === 'per' && !dados) node.querySelector('[data-k=publico]').checked = false;
+  node.querySelector('.rm').addEventListener('click', () => { node.remove(); vazios(); calcular(); });
+  if (tipo === 'per') node.querySelector('[data-k=regime]').addEventListener('change', e => {
+    node.querySelector('[data-k=publico]').checked = e.target.value !== 'RGPS';
+  });
+  $(lsel).appendChild(node); vazios();
+  return node;
+}
+function vazios() {
+  for (const t in LISTAS) {
+    const l = $(LISTAS[t][0]);
+    let v = l.querySelector('.vazio');
+    const tem = l.querySelector('.linha');
+    if (!tem && !v) { v = document.createElement('p'); v.className = 'vazio'; v.textContent = LISTAS[t][2]; l.appendChild(v); }
+    if (tem && v) v.remove();
+  }
+}
+function lerLista(tipo) {
+  return [...$(LISTAS[tipo][0]).querySelectorAll('.linha')].map(n => {
+    const o = {};
+    n.querySelectorAll('[data-k]').forEach(el => o[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value);
+    return o;
+  });
+}
+document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
+  const n = addLinha(b.dataset.add); n.querySelector('input').focus();
+}));
+
+/* ---------- estado ---------- */
+function ler() {
+  const v = k => f.elements[k] ? f.elements[k].value : '';
+  const c = k => f.elements[k] ? f.elements[k].checked : false;
+  return {
+    nome: v('nome'), processo: v('processo'),
+    sexo: f.querySelector('[name=sexo]:checked')?.value || 'M',
+    nasc: v('nasc'), ref: v('ref') || hoje, cargo: v('cargo'),
+    magistrado: v('cargo') === 'magistrado', policiaJudicial: v('cargo') === 'policia',
+    exercicio: v('exercicio'), ingressoCargo: v('ingressoCargo'), ingressoCarreira: v('ingressoCarreira'), ingressoSP: v('ingressoSP'),
+    migrouRPC: c('migrouRPC'),
+    periodos: lerLista('per'), deducoes: lerLista('ded').map(d => Object.assign(d, { dias: +d.dias || 0 })),
+    lpDias: +v('lpDias') || 0, lpData: v('lpData'),
+    exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
+    deficiencia: v('defGrau') ? { grau: v('defGrau'), inicio: v('defInicio') || v('exercicio') } : null,
+    param: { corteEC103: v('corteEC103') || '2019-11-13', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
+  };
+}
+function escrever(e) {
+  f.reset();
+  const set = (k, val) => { const el = f.elements[k]; if (!el || val == null) return; if (el.type === 'checkbox') el.checked = !!val; else el.value = val; };
+  ['nome','processo','nasc','cargo','exercicio','ingressoCargo','ingressoCarreira','ingressoSP','migrouRPC','lpDias','lpData','exposicaoContinua'].forEach(k => set(k, e[k]));
+  set('ref', e.ref || hoje);
+  const sx = f.querySelector(`[name=sexo][value="${e.sexo === 'F' ? 'F' : 'M'}"]`); if (sx) sx.checked = true;
+  if (e.deficiencia) { set('defGrau', e.deficiencia.grau); set('defInicio', e.deficiencia.inicio); }
+  const p = Object.assign({}, M.PADRAO_PARAM, e.param || {});
+  set('corteEC103', p.corteEC103); set('lpNosPontos', p.lpNosPontos); set('converteEspecial', p.converteEspecial); set('acrescimoMulher15', p.acrescimoMulher15);
+  for (const t in LISTAS) $(LISTAS[t][0]).innerHTML = '';
+  (e.periodos || []).forEach(q => addLinha('per', q));
+  (e.deducoes || []).forEach(q => addLinha('ded', q));
+  (e.exposicoes || []).forEach(q => addLinha('exp', q));
+  vazios(); calcular();
+}
+
+/* ---------- informações por linha ---------- */
+function infoLinhas() {
+  document.querySelectorAll('.linha').forEach(n => {
+    const info = n.querySelector('.info'); if (!info) return;
+    const a = M.d2n(n.querySelector('[data-k=inicio]').value), b = M.d2n(n.querySelector('[data-k=fim]').value);
+    info.textContent = (a != null && b != null) ? (b < a ? 'Fim anterior ao início.' : `${b - a + 1} dias · ${M.fmtTempo(b - a + 1)}`) : '';
+  });
+}
+
+/* ---------- textos ---------- */
+const STATUS = {
+  cumprida: ['ok', 'Cumprida'], prevista: ['prev', 'Prevista'],
+  nao_cumprida: ['no', 'Não cumprida até a EC 103'], inaplicavel: ['no', 'Não se aplica'], inalcancavel: ['no', 'Após a compulsória']
+};
+function txtProv(p) {
+  if (!p) return '—';
+  if (p.tipo === 'integral') return 'Integralidade' + (p.paridade ? ' e paridade' : '');
+  const pct = p.pct != null ? (Math.round(p.pct * 10) / 10).toString().replace('.', ',') + '% ' : '';
+  const base = p.tipo === 'media80' ? 'da média das 80% maiores' : 'da média (desde 07/1994)';
+  return pct + base + (p.teto ? ' · teto do RGPS' : '') + (p.tipo !== 'media80' ? ' · sem paridade' : '');
+}
+function cor(r) {
+  if (r.id === 'comp') return 'var(--s-comp)';
+  if (r.provento && r.provento.tipo === 'integral') return 'var(--s-int)';
+  if (r.adquirido) return 'var(--s-adq)';
+  return 'var(--s-med)';
+}
+
+/* ---------- linha do tempo (SVG) ---------- */
+function linhaDoTempo(res) {
+  const rs = res.regras.filter(r => r.status === 'cumprida' || r.status === 'prevista');
+  if (!rs.length) return '';
+  rs.sort((a, b) => a.data - b.data);
+  const ref = res.situacao.ref, comp = res.situacao.compulsoria;
+  const minD = Math.min(ref, ...rs.map(r => r.data)), maxD = Math.max(comp, ...rs.map(r => r.data));
+  const y0 = new Date(minD * 864e5).getUTCFullYear(), y1 = new Date(maxD * 864e5).getUTCFullYear() + 1;
+  const a = M.d2n(y0 + '-01-01'), b = M.d2n(y1 + '-01-01');
+  const W = 760, L = 250, R = 20, H = 34 + rs.length * 24 + 18;
+  const X = d => L + (d - a) / (b - a) * (W - L - R);
+  let s = `<svg class="tl" viewBox="0 0 ${W} ${H}" role="img" aria-label="Linha do tempo das regras de aposentadoria">`;
+  const passo = (y1 - y0) > 24 ? 4 : (y1 - y0) > 12 ? 2 : 1;
+  for (let y = y0; y <= y1; y += passo) {
+    const x = X(M.d2n(y + '-01-01'));
+    s += `<line class="eixo" x1="${x}" x2="${x}" y1="22" y2="${H - 14}"/><text class="mute" x="${x}" y="14" font-size="11" text-anchor="middle">${y}</text>`;
+  }
+  const xr = X(ref);
+  s += `<line class="hoje" x1="${xr}" x2="${xr}" y1="20" y2="${H - 10}" stroke-width="1.5"/><text x="${xr + 4}" y="${H - 2}" font-size="10.5" fill="var(--att)" style="fill:var(--att)">referência ${br(ref)}</text>`;
+  rs.forEach((r, i) => {
+    const y = 38 + i * 24, x = X(r.data), c = cor(r);
+    const nome = r.nome.length > 40 ? r.nome.slice(0, 39) + '…' : r.nome;
+    s += `<text x="${L - 10}" y="${y + 4}" font-size="12" text-anchor="end">${esc(nome)}</text>`;
+    s += `<line x1="${X(Math.max(a, ref))}" x2="${x}" y1="${y}" y2="${y}" stroke="${c}" stroke-opacity=".25" stroke-width="6" stroke-linecap="round"/>`;
+    s += `<circle cx="${x}" cy="${y}" r="6" fill="${c}"/><text x="${x + 10 > W - 80 ? x - 10 : x + 10}" y="${y + 4}" font-size="11.5" font-weight="700" text-anchor="${x + 10 > W - 80 ? 'end' : 'start'}">${br(r.data)}</text>`;
+  });
+  s += '</svg>';
+  return '<div class="tlw">' + s + '</div>' + `<div class="leg"><span><i style="background:var(--s-int)"></i>Integralidade e paridade</span><span><i style="background:var(--s-med)"></i>Média</span><span><i style="background:var(--s-adq)"></i>Direito adquirido</span><span><i style="background:var(--s-comp)"></i>Compulsória</span></div>`;
+}
+
+/* ---------- render ---------- */
+let abertas = new Set();
+function render(res, e) {
+  const av = $('#avisos'), corpo = $('#corpo');
+  if (!res.ok) {
+    av.innerHTML = res.erros.map(t => `<div class="aviso err"><span class="ic">!</span><span>${esc(t)}</span></div>`).join('');
+    corpo.innerHTML = '<div class="bloco"><p class="vazio" style="margin:0">Preencha os dados obrigatórios para ver o resultado: nascimento, exercício no Tribunal, ingresso no cargo e ingresso no serviço público.</p></div>';
+    return;
+  }
+  av.innerHTML = res.avisos.map(t => `<div class="aviso att"><span class="ic">!</span><span>${esc(t)}</span></div>`).join('')
+    + (res.situacao.sobreposicao > 0 ? `<div class="aviso info"><span class="ic">i</span><span>${res.situacao.sobreposicao} dia(s) de períodos concomitantes até a data de referência foram contados uma única vez.</span></div>` : '');
+  const s = res.situacao, ref = s.ref;
+  const P = res.primeira, B = res.melhor, A = res.abono;
+  const quando = d => d <= ref ? 'desde ' + br(d) : br(d);
+  let h = '';
+  h += `<div class="resumo">
+    <div class="card"><span>Primeira aposentadoria</span><b>${P ? quando(P.data) : '—'}</b><small>${P ? esc(P.nome) + ' · ' + esc(txtProv(P.provento)) : 'Nenhuma regra voluntária alcançada antes da compulsória'}</small></div>
+    <div class="card int"><span>Melhor provento</span><b>${B ? quando(B.data) : '—'}</b><small>${B ? esc(B.nome) + ' · ' + esc(txtProv(B.provento)) : '—'}</small></div>
+    <div class="card ab"><span>Abono de permanência</span><b>${A ? quando(A.abonoDesde) : '—'}</b><small>${A ? 'Pela regra ' + esc(A.nome) + ' (' + esc(A.fund) + ')' : 'Sem regra que gere abono'}</small></div>
+  </div>`;
+  const ft = M.fmtTempo;
+  h += `<div class="bloco"><h3>Situação em ${br(ref)}</h3><div class="tempos">
+    <div><span>Idade</span><b>${s.idadeAnos} anos</b></div>
+    <div><span>Contribuição total</span><b>${ft(s.contribuicao)}</b></div>
+    <div><span>Serviço público</span><b>${ft(s.servicoPublico)}</b></div>
+    <div><span>No cargo</span><b>${ft(s.cargo)}</b></div>
+    ${s.carreira != null ? `<div><span>Na carreira</span><b>${ft(s.carreira)}</b></div>` : ''}
+    <div><span>Pontos (art. 4º)</span><b>${s.pontos.toFixed(2).replace('.', ',')} de ${s.pontosExigidos}</b></div>
+    <div><span>Contribuição em ${br(res.x.corte)}</span><b>${ft(s.contribNoCorte)}</b></div>
+    <div><span>Compulsória</span><b>${br(s.compulsoria)}</b></div>
+    ${s.lp ? `<div><span>Licença-prêmio em dobro</span><b>${s.lp} dias</b></div>` : ''}
+    ${s.conversao ? `<div><span>Acréscimo por conversão</span><b>${Math.round(s.conversao)} dias</b></div>` : ''}
+    ${s.exposicao ? `<div><span>Efetiva exposição</span><b>${ft(s.exposicao)}</b></div>` : ''}
+    ${s.pcdFracao != null ? `<div><span>Tempo PcD cumprido</span><b>${Math.min(100, s.pcdFracao * 100).toFixed(1).replace('.', ',')}%</b></div>` : ''}
+  </div>
+  <p class="rodape" style="margin:10px 0 0">Ingresso até 13/11/2019: <b>${s.ate103 ? 'sim' : 'não'}</b> · Integralidade possível (ingresso até 31/12/2003, sem migração): <b>${s.ingr2003 ? 'sim' : 'não'}</b> · Provento limitado ao teto do RGPS: <b>${s.tetoRGPS ? 'sim' : 'não'}</b></p></div>`;
+  h += `<div class="bloco"><h3>Linha do tempo</h3>${linhaDoTempo(res) || '<p class="vazio">Nenhuma regra alcançável.</p>'}</div>`;
+  // tabela de regras
+  h += `<div class="bloco"><h3>Regras avaliadas</h3><p class="rodape nao-imp" style="margin:-4px 0 10px">Clique numa regra para ver a data em que cada requisito é cumprido.</p><div class="tw"><table><thead><tr><th>Regra</th><th>Situação</th><th>Data</th><th class="prov">Provento</th></tr></thead><tbody>`;
+  let g = null;
+  const imp = window.matchMedia && window.matchMedia('print').matches;
+  for (const r of res.regras) {
+    if (r.grupo !== g) { g = r.grupo; h += `<tr class="grp"><td colspan="4">${esc(g)}</td></tr>`; }
+    const [cls, lab] = STATUS[r.status];
+    const off = !['cumprida', 'prevista'].includes(r.status);
+    const ab = abertas.has(r.id);
+    h += `<tr class="regra${off ? ' off' : ''}${ab ? ' aberta' : ''}" data-id="${r.id}" tabindex="0" aria-expanded="${ab}"><td>${esc(r.nome)}<span class="fund">${esc(r.fund)}</span></td>
+      <td><span class="tag ${cls}">${lab}</span>${r.abonoDesde != null ? '<span class="fund">gera abono</span>' : ''}</td>
+      <td class="dt">${r.data != null && !off ? br(r.data) : '—'}</td>
+      <td class="prov">${off ? '—' : esc(txtProv(r.provento))}</td></tr>`;
+    let det = '';
+    if (r.status === 'inaplicavel') det = `<p class="nota" style="margin:0">${esc(r.motivo || '')}</p>`;
+    else {
+      det = `<table><thead><tr><th>Requisito</th><th>Exigido</th><th>Cumprido em</th></tr></thead><tbody>` +
+        r.requisitos.map(q => {
+          const ok = q.data != null && q.data <= (r.adquirido ? res.x.corte : ref);
+          return `<tr><td>${esc(q.rotulo)}</td><td>${esc(q.exigido)}</td><td style="white-space:nowrap">${q.data != null ? (ok ? '✓ ' : '') + br(q.data) : 'não alcançado'}</td></tr>`;
+        }).join('') + `</tbody></table>`;
+      const notas = [];
+      if (r.adquirido) notas.push(`Direito adquirido: todos os requisitos precisam estar cumpridos até ${br(res.x.corte)} (art. 3º da EC 103/2019).`);
+      if (r.provento && r.provento.nota) notas.push(r.provento.nota + '.');
+      if (r.notaAbono) notas.push(r.notaAbono);
+      if (r.abono && !r.adquirido) notas.push('Abono de permanência: ' + (r.id === 'art10' ? 'art. 10, §5º' : 'art. 8º') + ' da EC 103/2019.');
+      if (r.abono && r.adquirido) notas.push('Abono de permanência: art. 3º, §3º, da EC 103/2019.');
+      if (notas.length) det += `<p class="nota">${notas.map(esc).join(' ')}</p>`;
+    }
+    h += `<tr class="det" ${ab || imp ? '' : 'hidden'} data-det="${r.id}"><td colspan="4">${det}</td></tr>`;
+  }
+  h += `</tbody></table></div></div>`;
+  h += `<p class="rodape">Simulação baseada nos dados informados. Não substitui a análise do processo de aposentadoria pela unidade competente nem gera direito. Tempo em dias, ano de 365 dias (Lei 8.112/1990, art. 101). Após a data de referência, presume-se exercício contínuo no cargo atual. Parâmetros: corte da EC 103 em ${br(res.x.corte)}; licença-prêmio nos pontos: ${res.x.p.lpNosPontos ? 'sim' : 'não'}; conversão de tempo especial: ${res.x.p.converteEspecial ? 'sim' : 'não'}.</p>`;
+  corpo.innerHTML = h;
+  // cabeçalho de impressão
+  $('#impCab').innerHTML = `<p style="margin:0 0 10px"><b>Interessado(a):</b> ${esc(e.nome || '—')} · <b>Processo:</b> ${esc(e.processo || '—')} · <b>Nascimento:</b> ${br(M.d2n(e.nasc))} · <b>Sexo:</b> ${e.sexo === 'F' ? 'feminino' : 'masculino'} · <b>Gerado em:</b> ${br(M.d2n(hoje))}</p>`;
+}
+$('#corpo').addEventListener('click', ev => {
+  const tr = ev.target.closest('tr.regra'); if (!tr) return; alternar(tr);
+});
+$('#corpo').addEventListener('keydown', ev => {
+  const tr = ev.target.closest('tr.regra'); if (!tr || (ev.key !== 'Enter' && ev.key !== ' ')) return; ev.preventDefault(); alternar(tr);
+});
+function alternar(tr) {
+  const id = tr.dataset.id, det = document.querySelector(`tr[data-det="${id}"]`);
+  const abrir = det.hidden; det.hidden = !abrir; tr.classList.toggle('aberta', abrir); tr.setAttribute('aria-expanded', abrir);
+  abrir ? abertas.add(id) : abertas.delete(id);
+}
+
+let tm = null, ultimo = null;
+function calcular() {
+  infoLinhas();
+  const e = ler(); ultimo = e;
+  let res;
+  try { res = M.avaliar(e); } catch (err) { console.error(err); res = { ok: false, erros: ['Erro no cálculo: ' + err.message], avisos: [] }; }
+  render(res, e);
+}
+f.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(calcular, 120); });
+f.addEventListener('change', () => { clearTimeout(tm); tm = setTimeout(calcular, 60); });
+
+/* ---------- ações ---------- */
+$('#bImprimir').addEventListener('click', () => {
+  document.querySelectorAll('tr[data-det]').forEach(t => t.hidden = false);
+  window.print();
+  calcular();
+});
+$('#bSalvar').addEventListener('click', () => {
+  const e = ler();
+  const blob = new Blob([JSON.stringify({ ferramenta: 'calculadora_aposentadoria', versao: 1, dados: e }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  const nome = (e.nome || 'simulacao').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '_').slice(0, 40);
+  a.href = URL.createObjectURL(blob); a.download = `aposentadoria_${nome}_${hoje}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#bAbrir').addEventListener('click', () => $('#arq').click());
+$('#arq').addEventListener('change', async ev => {
+  const file = ev.target.files[0]; if (!file) return;
+  try { const j = JSON.parse(await file.text()); escrever(j.dados || j); }
+  catch (err) { alert('Arquivo inválido: ' + err.message); }
+  ev.target.value = '';
+});
+$('#bLimpar').addEventListener('click', () => { if (confirm('Limpar todos os campos?')) { abertas.clear(); escrever({}); } });
+
+escrever({});
+})();
+</script>
+</body>
+</html>
