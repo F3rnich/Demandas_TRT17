@@ -73,6 +73,11 @@ input[type=text],input[type=date],input[type=number],select{background:var(--pap
 .linha .rm{position:absolute;top:4px;right:4px}
 .linha .info{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
 .linha .flags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px}
+.marcos{display:flex;flex-direction:column;gap:4px;background:var(--navy-soft);border-radius:8px;padding:10px 12px;font-size:13px}
+.marcos .m{display:flex;gap:8px;align-items:baseline}
+.marcos .m b{min-width:28px}
+.marcos .s{color:var(--ok);font-weight:800}.marcos .n{color:var(--mute);font-weight:800}
+[data-auto]{font-style:italic;color:var(--navy)}
 .vazio{color:var(--mute);font-size:13.5px;font-style:italic;margin:0 0 10px}
 details.params > summary{cursor:pointer;font-weight:700;color:var(--navy)}
 details.params[open] > summary{margin-bottom:10px}
@@ -190,13 +195,14 @@ td.dt{white-space:nowrap;font-weight:700}
 
   <section class="bloco">
     <h2><span class="n">2</span>Vínculo e marcos de ingresso</h2>
-    <p class="intro">As datas de ingresso definem quais regras de transição e de integralidade se aplicam.</p>
+    <p class="intro">Em ordem cronológica. Só o exercício no Tribunal é obrigatório: campo vazio usa a data do campo seguinte.</p>
     <div class="campos">
-      <label>Exercício no Tribunal <input type="date" name="exercicio" required></label>
-      <label>Ingresso no cargo atual <input type="date" name="ingressoCargo" required><span class="dica">Conta os 5 anos no cargo</span></label>
-      <label>Ingresso na carreira <input type="date" name="ingressoCarreira"><span class="dica">Regras anteriores (EC 41 e EC 47). Vazio = cargo</span></label>
-      <label>Ingresso no serviço público <input type="date" name="ingressoSP" required><span class="dica">Data mais remota, sem interrupção, em qualquer ente</span></label>
-      <label class="chk full"><input type="checkbox" name="migrouRPC"> <span>Migrou para o regime de previdência complementar (Funpresp-Jud)<br><span class="dica">Sem integralidade; provento limitado ao teto do RGPS</span></span></label>
+      <label>1º · Ingresso no serviço público <input type="date" name="ingressoSP"><span class="dica">Primeira posse em cargo público (município, estado ou União), sem nenhum dia de interrupção até hoje. <span data-auto="ingressoSP"></span></span></label>
+      <label>2º · Ingresso na carreira <input type="date" name="ingressoCarreira"><span class="dica">Só pesa em regras anteriores a 2019, que exigem 10 ou 15 anos de carreira. <span data-auto="ingressoCarreira"></span></span></label>
+      <label>3º · Ingresso no cargo atual <input type="date" name="ingressoCargo"><span class="dica">Cargo em que vai se aposentar; conta os 5 anos no cargo. Muda se houve novo concurso ou redistribuição. <span data-auto="ingressoCargo"></span></span></label>
+      <label>4º · Exercício no Tribunal <input type="date" name="exercicio" required><span class="dica">Primeiro dia de trabalho no TRT-17. Vínculos anteriores vão no bloco 3.</span></label>
+      <div class="full" id="marcos" aria-live="polite"></div>
+      <label class="chk full" id="wrapRPC"><input type="checkbox" name="migrouRPC"> <span>Fez a opção formal de migrar para o regime complementar (Funpresp-Jud)<br><span class="dica">Só para quem ingressou antes de 14/10/2013 e assinou a migração. Efeito: sem integralidade e provento limitado ao teto do RGPS (mais o benefício especial).</span></span></label>
     </div>
   </section>
 
@@ -348,8 +354,8 @@ function ler() {
     sexo: f.querySelector('[name=sexo]:checked')?.value || 'M',
     nasc: v('nasc'), ref: v('ref') || hoje, cargo: v('cargo'),
     magistrado: v('cargo') === 'magistrado', policiaJudicial: v('cargo') === 'policia',
-    exercicio: v('exercicio'), ingressoCargo: v('ingressoCargo'), ingressoCarreira: v('ingressoCarreira'), ingressoSP: v('ingressoSP'),
-    migrouRPC: c('migrouRPC'),
+    exercicio: v('exercicio'), ingressoCargo: v('ingressoCargo') || v('exercicio'), ingressoCarreira: v('ingressoCarreira') || v('ingressoCargo') || v('exercicio'), ingressoSP: v('ingressoSP') || v('ingressoCarreira') || v('ingressoCargo') || v('exercicio'),
+    migrouRPC: c('migrouRPC') && (M.d2n(v('ingressoSP') || v('ingressoCarreira') || v('ingressoCargo') || v('exercicio')) ?? 0) < M.MARCOS.RPC,
     periodos: lerLista('per'), deducoes: lerLista('ded').map(d => Object.assign(d, { dias: +d.dias || 0 })),
     lpDias: +v('lpDias') || 0, lpData: v('lpData'),
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
@@ -437,7 +443,7 @@ function render(res, e) {
   const av = $('#avisos'), corpo = $('#corpo');
   if (!res.ok) {
     av.innerHTML = res.erros.map(t => `<div class="aviso err"><span class="ic">!</span><span>${esc(t)}</span></div>`).join('');
-    corpo.innerHTML = '<div class="bloco"><p class="vazio" style="margin:0">Preencha os dados obrigatórios para ver o resultado: nascimento, exercício no Tribunal, ingresso no cargo e ingresso no serviço público.</p></div>';
+    corpo.innerHTML = '<div class="bloco"><p class="vazio" style="margin:0">Preencha a data de nascimento e a de exercício no Tribunal para ver o resultado.</p></div>';
     return;
   }
   av.innerHTML = res.avisos.map(t => `<div class="aviso att"><span class="ic">!</span><span>${esc(t)}</span></div>`).join('')
@@ -518,8 +524,31 @@ function alternar(tr) {
 }
 
 let tm = null, ultimo = null;
+function marcos() {
+  const v = k => f.elements[k].value;
+  const ex = v('exercicio'), cg = v('ingressoCargo') || ex, cr = v('ingressoCarreira') || cg, sp = v('ingressoSP') || cr;
+  const auto = { ingressoCargo: [v('ingressoCargo'), ex, 'exercício'], ingressoCarreira: [v('ingressoCarreira'), cg, v('ingressoCargo') ? 'cargo' : 'exercício'],
+    ingressoSP: [v('ingressoSP'), cr, v('ingressoCarreira') ? 'carreira' : v('ingressoCargo') ? 'cargo' : 'exercício'] };
+  for (const k in auto) {
+    const [proprio, herdado, de] = auto[k], el = f.querySelector(`[data-auto="${k}"]`);
+    el.textContent = !proprio && herdado ? `Vazio: usando ${br(M.d2n(herdado))} (${de}).` : '';
+  }
+  const d = M.d2n(sp), box = $('#marcos'), wrap = $('#wrapRPC');
+  if (d == null) { box.innerHTML = ''; box.className = 'full'; wrap.hidden = false; return; }
+  const linha = (ok, txt) => `<div class="m"><b class="${ok ? 's' : 'n'}">${ok ? 'Sim' : 'Não'}</b><span>${txt}</span></div>`;
+  const preRPC = d < M.MARCOS.RPC;
+  wrap.hidden = !preRPC;
+  if (!preRPC) f.elements.migrouRPC.checked = false;
+  const mig = preRPC && f.elements.migrouRPC.checked;
+  box.className = 'full marcos';
+  box.innerHTML = `<div style="font-weight:700;margin-bottom:2px">Com ingresso no serviço público em ${br(d)}:</div>`
+    + linha(d <= M.MARCOS.EC20, 'Regras antigas da EC 47 e do art. 2º da EC 41 (ingresso até 16/12/1998)')
+    + linha(d <= M.MARCOS.EC41 && !mig, 'Integralidade e paridade (ingresso até 31/12/2003' + (mig ? '; perdida pela migração' : '') + ')')
+    + linha(d <= M.MARCOS.EC103, 'Regras de transição — pontos e pedágio (ingresso até 13/11/2019)')
+    + linha(!preRPC || mig, 'Provento limitado ao teto do RGPS' + (preRPC ? (mig ? ' (pela migração)' : ' (só se migrar)') : ' (ingresso a partir de 14/10/2013 — automático)'));
+}
 function calcular() {
-  infoLinhas();
+  infoLinhas(); marcos();
   const e = ler(); ultimo = e;
   let res;
   try { res = M.avaliar(e); } catch (err) { console.error(err); res = { ok: false, erros: ['Erro no cálculo: ' + err.message], avisos: [] }; }

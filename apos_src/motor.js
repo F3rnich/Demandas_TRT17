@@ -443,7 +443,7 @@ function avaliar(entrada) {
   const validas = regras.filter(r => r.status === 'cumprida' || r.status === 'prevista');
   const ordemProv = r => r.provento && r.provento.tipo === 'integral' ? 300 : (r.provento && r.provento.pct != null ? 100 + r.provento.pct : 0);
   const primeira = validas.filter(r => r.id !== 'comp').sort((a, b) => a.data - b.data)[0] || null;
-  const melhor = validas.slice().sort((a, b) => ordemProv(b) - ordemProv(a) || a.data - b.data)[0] || null;
+  const melhor = (validas.some(r => r.id !== 'comp') ? validas.filter(r => r.id !== 'comp') : validas).slice().sort((a, b) => ordemProv(b) - ordemProv(a) || a.data - b.data)[0] || null;
   const abonos = validas.filter(r => r.abonoDesde != null).sort((a, b) => a.abonoDesde - b.abonoDesde);
   const k = S.idx(x.ref);
   const situacao = {

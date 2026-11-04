@@ -105,6 +105,10 @@ eq('G: especial adquirida (25 anos até 2015)', R(G, 'sv33').status, 'cumprida')
 eq('G: data 25 anos de exposição', br(R(G, 'sv33').data), mais('1990-01-02', 25 * 365 - 1));
 eq('G: conversão 1,4 até a EC 103', Math.round(G.situacao.conversao), Math.round((M.d2n('2019-11-13') - M.d2n('1990-01-02') + 1) * 0.4));
 
+/* Melhor provento não pode ser a compulsória quando há regra voluntária */
+const H = M.avaliar({ sexo: 'M', nasc: '1985-03-10', ref: '2026-11-04', ingressoSP: '2016-01-16', ingressoCargo: '2016-01-16', exercicio: '2016-01-16' });
+eq('H: melhor provento ≠ compulsória', H.melhor.id !== 'comp', true);
+
 /* Validação: dados faltantes */
 const Z = M.avaliar({ sexo: 'M' });
 eq('Z: erros de entrada', Z.ok, false);
