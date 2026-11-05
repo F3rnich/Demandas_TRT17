@@ -646,7 +646,9 @@
       "Calculadora de aposentadoria",
       "MotorApos",
       "pontosExigidos",
-      "noindex"
+      "noindex",
+      "dados_aposentadoria.json",
+      "Optou pela migração"
     ],
     "must_not_contain": [
       "github_pat_",
@@ -686,6 +688,51 @@
     ]
   },
   "apos_src/build.py": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "dados_aposentadoria.json": {
+    "must_contain": [
+      "\"inpc\"",
+      "\"teto_rgps\"",
+      "\"tabelas\"",
+      "\"subsidios\"",
+      "Sem dados pessoais"
+    ],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_",
+      "CPF",
+      "matricula",
+      "matrícula"
+    ]
+  },
+  "apos_src/build_base.py": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "apos_src/fontes/inpc_bcb188.json": {
+    "must_contain": [],
+    "must_not_contain": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghs_"
+    ]
+  },
+  "apos_src/fontes/parametros_diprof.json": {
     "must_contain": [],
     "must_not_contain": [
       "github_pat_",

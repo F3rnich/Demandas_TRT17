@@ -243,7 +243,7 @@ td.dt{white-space:nowrap;font-weight:700}
         </details>
       </div>
       <div id="marcos" aria-live="polite"></div>
-      <label class="chk" id="wrapRPC" hidden><input type="checkbox" name="migrouRPC"> <span>Fez a opção formal de migrar para o regime complementar (Funpresp-Jud)<br><span class="dica">Aparece porque o ingresso é anterior a 14/10/2013. Marque só se a pessoa assinou a migração. Efeito: sem integralidade e provento limitado ao teto do RGPS, mais o benefício especial.</span></span></label>
+      <label class="chk" id="wrapRPC" hidden><input type="checkbox" name="migrouRPC"> <span>Optou pela migração para o regime de previdência complementar<br><span class="dica">Aparece porque o ingresso é anterior a 14/10/2013. Marque só se houve a opção formal de migração (art. 40, §16, da CF; Lei 12.618/2012, art. 3º, II). Efeito: sem integralidade e provento limitado ao teto do RGPS, mais o benefício especial pago pela União. A adesão ao plano da Funpresp-Jud é ato separado e facultativo: não marque este campo só porque a pessoa é participante da Funpresp-Jud.</span></span></label>
     </div>
   </section>
 
@@ -277,6 +277,22 @@ td.dt{white-space:nowrap;font-weight:700}
       <label>Grau <select name="defGrau"><option value="">Sem deficiência</option><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="grave">Grave</option></select></label>
       <label>Desde <input type="date" name="defInicio"></label>
     </div>
+  </section>
+
+  <section class="bloco">
+    <h2><span class="n">6</span>Valor estimado</h2>
+    <p class="intro">Para as regras com integralidade e para mostrar o teto do RGPS. Valores pela tabela vigente, sem projetar reajustes futuros. A média ainda não é calculada (depende da série de remunerações).</p>
+    <div class="campos" id="valServ">
+      <label>Cargo na tabela <select name="vCargo"><option value="ANALISTA JUDICIÁRIO">Analista Judiciário</option><option value="TÉCNICO JUDICIÁRIO">Técnico Judiciário</option><option value="AUXILIAR JUDICIÁRIO">Auxiliar Judiciário</option></select></label>
+      <label>Classe/padrão na aposentadoria <select name="vPadrao"></select><span class="dica">Em regra, o último padrão (C13)</span></label>
+      <label>Adicional por tempo de serviço <input type="number" name="vAts" min="0" max="35" step="1" placeholder="0"><span class="dica">% sobre o vencimento, se houver</span></label>
+      <label>Outras parcelas permanentes <input type="number" name="vOutras" min="0" step="0.01" placeholder="0,00"><span class="dica">R$ — AQ, VPNI, quintos incorporados</span></label>
+      <label class="chk full" id="wrapGas" hidden><input type="checkbox" name="vGas"> <span>Incluir a GAS (35% do vencimento) na remuneração do cargo<br><span class="dica">Padrão: não incluir (TNU, Tema 257: a GAS não se incorpora aos proventos). Confirme a prática do Tribunal.</span></span></label>
+    </div>
+    <div class="campos" id="valMag" hidden>
+      <label class="full">Cargo do magistrado <select name="vMag"></select></label>
+    </div>
+    <div id="valRes" class="marcos" style="margin-top:12px" hidden></div>
   </section>
 
   <section class="bloco">
@@ -864,6 +880,7 @@ function ler() {
     migrouRPC: c('migrouRPC') && (M.d2n(datas().sp) ?? Infinity) < M.MARCOS.RPC,
     periodos: lerLista('per'), deducoes: lerLista('ded').map(d => Object.assign(d, { dias: +d.dias || 0 })),
     lpDias: +v('lpDias') || 0, lpData: v('lpData'),
+    valor: { cargo: v('vCargo'), padrao: v('vPadrao'), ats: +v('vAts') || 0, outras: +v('vOutras') || 0, gas: c('vGas'), mag: v('vMag') },
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
     deficiencia: v('defGrau') ? { grau: v('defGrau'), inicio: v('defInicio') || v('exercicio') } : null,
     param: { corteEC103: v('corteEC103') || '2019-11-13', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
@@ -873,6 +890,7 @@ function escrever(e) {
   f.reset();
   const set = (k, val) => { const el = f.elements[k]; if (!el || val == null) return; if (el.type === 'checkbox') el.checked = !!val; else el.value = val; };
   ['nome','processo','nasc','cargo','exercicio','ingressoCargo','ingressoCarreira','ingressoSP','migrouRPC','lpDias','lpData','exposicaoContinua'].forEach(k => set(k, e[k]));
+  const vv = e.valor || {}; set('vCargo', vv.cargo || 'ANALISTA JUDICIÁRIO'); preencherPadroes(); set('vPadrao', vv.padrao || 'C13'); set('vAts', vv.ats || ''); set('vOutras', vv.outras || ''); set('vGas', vv.gas); if (vv.mag) set('vMag', vv.mag);
   set('ref', e.ref || hoje);
   const sx = f.querySelector(`[name=sexo][value="${e.sexo === 'F' ? 'F' : 'M'}"]`); if (sx) sx.checked = true;
   if (e.deficiencia) { set('defGrau', e.deficiencia.grau); set('defInicio', e.deficiencia.inicio); }
@@ -899,12 +917,59 @@ const STATUS = {
   cumprida: ['ok', 'Cumprida'], prevista: ['prev', 'Prevista'],
   nao_cumprida: ['no', 'Não cumprida até a EC 103'], inaplicavel: ['no', 'Não se aplica'], inalcancavel: ['no', 'Após a compulsória']
 };
+/* ---------- base de parâmetros (dados_aposentadoria.json) ---------- */
+let BASE = null;
+const moeda = x => x == null ? '—' : x.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function vigAtual(obj, ref) { const ks = Object.keys(obj).filter(k => k <= ref).sort(); return ks[ks.length - 1] || null; }
+function preencherPadroes() {
+  const sel = f.elements.vPadrao, atual = sel.value;
+  const pads = []; for (const c of ['A','B','C']) for (let n = 1; n <= 13; n++) { const k = c + String(n).padStart(2,'0'); if ((c==='A'&&n<=5)||(c==='B'&&n>=6&&n<=10)||(c==='C'&&n>=11)) pads.push(k); }
+  sel.innerHTML = pads.map(k => `<option value="${k}">${k[0]} · padrão ${k.slice(1)}</option>`).join('');
+  sel.value = atual || 'C13';
+}
+function valores(e) {
+  if (!BASE) return null;
+  const ref = M.n2d(M.d2n(e.ref || hoje));
+  const comp = ref.slice(0, 7);
+  const tetoK = vigAtual(BASE.teto_rgps, comp), teto = tetoK ? BASE.teto_rgps[tetoK] : null;
+  const smK = vigAtual(BASE.salario_minimo, comp), sm = smK ? BASE.salario_minimo[smK] : null;
+  let integral = null, det = '', vig = null;
+  if (e.magistrado) {
+    vig = vigAtual(BASE.subsidios, ref); const t = vig && BASE.subsidios[vig];
+    if (t && t[e.valor.mag]) { integral = t[e.valor.mag]; det = 'subsídio de ' + e.valor.mag.toLowerCase(); }
+  } else {
+    vig = vigAtual(BASE.tabelas, ref); const t = vig && BASE.tabelas[vig] && BASE.tabelas[vig][e.valor.cargo];
+    const p = t && t[e.valor.padrao];
+    if (p) {
+      const ats = p.vb * (e.valor.ats || 0) / 100, gas = e.policiaJudicial && e.valor.gas ? p.vb * 0.35 : 0;
+      integral = p.vb + p.gaj + ats + gas + (e.valor.outras || 0);
+      det = `VB ${moeda(p.vb)} + GAJ ${moeda(p.gaj)}` + (ats ? ` + ATS ${moeda(ats)}` : '') + (gas ? ` + GAS ${moeda(gas)}` : '') + (e.valor.outras ? ` + outras ${moeda(e.valor.outras)}` : '');
+    }
+  }
+  return { integral, det, vig, teto, tetoK, sm };
+}
+let VAL = null;
+function txtValor(p) {
+  if (!VAL || !p) return '';
+  if (p.tipo === 'integral' && VAL.integral != null) return ' · ' + moeda(VAL.integral);
+  if (p.teto && VAL.teto != null) return ' · até ' + moeda(VAL.teto);
+  return '';
+}
+function blocoValor(e) {
+  $('#valServ').hidden = e.magistrado; $('#valMag').hidden = !e.magistrado;
+  $('#wrapGas').hidden = !e.policiaJudicial;
+  const box = $('#valRes');
+  if (!BASE) { box.hidden = false; box.innerHTML = 'Base de parâmetros (dados_aposentadoria.json) não carregada. Abra a calculadora pelo hub para ver valores.'; return; }
+  VAL = valores(e); box.hidden = false;
+  box.innerHTML = `<div class="m"><b class="s">R$</b><span><b>Remuneração do cargo efetivo (integralidade): ${moeda(VAL.integral)}</b>${VAL.det ? '<br>' + esc(VAL.det) : ''}<br>Tabela vigente desde ${VAL.vig ? br(M.d2n(VAL.vig)) : '—'}.</span></div>`
+    + `<div class="m"><b class="s">R$</b><span>Teto do RGPS em ${VAL.tetoK ? VAL.tetoK.slice(5) + '/' + VAL.tetoK.slice(0,4) : '—'}: <b>${moeda(VAL.teto)}</b> · salário mínimo (piso): ${moeda(VAL.sm)}</span></div>`;
+}
 function txtProv(p) {
   if (!p) return '—';
-  if (p.tipo === 'integral') return 'Integralidade' + (p.paridade ? ' e paridade' : '');
+  if (p.tipo === 'integral') return 'Integralidade' + (p.paridade ? ' e paridade' : '') + txtValor(p);
   const pct = p.pct != null ? (Math.round(p.pct * 10) / 10).toString().replace('.', ',') + '% ' : '';
   const base = p.tipo === 'media80' ? 'da média das 80% maiores' : 'da média (desde 07/1994)';
-  return pct + base + (p.teto ? ' · teto do RGPS' : '') + (p.tipo !== 'media80' ? ' · sem paridade' : '');
+  return pct + base + (p.teto ? ' · teto do RGPS' : '') + (p.tipo !== 'media80' ? ' · sem paridade' : '') + txtValor(p);
 }
 function cor(r) {
   if (r.id === 'comp') return 'var(--s-comp)';
@@ -1066,6 +1131,7 @@ function marcos() {
 function calcular() {
   infoLinhas(); marcos();
   const e = ler(); ultimo = e;
+  blocoValor(e);
   let res;
   try { res = M.avaliar(e); } catch (err) { console.error(err); res = { ok: false, erros: ['Erro no cálculo: ' + err.message], avisos: [] }; }
   render(res, e);
@@ -1097,6 +1163,13 @@ $('#arq').addEventListener('change', async ev => {
 $('#bLimpar').addEventListener('click', () => { if (confirm('Limpar todos os campos?')) { abertas.clear(); escrever({}); } });
 
 escrever({});
+fetch('dados_aposentadoria.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => {
+  if (!j) return; BASE = j;
+  const vig = Object.keys(j.subsidios).sort().pop();
+  f.elements.vMag.innerHTML = Object.keys(j.subsidios[vig]).filter(c => !/CLASSISTA|STF|TST/.test(c)).map(c => `<option>${esc(c)}</option>`).join('');
+  calcular();
+}).catch(() => {});
+f.elements.vCargo.addEventListener('change', preencherPadroes);
 })();
 </script>
 </body>
