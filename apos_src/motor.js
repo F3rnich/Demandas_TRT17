@@ -143,7 +143,8 @@ function validar(x) {
     cursor = Math.max(cursor, b);
     if (cursor >= x.exercicio) break;
   }
-  if (lacuna) avisos.push(`Há intervalo sem vínculo público entre ${n2br(lacuna[0])} e ${n2br(lacuna[1])}. As datas-corte de ingresso (16/12/1998, 31/12/2003, 13/11/2019) dependem de vínculo sem interrupção — confira a data de ingresso informada.`);
+  if (lacuna) avisos.push({ lacuna: [n2d(lacuna[0]), n2d(lacuna[1])],
+    texto: `O serviço público começa em ${n2br(x.ingressoSP)}, mas não há vínculo público informado de ${n2br(lacuna[0])} a ${n2br(lacuna[1])}. Informe esse período no bloco 3 (ex.: o órgão de origem, como RPPS e "conta como serviço público"). Sem ele, esse tempo não conta como contribuição nem como serviço público. Se houve mesmo interrupção, corrija a data de ingresso no serviço público.` });
   if (x.policiaJudicial) avisos.push('Agente/inspetor de polícia judicial: sem regra especial vigente (art. 5º da EC 103/2019 não inclui o cargo; MI 844/STF). Aplicadas as regras gerais.');
   return { erros, avisos };
 }

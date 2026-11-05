@@ -552,7 +552,9 @@ function render(res, e) {
     corpo.innerHTML = '<div class="bloco"><p class="vazio" style="margin:0">Preencha a data de nascimento e a de exercício no Tribunal para ver o resultado.</p></div>';
     return;
   }
-  av.innerHTML = res.avisos.map(t => `<div class="aviso att"><span class="ic">!</span><span>${esc(t)}</span></div>`).join('')
+  av.innerHTML = res.avisos.map(t => typeof t === 'string'
+      ? `<div class="aviso att"><span class="ic">!</span><span>${esc(t)}</span></div>`
+      : `<div class="aviso att"><span class="ic">!</span><span>${esc(t.texto)}${t.lacuna ? `<br><button type="button" class="btn sec peq nao-imp" style="margin-top:8px" data-lacuna="${t.lacuna.join('|')}">Adicionar ${br(M.d2n(t.lacuna[0]))} a ${br(M.d2n(t.lacuna[1]))} no bloco 3</button>` : ''}</span></div>`).join('')
     + (res.situacao.sobreposicao > 0 ? `<div class="aviso info"><span class="ic">i</span><span>${res.situacao.sobreposicao} dia(s) de períodos concomitantes até a data de referência foram contados uma única vez.</span></div>` : '');
   const s = res.situacao, ref = s.ref;
   const P = res.primeira, B = res.melhor, A = res.abono;
@@ -617,6 +619,12 @@ function render(res, e) {
   // cabeçalho de impressão
   $('#impCab').innerHTML = `<p style="margin:0 0 10px"><b>Interessado(a):</b> ${esc(e.nome || '—')} · <b>Processo:</b> ${esc(e.processo || '—')} · <b>Nascimento:</b> ${br(M.d2n(e.nasc))} · <b>Sexo:</b> ${e.sexo === 'F' ? 'feminino' : 'masculino'} · <b>Gerado em:</b> ${br(M.d2n(hoje))}</p>`;
 }
+$('#avisos').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-lacuna]'); if (!b) return;
+  const [ini, fim] = b.dataset.lacuna.split('|');
+  const n = addLinha('per', { orgao: '', regime: 'RPPS', publico: true, inicio: ini, fim });
+  calcular(); n.scrollIntoView({ block: 'center' }); n.querySelector('[data-k=orgao]').focus();
+});
 $('#corpo').addEventListener('click', ev => {
   const tr = ev.target.closest('tr.regra'); if (!tr) return; alternar(tr);
 });

@@ -109,6 +109,15 @@ eq('G: conversão 1,4 até a EC 103', Math.round(G.situacao.conversao), Math.rou
 const H = M.avaliar({ sexo: 'M', nasc: '1985-03-10', ref: '2026-11-04', ingressoSP: '2016-01-16', ingressoCargo: '2016-01-16', exercicio: '2016-01-16' });
 eq('H: melhor provento ≠ compulsória', H.melhor.id !== 'comp', true);
 
+/* Lacuna de vínculo público: aviso estruturado com o período a informar */
+const L = M.avaliar({ sexo: 'M', nasc: '1985-11-12', ref: '2026-11-05', ingressoSP: '2011-10-25', ingressoCargo: '2016-01-16', exercicio: '2016-01-16' });
+const av = L.avisos.find(a => a.lacuna);
+eq('L: lacuna 25/10/2011 a 15/01/2016', av && av.lacuna.join('|'), '2011-10-25|2016-01-15');
+const L2 = M.avaliar({ sexo: 'M', nasc: '1985-11-12', ref: '2026-11-05', ingressoSP: '2011-10-25', ingressoCargo: '2016-01-16', exercicio: '2016-01-16',
+  periodos: [{ orgao: 'MPF', regime: 'RPPS', inicio: '2011-10-25', fim: '2016-01-15' }] });
+eq('L2: sem aviso de lacuna com o período informado', L2.avisos.some(a => a.lacuna), false);
+eq('L2: contribuição inclui o MPF', Math.round(L2.situacao.contribuicao), M.d2n('2026-11-05') - M.d2n('2011-10-25') + 1);
+
 /* Validação: dados faltantes */
 const Z = M.avaliar({ sexo: 'M' });
 eq('Z: erros de entrada', Z.ok, false);
