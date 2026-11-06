@@ -400,6 +400,12 @@ SIGLA_SERIE = {"OCMJT": "OCMJT", "COGEP": "SGP", "SGP": "SGP", "SEGEP": "SGP", "
                "SEADM": "SEADM", "SADM": "SEADM", "DIGER": "DIGER", "DG": "DIGER", "EJUD": "EJUD", "EMATRA": "EJUD",
                "NUPEMEC": "NUPEMEC", "CEJUSC": "NUPEMEC"}
 URL_SITE = "https://www.trt17.jus.br"
+# Link estável: o portal troca o nome do arquivo na URL quando substitui o documento (ex.: nova versão consolidada),
+# e o endereço /documents/<grupo>/<pasta>/<nome>/<uuid> passa a dar 404. O get_file por uuid continua valendo.
+RX_URL_DOC = re.compile(r"^/documents/(\d+)/\d+/[^/]+/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/?$", re.I)
+def url_estavel(u):
+    m = RX_URL_DOC.match(u or "")
+    return f"{URL_SITE}/c/document_library/get_file?uuid={m.group(2)}&groupId={m.group(1)}" if m else URL_SITE + (u or "")
 
 def serie_pdf(a):
     for s_ in a["un"]:
@@ -508,7 +514,7 @@ def incorpora_site(atos, site):
             if x is vigente: return ["c", data_compilacao(x[0]["titulo"])]
             if compilada(x): return ["h", data_compilacao(x[0]["titulo"])]
             return []
-        arquivos = [[URL_SITE + x[0]["url"], (x[0]["titulo"] or "")[:140]] + marca(x) for x in ordem if x[0].get("url")]
+        arquivos = [[url_estavel(x[0]["url"]), (x[0]["titulo"] or "")[:140]] + marca(x) for x in ordem if x[0].get("url")]
         texto_site = max([assunto, d0.get("descricao") or ""], key=len)
         rev_site = any(RX_REV_SITE.search(x[0]["titulo"] or "") for x in docs)
         alvo = None
