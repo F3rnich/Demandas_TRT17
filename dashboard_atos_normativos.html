@@ -123,6 +123,11 @@
   .dest .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
   .maisrev{background:#fff;border-radius:12px;box-shadow:var(--sh);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:.88rem;color:var(--txt-2)}
   .more{text-align:center}
+  .ecbloco{background:#EEF3F7;border:1px solid var(--line-2);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;margin:6px 0}
+  .ech{display:flex;flex-direction:column;gap:2px;font-size:.92rem;color:var(--navy)}
+  .ech .dim{font-size:.8rem;color:var(--txt-3)}
+  .ecn{color:var(--txt-3);font-weight:600}
+  .ecbloco>.btn{align-self:flex-start}
   .vazio{padding:30px;text-align:center;color:var(--txt-3);font-size:.9rem;background:#fff;border-radius:12px}
 
   details.sobre{background:#fff;border-radius:12px;box-shadow:var(--sh);padding:0 18px;font-size:.82rem}
@@ -426,7 +431,7 @@ const ST0 = () => ({q:'', sit:'v', nat:'g', tema:'', col:'', tipo:'', s:'', un:'
 
 let D, A, META, HAY = [], CIT = [];
 let st = ST0();
-let ocultos = 0, revOc = 0;
+let ocultos = 0, revOc = 0, ecLista = [];
 let lista = [], mostrados = 0, termos = null;
 let pilha = [], atual = null, empurrou = false, scroll0 = 0;
 
@@ -553,7 +558,7 @@ function filtra(){
   const porNumero = !!termos && termos.todos.some(t => /^\d+\/\d{4}$/.test(t));
   const usaNat = st.nat !== 't' && !porNumero;
   const usaSit = !st.s && !porNumero && st.sit !== 't';
-  ocultos = 0; revOc = 0;
+  ocultos = 0; revOc = 0; const ec = [];
   for (const a of A){
     if (st.tema !== '' && !(a.tm || []).includes(+st.tema)) continue;
     if (st.col === '1' && !a.cl) continue;
@@ -587,7 +592,11 @@ function filtra(){
       // norma com texto compilado e não revogada: reúne as alterações e traz o conteúdo em vigor
       if (a.cp && a.s !== 'revogado') sc += 60;
     }
-    if (usaNat && (a.k || 'g') !== st.nat) { ocultos++; continue; }
+    if (usaNat && (a.k || 'g') !== st.nat) {
+      // fora da natureza escolhida: com busca por texto, vai para o bloco "efeito concreto" (respeitando a situação)
+      if (usaSit && ((st.sit === 'v' && a.s === 'revogado') || (st.sit === 'r' && a.s !== 'revogado'))) continue;
+      ocultos++; if (termos) ec.push([a, sc]); continue;
+    }
     if (usaSit){
       if (st.sit === 'v' && a.s === 'revogado') { revOc++; continue; }
       if (st.sit === 'r' && a.s !== 'revogado') continue;
@@ -603,6 +612,7 @@ function filtra(){
   else if (ord === 'rec') res.sort((x, y) => (chave(y[0]) > chave(x[0]) ? 1 : chave(y[0]) < chave(x[0]) ? -1 : 0));
   else if (ord === 'ant') res.sort((x, y) => (chave(x[0]) > chave(y[0]) ? 1 : chave(x[0]) < chave(y[0]) ? -1 : 0));
   else if (ord === 'cit') res.sort((x, y) => CIT[y[0].i] - CIT[x[0].i] || y[0].i - x[0].i);
+  ecLista = ec.sort((x, y) => y[1] - x[1] || vig(y[0]) - vig(x[0]) || (chave(y[0]) > chave(x[0]) ? 1 : -1)).map(x => x[0]);
   return res.map(x => x[0]);
 }
 
@@ -630,7 +640,7 @@ function roda(){
   const sobre = termos ? ` sobre “${esc(st.q.trim())}”` : st.tema !== '' ? ` no tema ${esc(META.temas[+st.tema].tema)}` : '';
   $('count').innerHTML = `<b>${n.toLocaleString('pt-BR')} ato${n === 1 ? '' : 's'}</b>${sitTxt}${sobre}` +
     (n && st.ord === 'rel' && st.sit !== 'r' && (termos || st.tema !== '') ? ' <span class="dim">· mais relevantes primeiro; textos compilados em vigor têm prioridade</span>' : '') +
-    (ocultos && st.nat === 'g' ? ` <span class="dim">· <a href="#" id="ver-ec">+ ${ocultos.toLocaleString('pt-BR')} de efeito concreto</a></span>` : '');
+    (ocultos && st.nat === 'g' ? ` <span class="dim">· <a href="#" id="ver-ec">+ ${ocultos.toLocaleString('pt-BR')} de efeito concreto</a>${termos ? ' (em bloco separado abaixo)' : ''}</span>` : '');
   const ve = $('ver-ec'); if (ve) ve.onclick = e => { e.preventDefault(); st.nat = 't'; aplicaUI(); roda(); };
   if (!n) $('res').innerHTML = `<div class="vazio">Nenhum ato atende à busca e aos filtros.${revOc ? '' : ' Tente menos palavras, troque “Buscar o texto em” (Mais filtros) para incluir as notas, ou limpe os filtros.'}</div>`;
   mais(); hist(); chips(); escreveHash();
@@ -640,7 +650,10 @@ function roda(){
 
 function mais(){
   const destaque = mostrados === 0;
-  const frag = lista.slice(mostrados, mostrados + PAG).map((a, k) => cartao(a, destaque && k === 0 && podeDestacar(a))).join('');
+  const cards = lista.slice(mostrados, mostrados + PAG).map((a, k) => cartao(a, destaque && k === 0 && podeDestacar(a)));
+  // busca por texto: atos de efeito concreto que casam aparecem num bloco próprio depois dos 10 primeiros resultados (ou no fim)
+  if (destaque && termos && st.nat === 'g' && ecLista.length) cards.splice(Math.min(10, cards.length), 0, blocoEC());
+  const frag = cards.join('');
   $('res').insertAdjacentHTML('beforeend', frag);
   mostrados = Math.min(lista.length, mostrados + PAG);
   const resto = lista.length - mostrados;
@@ -649,6 +662,16 @@ function mais(){
   $('more').innerHTML = h;
   const b = $('b-mais'); if (b) b.onclick = mais;
   const r = $('b-rev'); if (r) r.onclick = () => { st.sit = 't'; aplicaUI(); roda(); };
+}
+
+function blocoEC(){
+  const n = ecLista.length;
+  return `<section class="ecbloco" aria-label="Atos de efeito concreto">
+    <div class="ech"><div><b>Atos de efeito concreto com estes termos</b> <span class="ecn">(${n.toLocaleString('pt-BR')})</span></div>
+    <div class="dim">Ficam fora de “Normas gerais” por se esgotarem num caso: prorrogações e homologações de concurso, designações, editais, escalas…</div></div>
+    <div class="res">${ecLista.slice(0, 5).map(a => cartao(a, false)).join('')}</div>
+    ${n > 5 ? `<button class="btn" data-ver-ec="1">Ver os ${n.toLocaleString('pt-BR')} atos de efeito concreto</button>` : ''}
+  </section>`;
 }
 
 // destaque só quando há busca ou tema, na ordem por relevância, e o 1º resultado é norma geral não revogada
@@ -1046,6 +1069,7 @@ function bind(){
   $('b-link').onclick = () => copia(location.href, $('b-link'));
   $('res').addEventListener('click', e => {
     if (e.target.closest('[data-pdf]')) return;
+    if (e.target.closest('[data-ver-ec]')) { st.nat = 'e'; aplicaUI(); roda(); window.scrollTo(0, 0); return; }
     const r = e.target.closest('[data-ref]'); if (r) { copia(referencia(A[+r.dataset.ref]), r); return; }
     const tg = e.target.closest('[data-tema]'); if (tg) { st.tema = tg.dataset.tema; aplicaUI(); roda(); return; }
     const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); abre(+g.dataset.go, false); return; }
