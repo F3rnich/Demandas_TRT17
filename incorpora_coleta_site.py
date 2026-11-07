@@ -28,6 +28,7 @@ import sys
 
 BASE = "fontes/atos_normativos/legislacao_trt17_site.json"
 ACOMP = "fontes/atos_normativos/acompanhamento_pastas_antigas.json"
+SEMANA = "fontes/atos_normativos/alvos_semana.json"
 RODIZIO = 3            # pastas antigas "ativas" (já receberam documento tardio desde 2026) por semana no rodízio
 RODIZIO_QUIETAS = 1    # e pastas antigas sem histórico de documento tardio
 MAX_PEND = 6           # teto de pastas pendentes por semana (as menos visitadas e de pendência mais recente primeiro)
@@ -279,12 +280,25 @@ def main():
     b.add_argument("--simular", action="store_true", help="não grava a base")
     b.add_argument("--hoje")
     c = sub.add_parser("pendencias"); c.add_argument("--base", default=BASE); c.add_argument("--hoje")
+    d = sub.add_parser("semana", help="grava fontes/atos_normativos/alvos_semana.json para o favorito da coleta semanal assistida")
+    d.add_argument("--base", default=BASE); d.add_argument("--hoje")
     x = ap.parse_args()
     base = carrega(x.base)
     hoje = dt.date.fromisoformat(x.hoje) if x.hoje else dt.date.today()
     acomp = carrega_acomp()
     if x.cmd == "alvos":
         json.dump(alvos(base, hoje, acomp), sys.stdout, ensure_ascii=False)
+        return
+    if x.cmd == "semana":
+        a = alvos(base, hoje, acomp)
+        ant = {v["id"] for v in a["antigas"]}
+        ps = [{"id": i, "c": a["_rotulos"][str(i)], "t": "docs", "a": i in ant} for i in a["docs"]]
+        ps += [{"id": i, "c": a["_rotulos"][str(i)], "t": "mae", "a": False} for i in a["maes"] if i not in set(a["docs"]) and "/" in a["_rotulos"][str(i)]]   # raiz da seção carrega antes do favorito
+        ps.sort(key=lambda p: (p["c"].split("/")[0], p["a"], p["c"]))
+        saida = {"semana": hoje.isoformat(), "pastas": ps}
+        with open(SEMANA, "w", encoding="utf-8") as f:
+            json.dump(saida, f, ensure_ascii=False, indent=1)
+        print(f"{SEMANA}: {len(ps)} pastas ({sum(p['t'] == 'docs' for p in ps)} com documentos, {len(ant)} de anos anteriores)")
         return
     if x.cmd == "pendencias":
         resumo = atualiza_acomp(base, {}, acomp, hoje)

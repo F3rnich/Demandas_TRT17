@@ -21,6 +21,14 @@
 >   `n` da base e abrir também as pastas cujo número mudou.
 > - Não detecta arquivo trocado em documento existente (contagem não muda): a coleta completa ocasional cobre. O jeito exato de extrair da aba (DOM ou respostas de rede) fica registrado aqui após a 1ª execução.
 
+> **Como coletar no modo assistido (definido em 07/11/2026).** O Claude NÃO consegue navegar o portal pela aba dele (Claude in Chrome):
+> em 07/11 até o clique normal numa pasta, feito pela aba do Claude, recebeu 202. Quem navega é o Leo, numa aba comum, com o favorito
+> **"Coleta semanal TRT-17"** (página `coletor_legislacao.html`, seção "Coleta semanal"): ele lista as pastas da semana
+> (`fontes/atos_normativos/alvos_semana.json`, gerado por `python3 -I incorpora_coleta_site.py semana` e publicado ANTES de o Leo começar),
+> anota as respostas que a própria página recebe (IndexedDB `coleta_semanal`, sobrevive à troca de seção) e baixa
+> `coleta_semanal_AAAA-MM-DD.json` em Downloads, já no formato de `/tmp/resultado.json` (inclui `visitadas`). O Claude pega o arquivo pelo
+> computador do Leo (Downloads conectado) e segue os passos 5 a 8. Depois de publicar, gere e publique o `alvos_semana.json` da semana seguinte.
+
 Objetivo: trazer para o painel `dashboard_atos_normativos.html` os atos publicados na seção Legislação do portal do TRT-17
 na última semana e, quando o Leo tiver baixado um PDF novo da compilação oficial, reprocessar a compilação.
 Publicação é direta (decisão do Leo, 31/10/2026) quando a validação passa. Execute sem pedir confirmação, exceto nos casos de parada abaixo.

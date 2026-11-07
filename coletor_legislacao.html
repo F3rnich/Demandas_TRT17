@@ -41,6 +41,19 @@
     O portal só responde a consultas feitas de dentro dele (firewall AWS), então a coleta roda no seu navegador, na página do TRT, e baixa um arquivo JSON.</p>
   </section>
 
+  <section class="panel" style="border:2px solid var(--yellow)">
+    <h2>Coleta semanal (sábados)</h2>
+    <p style="font-size:.9rem">Traz só o que entrou no portal desde a última coleta. Você navega; o favorito só anota o que a página carrega.</p>
+    <ol>
+      <li>Arraste para a barra de favoritos (de novo a cada semana — a lista de pastas muda): <a class="bm" id="bm3" href="#">Coleta semanal TRT-17</a> <span id="bm3-info" style="font-size:.8rem;color:var(--txt-2)">carregando a lista da semana…</span></li>
+      <li>Abra <a href="https://www.trt17.jus.br/web/legislacao/w/atos-da-presidencia" target="_blank" rel="noopener">a seção Legislação do portal</a> numa aba comum e clique no favorito. Um quadro no canto lista as pastas da semana, por seção.</li>
+      <li>Abra cada pasta da lista, com calma (alguns segundos entre cliques). Em "Itens por página", escolha o maior número; se o quadro disser que faltam documentos numa pasta, passe as páginas. Cada pasta concluída ganha um ✓.</li>
+      <li>Para outra seção (ex.: Portarias), abra a página dela e clique no favorito de novo — o que já foi anotado fica guardado.</li>
+      <li>No fim, clique em <b>Baixar arquivo da semana</b> no quadro (vai para Downloads) e avise o Claude.</li>
+    </ol>
+    <p style="font-size:.8rem;color:var(--txt-2);margin-top:8px">Se o portal recusar carregamentos (o quadro avisa), pare e tente mais tarde. Não insista.</p>
+  </section>
+
   <section class="panel">
     <h2>Uma vez só: instalar o favorito</h2>
     <ol>
@@ -214,11 +227,94 @@ python deploy.py "Atos normativos: atualização" dados_atos_normativos.json</pr
   desenha();
 })();
 </script>
+<script type="text/plain" id="src3">
+(async () => {
+  // Coleta semanal assistida: não faz pedidos próprios ao portal; anota as respostas que a página recebe
+  // quando a pessoa abre as pastas. Estado em IndexedDB (sobrevive à troca de seção).
+  if (!/trt17\.jus\.br$/.test(location.hostname)) { alert('Abra a seção Legislação do portal www.trt17.jus.br e clique no favorito lá.'); return; }
+  if (window.__semanalAtivo) return; window.__semanalAtivo = true;
+  const ALVOS = __ALVOS__;
+  const PAG = {'Atos da Presidência': 'atos-da-presidencia', 'Portarias': 'portarias', 'Resoluções Administrativas': 'resolucoes-administrativas', 'Provimentos': 'provimentos', 'Editais': 'editais', 'Recomendações': 'recomendacoes', 'Ordens de Serviço': 'ordens-de-servico', 'Instruções Normativas': 'instrucoes-normativas'};
+  const db = await new Promise((ok, err) => { const q = indexedDB.open('coleta_semanal', 1); q.onupgradeneeded = () => q.result.createObjectStore('s'); q.onsuccess = () => ok(q.result); q.onerror = err; });
+  const ler = () => new Promise(ok => { const q = db.transaction('s').objectStore('s').get('estado'); q.onsuccess = () => ok(q.result); });
+  const gravar = v => new Promise(ok => { const t = db.transaction('s', 'readwrite'); t.objectStore('s').put(v, 'estado'); t.oncomplete = ok; });
+  let est = await ler();
+  if (!est || est.semana !== ALVOS.semana) est = {semana: ALVOS.semana, docs: {}, pastas: {}, totais: {}, vistas: {}, maesVistas: {}, recusas: 0};
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999999;background:#003A5C;color:#fff;font:12.5px/1.45 Arial;padding:12px 16px;border-radius:8px;border-bottom:4px solid #FFD040;box-shadow:0 4px 14px rgba(0,0,0,.3);width:360px;max-height:70vh;overflow:auto';
+  (document.body || document.documentElement).appendChild(box);
+  const secaoAqui = Object.keys(PAG).find(k => PAG[k] === decodeURIComponent(location.pathname.split('/w/')[1] || ''));
+  const visto = (id) => est.vistas[id] ? (est.totais[id] || 0) <= Object.values(est.docs).filter(d => d.pastaId === id).length : false;
+  const desenha = () => {
+    const linhas = ALVOS.pastas.map(p => {
+      const ok = p.t === 'mae' ? !!est.maesVistas[p.id] : visto(p.id);
+      const cap = Object.values(est.docs).filter(d => d.pastaId === p.id).length, tot = est.totais[p.id] || 0;
+      const falta = p.t !== 'mae' && est.vistas[p.id] && tot > cap ? ' <span style="color:#FFD040">(faltam ' + (tot - cap) + ': passe as páginas)</span>' : '';
+      return {sec: p.c.split('/')[0], h: '<li style="opacity:' + (ok ? .6 : 1) + '">' + (ok ? '✓ ' : '') + p.c.split('/').slice(1).join(' › ') + (p.t === 'mae' ? ' <i>(só abrir a pasta)</i>' : '') + (p.t !== 'mae' && !p.c.includes('/') ? ' <i>(documentos da própria seção: mude "Itens por página" para o maior número, isso recarrega a lista)</i>' : '') + (p.a ? ' <i>(ano anterior)</i>' : '') + falta + '</li>'};
+    });
+    const secs = [...new Set(linhas.map(l => l.sec))];
+    const nd = Object.keys(est.docs).length, faltam = ALVOS.pastas.filter(p => !(p.t === 'mae' ? est.maesVistas[p.id] : visto(p.id))).length;
+    box.innerHTML = '<b>Coleta semanal — ' + ALVOS.semana + '</b><br>Pastas que faltam: <b>' + faltam + '</b> de ' + ALVOS.pastas.length + ' · documentos anotados: ' + nd +
+      (est.recusas ? '<div style="background:#B03A2E;padding:4px 8px;border-radius:4px;margin-top:6px">O portal recusou ' + est.recusas + ' carregamento(s). Espere alguns minutos antes de continuar; se repetir, pare por hoje.</div>' : '') +
+      secs.map(s => '<div style="margin-top:8px"><b>' + (s === secaoAqui ? '▶ ' : '') + (s === secaoAqui ? s : '<a style="color:#FFD040" href="/web/legislacao/w/' + PAG[s] + '">' + s + '</a>') + '</b>' + (s === secaoAqui ? '' : ' <span style="opacity:.7">(abra e clique no favorito)</span>') +
+        '<ul style="margin:3px 0 0 16px">' + linhas.filter(l => l.sec === s).map(l => l.h).join('') + '</ul></div>').join('') +
+      '<div style="margin-top:10px"><button id="__bs" style="font:inherit;padding:4px 10px;border-radius:5px;border:0;background:#FFD040;color:#003A5C;font-weight:700;cursor:pointer">Baixar arquivo da semana</button></div>';
+    document.getElementById('__bs').onclick = baixar;
+  };
+  const baixar = () => {
+    const saida = {modo: 'assistido-semanal', semana: ALVOS.semana, gerado_em: new Date().toISOString(), bloqueado: null,
+      pastas: Object.values(est.pastas), novos: Object.values(est.docs),
+      paginas_incompletas: Object.keys(est.vistas).map(Number).filter(id => (est.totais[id] || 0) > Object.values(est.docs).filter(d => d.pastaId === id).length).map(id => ({pastaId: id, total: est.totais[id], vistos: Object.values(est.docs).filter(d => d.pastaId === id).length})),
+      visitadas: Object.keys(est.vistas).map(Number), recusas: est.recusas};
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(saida)], {type: 'application/json'}));
+    a.download = 'coleta_semanal_' + ALVOS.semana + '.json';
+    (document.body || document.documentElement).appendChild(a); a.click(); a.remove();
+  };
+  const RX = /document-folders\/(\d+)\/(documents|document-folders)(?:\?|$)/;
+  const registra = async (u, status, txt) => {
+    const m = String(u).match(RX); if (!m) return;
+    if (status === 202 || (status === 200 && !txt)) { est.recusas++; await gravar(est); desenha(); return; }
+    if (status !== 200) return;
+    let j; try { j = JSON.parse(txt); } catch (e) { est.recusas++; await gravar(est); desenha(); return; }
+    if (!j || !Array.isArray(j.items)) return;
+    const id = +m[1];
+    if (m[2] === 'documents') {
+      est.vistas[id] = 1; est.totais[id] = Math.max(est.totais[id] || 0, j.totalCount || 0);
+      j.items.forEach(d => { est.docs[d.id] = {id: d.id, pastaId: id, titulo: d.title, descricao: d.description || '', arquivo: d.fileName, ext: d.fileExtension,
+        url: (d.contentUrl || '').split('?')[0], bytes: d.sizeInBytes, criado: d.dateCreated, modificado: d.dateModified, kw: d.keywords || [], cat: (d.taxonomyCategoryBriefs || []).map(t => t.taxonomyCategoryName)}; });
+    } else {
+      est.maesVistas[id] = 1;
+      j.items.forEach(f => { est.pastas[f.id] = {id: f.id, paiId: id, nome: f.name, n: f.numberOfDocuments, nf: f.numberOfDocumentFolders}; });
+    }
+    await gravar(est); desenha();
+  };
+  const ofetch = window.fetch;
+  window.fetch = async function (...args) {
+    const r = await ofetch.apply(this, args);
+    try { const u = typeof args[0] === 'string' ? args[0] : args[0].url; if (RX.test(u)) r.clone().text().then(t => registra(u, r.status, t)).catch(() => {}); } catch (e) {}
+    return r;
+  };
+  const oopen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (m, u, ...rest) {
+    if (RX.test(String(u))) this.addEventListener('load', () => { try { registra(u, this.status, this.responseText); } catch (e) {} });
+    return oopen.call(this, m, u, ...rest);
+  };
+  desenha();
+})();
+</script>
 <script>
   document.getElementById('bm2').href = 'javascript:' + encodeURIComponent(document.getElementById('src2').textContent.trim());
   document.getElementById('bm2').addEventListener('click', e => { e.preventDefault(); alert('Arraste este botão para a barra de favoritos e use-o na página de Legislação do TRT-17.'); });
   document.getElementById('bm').href = 'javascript:' + encodeURIComponent(document.getElementById('src').textContent.trim());
   document.getElementById('bm').addEventListener('click', e => { e.preventDefault(); alert('Arraste este botão para a barra de favoritos e use-o na página de Legislação do TRT-17.'); });
+  // favorito da coleta semanal: a lista de pastas da semana vem de fontes/atos_normativos/alvos_semana.json
+  fetch('fontes/atos_normativos/alvos_semana.json', {cache: 'no-cache'}).then(r => r.json()).then(a => {
+    const b = document.getElementById('bm3');
+    b.href = 'javascript:' + encodeURIComponent(document.getElementById('src3').textContent.trim().replace('__ALVOS__', JSON.stringify(a)));
+    document.getElementById('bm3-info').textContent = 'semana de ' + a.semana.split('-').reverse().join('/') + ' · ' + a.pastas.length + ' pastas';
+  }).catch(() => { document.getElementById('bm3-info').textContent = 'lista da semana indisponível'; });
+  document.getElementById('bm3').addEventListener('click', e => { e.preventDefault(); alert('Arraste este botão para a barra de favoritos e use-o na página de Legislação do TRT-17.'); });
 </script>
 </body>
 </html>

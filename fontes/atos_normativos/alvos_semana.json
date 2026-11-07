@@ -1,0 +1,203 @@
+{
+ "semana": "2026-11-07",
+ "pastas": [
+  {
+   "id": 1050584,
+   "c": "Atos da Presidência/Administração",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 5192808,
+   "c": "Atos da Presidência/Administração/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1058728,
+   "c": "Atos da Presidência/Conciliação",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1058880,
+   "c": "Atos da Presidência/Corregedoria",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 4937223,
+   "c": "Atos da Presidência/Corregedoria/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1081247,
+   "c": "Atos da Presidência/Diretoria-Geral",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 5006333,
+   "c": "Atos da Presidência/Diretoria-Geral/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1087924,
+   "c": "Atos da Presidência/Escola Judicial",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1088053,
+   "c": "Atos da Presidência/Gestão de Pessoas",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 5007175,
+   "c": "Atos da Presidência/Gestão de Pessoas/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1096604,
+   "c": "Atos da Presidência/Presidência",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 5007173,
+   "c": "Atos da Presidência/Presidência/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1058101,
+   "c": "Atos da Presidência/Administração/2020",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1083232,
+   "c": "Atos da Presidência/Diretoria-Geral/2021",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1096602,
+   "c": "Atos da Presidência/Gestão de Pessoas/2025",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1132075,
+   "c": "Atos da Presidência/Presidência/2024",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1104627,
+   "c": "Atos da Presidência/Presidência/Anos Anteriores/2011",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1015672,
+   "c": "Editais",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1015376,
+   "c": "Instruções Normativas",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1015267,
+   "c": "Ordens de Serviço",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1037968,
+   "c": "Portarias/Diretoria-Geral",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 7034806,
+   "c": "Portarias/Diretoria-Geral/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1066874,
+   "c": "Portarias/Presidência",
+   "t": "mae",
+   "a": false
+  },
+  {
+   "id": 5850664,
+   "c": "Portarias/Presidência/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1066779,
+   "c": "Portarias/Diretoria-Geral/2024",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1066872,
+   "c": "Portarias/Diretoria-Geral/2025",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1016834,
+   "c": "Provimentos",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1017462,
+   "c": "Recomendações/Corregedoria",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1019604,
+   "c": "Recomendações/Presidência",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 5006335,
+   "c": "Resoluções Administrativas/2026",
+   "t": "docs",
+   "a": false
+  },
+  {
+   "id": 1148157,
+   "c": "Resoluções Administrativas/2023",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1038857,
+   "c": "Resoluções Administrativas/Anos Anteriores/2014",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1054448,
+   "c": "Resoluções Administrativas/Anos Anteriores/2019",
+   "t": "docs",
+   "a": true
+  }
+ ]
+}
