@@ -1,5 +1,5 @@
 {
- "semana": "2026-11-07",
+ "semana": "2026-11-14",
  "pastas": [
   {
    "id": 1050584,
@@ -74,32 +74,50 @@
    "a": false
   },
   {
-   "id": 1058101,
-   "c": "Atos da Presidência/Administração/2020",
+   "id": 1058238,
+   "c": "Atos da Presidência/Administração/2021",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1083232,
-   "c": "Atos da Presidência/Diretoria-Geral/2021",
+   "id": 1087921,
+   "c": "Atos da Presidência/Diretoria-Geral/2025",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1096602,
-   "c": "Atos da Presidência/Gestão de Pessoas/2025",
+   "id": 1081514,
+   "c": "Atos da Presidência/Diretoria-Geral/Anos Anteriores/2012",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1132075,
-   "c": "Atos da Presidência/Presidência/2024",
+   "id": 1094897,
+   "c": "Atos da Presidência/Gestão de Pessoas/2022",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1104627,
-   "c": "Atos da Presidência/Presidência/Anos Anteriores/2011",
+   "id": 1093426,
+   "c": "Atos da Presidência/Gestão de Pessoas/Anos anteriores - Atos COGEP-PRESI/2019",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1129962,
+   "c": "Atos da Presidência/Presidência/2023",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1135192,
+   "c": "Atos da Presidência/Presidência/2025",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1096627,
+   "c": "Atos da Presidência/Presidência/Anos Anteriores/2001",
    "t": "docs",
    "a": true
   },
@@ -146,18 +164,6 @@
    "a": false
   },
   {
-   "id": 1066779,
-   "c": "Portarias/Diretoria-Geral/2024",
-   "t": "docs",
-   "a": true
-  },
-  {
-   "id": 1066872,
-   "c": "Portarias/Diretoria-Geral/2025",
-   "t": "docs",
-   "a": true
-  },
-  {
    "id": 1016834,
    "c": "Provimentos",
    "t": "docs",
@@ -182,20 +188,14 @@
    "a": false
   },
   {
-   "id": 1148157,
-   "c": "Resoluções Administrativas/2023",
+   "id": 1145515,
+   "c": "Resoluções Administrativas/2022",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1038857,
-   "c": "Resoluções Administrativas/Anos Anteriores/2014",
-   "t": "docs",
-   "a": true
-  },
-  {
-   "id": 1054448,
-   "c": "Resoluções Administrativas/Anos Anteriores/2019",
+   "id": 1151288,
+   "c": "Resoluções Administrativas/2024",
    "t": "docs",
    "a": true
   }
