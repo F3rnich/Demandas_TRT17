@@ -1,5 +1,5 @@
 {
- "semana": "2026-11-14",
+ "semana": "2026-11-21",
  "pastas": [
   {
    "id": 1050584,
@@ -74,38 +74,20 @@
    "a": false
   },
   {
-   "id": 1058238,
-   "c": "Atos da Presidência/Administração/2021",
+   "id": 1058390,
+   "c": "Atos da Presidência/Administração/2022",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1087921,
-   "c": "Atos da Presidência/Diretoria-Geral/2025",
+   "id": 1083232,
+   "c": "Atos da Presidência/Diretoria-Geral/2021",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1081514,
-   "c": "Atos da Presidência/Diretoria-Geral/Anos Anteriores/2012",
-   "t": "docs",
-   "a": true
-  },
-  {
-   "id": 1094897,
-   "c": "Atos da Presidência/Gestão de Pessoas/2022",
-   "t": "docs",
-   "a": true
-  },
-  {
-   "id": 1093426,
-   "c": "Atos da Presidência/Gestão de Pessoas/Anos anteriores - Atos COGEP-PRESI/2019",
-   "t": "docs",
-   "a": true
-  },
-  {
-   "id": 1129962,
-   "c": "Atos da Presidência/Presidência/2023",
+   "id": 1096602,
+   "c": "Atos da Presidência/Gestão de Pessoas/2025",
    "t": "docs",
    "a": true
   },
@@ -116,8 +98,8 @@
    "a": true
   },
   {
-   "id": 1096627,
-   "c": "Atos da Presidência/Presidência/Anos Anteriores/2001",
+   "id": 1104627,
+   "c": "Atos da Presidência/Presidência/Anos Anteriores/2011",
    "t": "docs",
    "a": true
   },
@@ -164,6 +146,18 @@
    "a": false
   },
   {
+   "id": 1066779,
+   "c": "Portarias/Diretoria-Geral/2024",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1066872,
+   "c": "Portarias/Diretoria-Geral/2025",
+   "t": "docs",
+   "a": true
+  },
+  {
    "id": 1016834,
    "c": "Provimentos",
    "t": "docs",
@@ -188,14 +182,20 @@
    "a": false
   },
   {
-   "id": 1145515,
-   "c": "Resoluções Administrativas/2022",
+   "id": 1153390,
+   "c": "Resoluções Administrativas/2025",
    "t": "docs",
    "a": true
   },
   {
-   "id": 1151288,
-   "c": "Resoluções Administrativas/2024",
+   "id": 1035443,
+   "c": "Resoluções Administrativas/Anos Anteriores/2013",
+   "t": "docs",
+   "a": true
+  },
+  {
+   "id": 1045748,
+   "c": "Resoluções Administrativas/Anos Anteriores/2016",
    "t": "docs",
    "a": true
   }
