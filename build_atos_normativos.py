@@ -568,7 +568,7 @@ def incorpora_site(atos, site):
 RX_CONCRETO = re.compile(r"^\W*(?:"
     r"design\w*|dispens\w*|nome(?:ia|a[cç][aã]o)|exonera\w*|aposent\w*|pens[aã]o|concede\w*|concess[aã]o d[eao] (?:aposent|pens|licen|abono|f[eé]rias|di[aá]ria|ajuda)|"
     r"convoca\w*|remov\w*|remo[cç][aã]o|lota\w*|cede\b|cess[aã]o d[eao]|redistribu\w*|vincula\w*|desvincula\w*|reconduz\w*|substitui[cç][aã]o d[eoa]|"
-    r"homologa\w*|torna p[uú]blic\w*|publica (?:a|o) (?:lista|resultado|rela[cç])|indica\w*|elege\w*|elei[cç][aã]o|escala\b|escala de|"
+    r"homologa\w*|torna p[uú]blic\w*|publica (?:a|o) (?:lista|resultado|rela[cç])|indica\w*|elege\w*|elei[cç](?:[aã]o|[oõ]es)|escala\b|escala de|"
     r"suspen(?:de|s[aã]o)\b.{0,60}\b(?:prazo|expediente|atividade|distribui)|prorroga\w*\b.{0,60}\b(?:prazo|suspens|expediente)|"
     r"aprova\w*\s+(?:a\s+)?prorroga[cç][aã]o\b|prorroga\w*\s+(?:d[aoe]s?\s+)?(?:prazo\s+de\s+)?validade|autoriza\w*\s+a\s+realiza[cç][aã]o\s+d[eo]\s+concurso|"
     r"(?:decreta|declara)\b.{0,30}ponto facultativo|ponto facultativo|altera,?\s+excepcionalmente|altera a composi[cç][aã]o|comp[oõ]e\b|"
@@ -580,7 +580,7 @@ RX_CONCRETO = re.compile(r"^\W*(?:"
 # termos de norma geral (para descrições do portal, onde o verbo não abre o texto)
 RX_GERAL = re.compile(r"\b(?:regulament\w*|institu\w*|disp[oõ]e(?:m)? sobre|disciplin\w*|normatiz\w*|estabelece\w*\s+(?:normas|crit[eé]rios|regras|diretrizes|procedimentos)|"
                       r"pol[ií]tica|regimento|norma de|cria\w*\b|fixa\w*\s+(?:o valor|crit|normas)|delega\w* compet|define\w*|aprova\w* (?:o regulamento|a pol[ií]tica|o plano|a norma))", re.I)
-RX_CONCRETO_LIVRE = re.compile(r"\b(?:design\w*|aposent\w*|pens[aã]o|convoca\w*|redistribu\w*|remo[cç][aã]o|lista tr[ií]plice|elei[cç][aã]o|escala de f[eé]rias|"
+RX_CONCRETO_LIVRE = re.compile(r"\b(?:design\w*|aposent\w*|pens[aã]o|convoca\w*|redistribu\w*|remo[cç][aã]o|lista tr[ií]plice|elei[cç](?:[aã]o|[oõ]es)|escala de f[eé]rias|"
                       r"suspen\w*\s+(?:dos\s+|os\s+)?prazos|prorroga\w*\s+(?:dos\s+|os\s+)?prazos|prorroga\w*\s+(?:d[aoe]s?\s+)?(?:prazo\s+de\s+)?validade|ponto facultativo|vincula\w*|homologa\w*|nomea\w*|exonera\w*|"
                       r"concede\w*|concess[aã]o de (?:aposent|pens|licen|abono)|vac[aâ]ncia|promo[cç][aã]o|participa[cç][aã]o (?:no|na|em)|recondu\w*|substitui[cç][aã]o d)", re.I)
 TIPOS_CONCRETOS = {"Edital", "Apostila", "Escala / Lista / Resultado", "Despacho", "Ata", "Extrato", "Acórdão", "Decisão administrativa", "Aviso", "Comunicado"}
