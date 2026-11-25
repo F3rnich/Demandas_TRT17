@@ -68,7 +68,7 @@ const MARCOS = {
   IDADE4: d2n('2022-01-01')  // art. 4º, §1º: idades mínimas sobem
 };
 const PADRAO_PARAM = {
-  corteEC103: '2019-11-13',     // data-limite (inclusiva) para direito adquirido e pedágio
+  corteEC103: '2019-11-12',     // último dia completo antes da vigência da EC 103 (13/11/2019) — entendimento da SESES
   lpNosPontos: true,            // licença-prêmio em dobro integra o tempo de contribuição dos pontos
   converteEspecial: true,       // conversão de tempo especial em comum até a EC 103 (STF Tema 942)
   acrescimoMulher15: false,     // 2% a partir de 15 anos (em vez de 20) para servidoras — tese em ADI
@@ -336,7 +336,7 @@ function avaliar(entrada) {
     provento: () => prov('media80', 100, { nota: 'Média, sem paridade' }) });
 
   /* ===== 2. Transição (EC 103) ===== */
-  const ate103 = x.ingressoSP <= x.corte;
+  const ate103 = x.ingressoSP <= MARCOS.EC103;   // ingresso até a data de entrada em vigor (13/11/2019)
   const idade4 = d => (d < MARCOS.IDADE4 ? (F ? 56 : 61) : (F ? 57 : 62));
   // Art. 4º — pontos
   {
@@ -415,8 +415,8 @@ function avaliar(entrada) {
     requisitos: [idd(F ? 62 : 65), contrib(25), sp(10), cargo5],
     provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
   if (x.exposicoes.length) add({ id: 'art10esp', grupo: 'Regra permanente (EC 103)', nome: 'Especial por agentes nocivos',
-    fund: 'Art. 10, §2º, II, da EC 103/2019', abono: false,
-    notaAbono: 'O art. 10, §5º, prevê abono só para a regra do §1º, I; confirme o entendimento do órgão.',
+    fund: 'Art. 10, §2º, II, da EC 103/2019', abono: true,
+    notaAbono: 'Abono pelo art. 10, §5º ("nos termos do disposto neste artigo", o que inclui o §2º, II), conforme TCU, Acórdão 1.588/2023-Plenário, e STF, Tema 888.',
     requisitos: [idd(60), req('25 anos de efetiva exposição', '25 anos', tempo('EXP', 25)), req('25 anos de contribuição (sem conversão)', '25 anos', S.primeiro('Cbruto', T(25))), sp(10), cargo5],
     provento: d => media(d, dd => pctArt26(x, S, dd), { teto: tetoRGPS }) });
   // PcD — art. 22 c/c LC 142

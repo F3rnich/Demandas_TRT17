@@ -25,7 +25,7 @@ const A = M.avaliar({ sexo: 'M', nasc: '1968-06-15', ref: '2026-11-04',
 eq('A: sem erros', A.ok, true);
 const d35 = M.d2n('1995-03-01') + 35 * 365 - 1;
 // Na EC 103 (13/11/2019 inclusive) tinha: 13/11/2019 - 01/03/1995 + 1 dias
-const tEC = M.d2n('2019-11-13') - M.d2n('1995-03-01') + 1;
+const tEC = M.d2n('2019-11-12') - M.d2n('1995-03-01') + 1;   // corte SESES: 12/11/2019 inclusive
 const falta = 35 * 365 - tEC;
 eq('A: art. 20 — contribuição + pedágio', br(R(A, 'art20i').requisitos[1].data), br(d35 + falta));
 eq('A: art. 20 — data = max(pedágio, 60 anos)', br(R(A, 'art20i').data), br(Math.max(d35 + falta, M.d2n('2028-06-15'))));
@@ -103,7 +103,7 @@ const G = M.avaliar({ sexo: 'M', nasc: '1965-01-01', ref: '2026-11-04', ingresso
   exposicoes: [{ inicio: '1990-01-02', fim: '2019-11-13' }] });
 eq('G: especial adquirida (25 anos até 2015)', R(G, 'sv33').status, 'cumprida');
 eq('G: data 25 anos de exposição', br(R(G, 'sv33').data), mais('1990-01-02', 25 * 365 - 1));
-eq('G: conversão 1,4 até a EC 103', Math.round(G.situacao.conversao), Math.round((M.d2n('2019-11-13') - M.d2n('1990-01-02') + 1) * 0.4));
+eq('G: conversão 1,4 até a EC 103', Math.round(G.situacao.conversao), Math.round((M.d2n('2019-11-12') - M.d2n('1990-01-02') + 1) * 0.4));
 
 /* Melhor provento não pode ser a compulsória quando há regra voluntária */
 const H = M.avaliar({ sexo: 'M', nasc: '1985-03-10', ref: '2026-11-04', ingressoSP: '2016-01-16', ingressoCargo: '2016-01-16', exercicio: '2016-01-16' });
@@ -117,6 +117,16 @@ const L2 = M.avaliar({ sexo: 'M', nasc: '1985-11-12', ref: '2026-11-05', ingress
   periodos: [{ orgao: 'MPF', regime: 'RPPS', inicio: '2011-10-25', fim: '2016-01-15' }] });
 eq('L2: sem aviso de lacuna com o período informado', L2.avisos.some(a => a.lacuna), false);
 eq('L2: contribuição inclui o MPF', Math.round(L2.situacao.contribuicao), M.d2n('2026-11-05') - M.d2n('2011-10-25') + 1);
+
+/* Respostas da SESES (25/11/2026) */
+eq('SESES: corte padrão 12/11/2019', M.PADRAO_PARAM.corteEC103, '2019-11-12');
+const N1 = M.avaliar({ sexo: 'M', nasc: '1960-01-01', ref: '2026-11-04', ingressoSP: '2019-11-13', ingressoCargo: '2019-11-13', exercicio: '2019-11-13' });
+eq('SESES: ingresso em 13/11/2019 ainda dá acesso às regras de transição', N1.situacao.ate103, true);
+const N2 = M.avaliar({ sexo: 'M', nasc: '1960-01-01', ref: '2026-11-04', ingressoSP: '1990-01-02', ingressoCargo: '1990-01-02', exercicio: '1990-01-02',
+  exposicoes: [{ inicio: '1990-01-02', fim: '2026-11-04' }], exposicaoContinua: true });
+eq('SESES: especial permanente (art. 10, §2º, II) gera abono', R(N2, 'art10esp').abono, true);
+const N3 = M.avaliar({ sexo: 'M', nasc: '1966-01-20', ref: '2026-11-04', ingressoSP: '1990-02-01', ingressoCargo: '1990-02-01', exercicio: '1990-02-01', lpDias: 180 });
+eq('SESES: LP em dobro não altera serviço público nem cargo', R(N3, 'art10').requisitos[2].data, R(C1, 'art10').requisitos[2].data);
 
 /* Validação: dados faltantes */
 const Z = M.avaliar({ sexo: 'M' });

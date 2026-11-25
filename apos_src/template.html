@@ -220,7 +220,7 @@ td.dt{white-space:nowrap;font-weight:700}
           <ul>
             <li><b>Mudou de cargo no TRT-17.</b> Técnica desde 10/03/2010, tomou posse como analista em 05/08/2018 → exercício 10/03/2010; cargo atual 05/08/2018.</li>
             <li><b>Chegou por redistribuição</b> (o cargo veio junto). Analista no TRT-1 desde 02/04/2012, redistribuída em 01/02/2020 → cargo atual 02/04/2012; exercício 01/02/2020; o período no TRT-1 vai no bloco 3.</li>
-            <li><b>Não muda</b> quando a pessoa veio de outro órgão por <b>novo concurso</b>: o cargo começa na posse no TRT-17.</li>
+            <li><b>Novo concurso, mesmo para o mesmo cargo em outro órgão:</b> os 5 anos reiniciam na posse no TRT-17 (entendimento da SESES). Há tese de soma dentro do Judiciário da União (Lei 11.416/2006), mas exige análise do caso concreto.</li>
           </ul>
         </details>
       </div>
@@ -287,7 +287,7 @@ td.dt{white-space:nowrap;font-weight:700}
       <label>Classe/padrão na aposentadoria <select name="vPadrao"></select><span class="dica">Em regra, o último padrão (C13)</span></label>
       <label>Adicional por tempo de serviço <input type="number" name="vAts" min="0" max="35" step="1" placeholder="0"><span class="dica">% sobre o vencimento, se houver</span></label>
       <label>Outras parcelas permanentes <input type="number" name="vOutras" min="0" step="0.01" placeholder="0,00"><span class="dica">R$ — AQ, VPNI, quintos incorporados</span></label>
-      <label class="chk full" id="wrapGas" hidden><input type="checkbox" name="vGas"> <span>Incluir a GAS (35% do vencimento) na remuneração do cargo<br><span class="dica">Padrão: não incluir (TNU, Tema 257: a GAS não se incorpora aos proventos). Confirme a prática do Tribunal.</span></span></label>
+      <p class="dica full" id="wrapGas" hidden style="margin:0">Polícia judicial: a GAS não entra nos proventos. É vantagem só de servidor ativo e deixa de ser paga com a publicação do ato de aposentadoria (Resolução CSJT 315/2021, arts. 34 a 49; TNU, Tema 257).</p>
     </div>
     <div class="campos" id="valMag" hidden>
       <label class="full">Cargo do magistrado <select name="vMag"></select></label>
@@ -299,7 +299,7 @@ td.dt{white-space:nowrap;font-weight:700}
     <details class="params">
       <summary>Parâmetros de interpretação</summary>
       <div class="campos">
-        <label>Data-corte da EC 103 <input type="date" name="corteEC103"><span class="dica">Inclusiva. Direito adquirido e cálculo do pedágio</span></label>
+        <label>Data-corte da EC 103 <input type="date" name="corteEC103"><span class="dica">Último dia contado (inclusive). Padrão 12/11/2019: o dia 13, de entrada em vigor, não está completo (entendimento da SESES). Vale para o direito adquirido e o pedágio</span></label>
         <div></div>
         <label class="chk full"><input type="checkbox" name="lpNosPontos"> <span>Licença-prêmio em dobro entra no tempo de contribuição dos pontos (art. 4º)</span></label>
         <label class="chk full"><input type="checkbox" name="converteEspecial"> <span>Converter tempo especial em comum até a EC 103 (fator 1,4 H / 1,2 M — STF, Tema 942)</span></label>
@@ -415,17 +415,17 @@ function ler() {
     migrouRPC: c('migrouRPC') && (M.d2n(datas().sp) ?? Infinity) < M.MARCOS.RPC,
     periodos: lerLista('per'), deducoes: lerLista('ded').map(d => Object.assign(d, { dias: +d.dias || 0 })),
     lpDias: +v('lpDias') || 0, lpData: v('lpData'),
-    valor: { cargo: v('vCargo'), padrao: v('vPadrao'), ats: +v('vAts') || 0, outras: +v('vOutras') || 0, gas: c('vGas'), mag: v('vMag') },
+    valor: { cargo: v('vCargo'), padrao: v('vPadrao'), ats: +v('vAts') || 0, outras: +v('vOutras') || 0, mag: v('vMag') },
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
     deficiencia: v('defGrau') ? { grau: v('defGrau'), inicio: v('defInicio') || v('exercicio') } : null,
-    param: { corteEC103: v('corteEC103') || '2019-11-13', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
+    param: { corteEC103: v('corteEC103') || '2019-11-12', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
   };
 }
 function escrever(e) {
   f.reset();
   const set = (k, val) => { const el = f.elements[k]; if (!el || val == null) return; if (el.type === 'checkbox') el.checked = !!val; else el.value = val; };
   ['nome','processo','nasc','cargo','exercicio','ingressoCargo','ingressoCarreira','ingressoSP','migrouRPC','lpDias','lpData','exposicaoContinua'].forEach(k => set(k, e[k]));
-  const vv = e.valor || {}; set('vCargo', vv.cargo || 'ANALISTA JUDICIÁRIO'); preencherPadroes(); set('vPadrao', vv.padrao || 'C13'); set('vAts', vv.ats || ''); set('vOutras', vv.outras || ''); set('vGas', vv.gas); if (vv.mag) set('vMag', vv.mag);
+  const vv = e.valor || {}; set('vCargo', vv.cargo || 'ANALISTA JUDICIÁRIO'); preencherPadroes(); set('vPadrao', vv.padrao || 'C13'); set('vAts', vv.ats || ''); set('vOutras', vv.outras || ''); if (vv.mag) set('vMag', vv.mag);
   set('ref', e.ref || hoje);
   const sx = f.querySelector(`[name=sexo][value="${e.sexo === 'F' ? 'F' : 'M'}"]`); if (sx) sx.checked = true;
   if (e.deficiencia) { set('defGrau', e.deficiencia.grau); set('defInicio', e.deficiencia.inicio); }
@@ -476,7 +476,7 @@ function valores(e) {
     vig = vigAtual(BASE.tabelas, ref); const t = vig && BASE.tabelas[vig] && BASE.tabelas[vig][e.valor.cargo];
     const p = t && t[e.valor.padrao];
     if (p) {
-      const ats = p.vb * (e.valor.ats || 0) / 100, gas = e.policiaJudicial && e.valor.gas ? p.vb * 0.35 : 0;
+      const ats = p.vb * (e.valor.ats || 0) / 100, gas = 0;
       integral = p.vb + p.gaj + ats + gas + (e.valor.outras || 0);
       det = `VB ${moeda(p.vb)} + GAJ ${moeda(p.gaj)}` + (ats ? ` + ATS ${moeda(ats)}` : '') + (gas ? ` + GAS ${moeda(gas)}` : '') + (e.valor.outras ? ` + outras ${moeda(e.valor.outras)}` : '');
     }
