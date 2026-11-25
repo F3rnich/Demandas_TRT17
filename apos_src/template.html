@@ -303,6 +303,7 @@ td.dt{white-space:nowrap;font-weight:700}
         <div></div>
         <label class="chk full"><input type="checkbox" name="lpNosPontos"> <span>Licença-prêmio em dobro entra no tempo de contribuição dos pontos (art. 4º)</span></label>
         <label class="chk full"><input type="checkbox" name="converteEspecial"> <span>Converter tempo especial em comum até a EC 103 (fator 1,4 H / 1,2 M — STF, Tema 942)</span></label>
+        <label class="chk full"><input type="checkbox" name="acrescimo17Magistrado"> <span>Magistrado homem: acréscimo de 17% sobre o tempo de serviço até 15/12/1998, em qualquer regra (EC 20/1998, art. 8º, §3º — prática da SESES; o STF, na Rcl 10823, restringiu)</span></label>
         <label class="chk full"><input type="checkbox" name="acrescimoMulher15"> <span>Servidora: acréscimo de 2% a partir de 15 anos de contribuição, e não de 20 (tese discutida em ADIs contra a EC 103)</span></label>
       </div>
     </details>
@@ -418,7 +419,7 @@ function ler() {
     valor: { cargo: v('vCargo'), padrao: v('vPadrao'), ats: +v('vAts') || 0, outras: +v('vOutras') || 0, mag: v('vMag') },
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
     deficiencia: v('defGrau') ? { grau: v('defGrau'), inicio: v('defInicio') || v('exercicio') } : null,
-    param: { corteEC103: v('corteEC103') || '2019-11-12', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
+    param: { corteEC103: v('corteEC103') || '2019-11-12', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15'), acrescimo17Magistrado: c('acrescimo17Magistrado') }
   };
 }
 function escrever(e) {
@@ -430,7 +431,7 @@ function escrever(e) {
   const sx = f.querySelector(`[name=sexo][value="${e.sexo === 'F' ? 'F' : 'M'}"]`); if (sx) sx.checked = true;
   if (e.deficiencia) { set('defGrau', e.deficiencia.grau); set('defInicio', e.deficiencia.inicio); }
   const p = Object.assign({}, M.PADRAO_PARAM, e.param || {});
-  set('corteEC103', p.corteEC103); set('lpNosPontos', p.lpNosPontos); set('converteEspecial', p.converteEspecial); set('acrescimoMulher15', p.acrescimoMulher15);
+  set('corteEC103', p.corteEC103); set('lpNosPontos', p.lpNosPontos); set('converteEspecial', p.converteEspecial); set('acrescimoMulher15', p.acrescimoMulher15); set('acrescimo17Magistrado', p.acrescimo17Magistrado);
   for (const t in LISTAS) $(LISTAS[t][0]).innerHTML = '';
   (e.periodos || []).forEach(q => addLinha('per', q));
   (e.deducoes || []).forEach(q => addLinha('ded', q));
@@ -577,6 +578,7 @@ function render(res, e) {
     <div><span>Compulsória</span><b>${br(s.compulsoria)}</b></div>
     ${s.lp ? `<div><span>Licença-prêmio em dobro</span><b>${s.lp} dias</b></div>` : ''}
     ${s.conversao ? `<div><span>Acréscimo por conversão</span><b>${Math.round(s.conversao)} dias</b></div>` : ''}
+    ${s.acrescimo17 ? `<div><span>Acréscimo de 17% (magistrado)</span><b>${Math.round(s.acrescimo17)} dias</b></div>` : ''}
     ${s.exposicao ? `<div><span>Efetiva exposição</span><b>${ft(s.exposicao)}</b></div>` : ''}
     ${s.pcdFracao != null ? `<div><span>Tempo PcD cumprido</span><b>${Math.min(100, s.pcdFracao * 100).toFixed(1).replace('.', ',')}%</b></div>` : ''}
   </div>
@@ -614,7 +616,7 @@ function render(res, e) {
     h += `<tr class="det" ${ab || imp ? '' : 'hidden'} data-det="${r.id}"><td colspan="4">${det}</td></tr>`;
   }
   h += `</tbody></table></div></div>`;
-  h += `<p class="rodape">Simulação baseada nos dados informados. Não substitui a análise do processo de aposentadoria pela unidade competente nem gera direito. Tempo em dias, ano de 365 dias (Lei 8.112/1990, art. 101). Após a data de referência, presume-se exercício contínuo no cargo atual. Parâmetros: corte da EC 103 em ${br(res.x.corte)}; licença-prêmio nos pontos: ${res.x.p.lpNosPontos ? 'sim' : 'não'}; conversão de tempo especial: ${res.x.p.converteEspecial ? 'sim' : 'não'}.</p>`;
+  h += `<p class="rodape">Simulação baseada nos dados informados. Não substitui a análise do processo de aposentadoria pela unidade competente nem gera direito. Tempo em dias, ano de 365 dias (Lei 8.112/1990, art. 101). Após a data de referência, presume-se exercício contínuo no cargo atual. Parâmetros: corte da EC 103 em ${br(res.x.corte)}; licença-prêmio nos pontos: ${res.x.p.lpNosPontos ? 'sim' : 'não'}; conversão de tempo especial: ${res.x.p.converteEspecial ? 'sim' : 'não'}; acréscimo de 17% para magistrado: ${res.x.p.acrescimo17Magistrado ? 'sim' : 'não'}.</p>`;
   corpo.innerHTML = h;
   // cabeçalho de impressão
   $('#impCab').innerHTML = `<p style="margin:0 0 10px"><b>Interessado(a):</b> ${esc(e.nome || '—')} · <b>Processo:</b> ${esc(e.processo || '—')} · <b>Nascimento:</b> ${br(M.d2n(e.nasc))} · <b>Sexo:</b> ${e.sexo === 'F' ? 'feminino' : 'masculino'} · <b>Gerado em:</b> ${br(M.d2n(hoje))}</p>`;

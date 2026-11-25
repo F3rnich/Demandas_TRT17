@@ -128,6 +128,19 @@ eq('SESES: especial permanente (art. 10, §2º, II) gera abono', R(N2, 'art10esp
 const N3 = M.avaliar({ sexo: 'M', nasc: '1966-01-20', ref: '2026-11-04', ingressoSP: '1990-02-01', ingressoCargo: '1990-02-01', exercicio: '1990-02-01', lpDias: 180 });
 eq('SESES: LP em dobro não altera serviço público nem cargo', R(N3, 'art10').requisitos[2].data, R(C1, 'art10').requisitos[2].data);
 
+/* Acréscimo de 17% — magistrado homem, todo o tempo até 15/12/1998 (SESES 25/11/2026) */
+const MG = { sexo: 'M', nasc: '1962-03-01', ref: '2026-11-04', ingressoSP: '1993-05-03', ingressoCargo: '1993-05-03', exercicio: '1993-05-03', magistrado: true,
+  periodos: [{ orgao: 'Escritório', regime: 'RGPS', inicio: '1986-01-02', fim: '1993-04-30' }] };
+const M17 = M.avaliar(MG), M0 = M.avaliar(Object.assign({}, MG, { param: { acrescimo17Magistrado: false } }));
+{
+  const dias98 = (M.d2n('1993-04-30') - M.d2n('1986-01-02') + 1) + (M.d2n('1998-12-15') - M.d2n('1993-05-03') + 1);
+  eq('17%: acréscimo sobre RGPS + magistratura até 15/12/1998', Math.round(M17.situacao.acrescimo17), Math.round(dias98 * 0.17));
+  eq('17%: entra na contribuição', Math.round(M17.situacao.contribuicao - M0.situacao.contribuicao), Math.round(dias98 * 0.17));
+  eq('17%: não entra no serviço público', M17.situacao.servicoPublico, M0.situacao.servicoPublico);
+  eq('17%: não se aplica a magistrada', Math.round(M.avaliar(Object.assign({}, MG, { sexo: 'F' })).situacao.acrescimo17), 0);
+  eq('17%: não se aplica a servidor', Math.round(M.avaliar(Object.assign({}, MG, { magistrado: false })).situacao.acrescimo17), 0);
+}
+
 /* Validação: dados faltantes */
 const Z = M.avaliar({ sexo: 'M' });
 eq('Z: erros de entrada', Z.ok, false);

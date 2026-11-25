@@ -72,6 +72,7 @@ const PADRAO_PARAM = {
   lpNosPontos: true,            // licença-prêmio em dobro integra o tempo de contribuição dos pontos
   converteEspecial: true,       // conversão de tempo especial em comum até a EC 103 (STF Tema 942)
   acrescimoMulher15: false,     // 2% a partir de 15 anos (em vez de 20) para servidoras — tese em ADI
+  acrescimo17Magistrado: true,  // magistrado homem: +17% sobre todo o tempo de serviço até 15/12/1998, em qualquer regra (prática da SESES)
   idadeCompulsoria: 75          // LC 152/2015
 };
 function pontosExigidos(sexo, ano) {
@@ -145,6 +146,7 @@ function validar(x) {
   }
   if (lacuna) avisos.push({ lacuna: [n2d(lacuna[0]), n2d(lacuna[1])],
     texto: `O serviço público começa em ${n2br(x.ingressoSP)}, mas não há vínculo público informado de ${n2br(lacuna[0])} a ${n2br(lacuna[1])}. Informe esse período no bloco 3 (ex.: o órgão de origem, como RPPS e "conta como serviço público"). Sem ele, esse tempo não conta como contribuição nem como serviço público. Se houve mesmo interrupção, corrija a data de ingresso no serviço público.` });
+  if (x.p.acrescimo17Magistrado && x.magistrado && x.sexo === 'M') avisos.push('Magistrado: aplicado o acréscimo de 17% sobre todo o tempo de serviço até 15/12/1998, público ou privado, em qualquer regra (EC 20/1998, art. 8º, §3º — prática da SESES). Atenção: o STF, na Rcl 10823/2018, restringiu o acréscimo a quem reuniu os requisitos antes da EC 41/2003. O acréscimo não conta como serviço público nem como tempo no cargo. Pode ser desligado nos parâmetros.');
   if (x.policiaJudicial) avisos.push('Agente/inspetor de polícia judicial: sem regra especial vigente (art. 5º da EC 103/2019 não inclui o cargo; MI 844/STF). Aplicadas as regras gerais.');
   return { erros, avisos };
 }
@@ -183,11 +185,13 @@ function construirSeries(x) {
     Cp: new Float64Array(N),     // contribuição para pontos
     Cbruto: new Float64Array(N), // contribuição sem LP e sem conversão
     SP: new Float64Array(N), CG: new Float64Array(N), CR: new Float64Array(N),
-    EXP: new Float64Array(N), CONV: new Float64Array(N),
+    EXP: new Float64Array(N), CONV: new Float64Array(N), BON17: new Float64Array(N),
     PCDf: new Float64Array(N),   // fração acumulada (LC 142, art. 7º)
     PCDd: new Float64Array(N),   // dias de contribuição na condição de PcD
     sobreposicao: 0
   };
+  const aplica17 = x.p.acrescimo17Magistrado && x.magistrado && x.sexo === 'M';
+  let b17 = 0;
   let c = 0, s = 0, e = 0, ac = 0, as = 0, ag = 0, ar = 0, ae = 0, conv = 0, lp = 0, pf = 0, pd = 0, dc = 0, ds = 0, dg = 0;
   let somaBruta = 0;
   for (let k = 0; k < N; k++) {
@@ -197,6 +201,7 @@ function construirSeries(x) {
     if (c > 1) S.sobreposicao += (d <= x.ref ? c - 1 : 0);
     if (ativo) {
       ac++;
+      if (aplica17 && d < MARCOS.EC20) b17 += 0.17;   // tempo exercido até a publicação da EC 20 (dia 16/12/1998 incompleto)
       if (e > 0) { ae++; if (x.p.converteEspecial && d <= x.corte) conv += fator - 1; }
       if (def && def.ini != null && d >= def.ini && (def.fim == null || d <= def.fim)) { pd++; pf += 1 / (reqDef[def.grau] * ANO); }
       else pf += 1 / (reqSem * ANO);
@@ -207,10 +212,10 @@ function construirSeries(x) {
     if (k === lpK) lp = x.lpDias;
     dc += dedC[k]; ds += dedS[k]; dg += dedG[k];
     S.Cbruto[k] = ac - dc;
-    S.C[k] = ac - dc + lp + conv;
-    S.Cp[k] = ac - dc + (x.p.lpNosPontos ? lp : 0) + conv;
+    S.C[k] = ac - dc + lp + conv + b17;
+    S.Cp[k] = ac - dc + (x.p.lpNosPontos ? lp : 0) + conv + b17;
     S.SP[k] = as - ds; S.CG[k] = ag - dg; S.CR[k] = ar - dg;
-    S.EXP[k] = ae; S.CONV[k] = conv;
+    S.EXP[k] = ae; S.CONV[k] = conv; S.BON17[k] = b17;
     S.PCDf[k] = pf - (dc / ((reqSem) * ANO)); S.PCDd[k] = pd;
   }
   // mínimo do sufixo: primeiro dia a partir do qual a série não cai mais abaixo do limiar
@@ -450,7 +455,7 @@ function avaliar(entrada) {
   const situacao = {
     ref: x.ref, idadeAnos: idadeAnos(x.nasc, x.ref), idadeDias: x.ref - x.nasc + 1,
     contribuicao: S.C[k], contribuicaoBruta: S.Cbruto[k], lp: x.ref >= x.lpData ? x.lpDias : 0,
-    conversao: S.CONV[k], servicoPublico: S.SP[k], cargo: S.CG[k], carreira: x.ingressoCarreira != null ? S.CR[k] : null,
+    conversao: S.CONV[k], acrescimo17: S.BON17[k], servicoPublico: S.SP[k], cargo: S.CG[k], carreira: x.ingressoCarreira != null ? S.CR[k] : null,
     exposicao: S.EXP[k], pontos: (x.ref - x.nasc + 1 + S.Cp[k]) / ANO,
     pontosExigidos: pontosExigidos(x.sexo, anoDe(x.ref)),
     contribNoCorte: S.v('C', x.corte), sobreposicao: S.sobreposicao,

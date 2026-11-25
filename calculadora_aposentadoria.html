@@ -303,6 +303,7 @@ td.dt{white-space:nowrap;font-weight:700}
         <div></div>
         <label class="chk full"><input type="checkbox" name="lpNosPontos"> <span>Licença-prêmio em dobro entra no tempo de contribuição dos pontos (art. 4º)</span></label>
         <label class="chk full"><input type="checkbox" name="converteEspecial"> <span>Converter tempo especial em comum até a EC 103 (fator 1,4 H / 1,2 M — STF, Tema 942)</span></label>
+        <label class="chk full"><input type="checkbox" name="acrescimo17Magistrado"> <span>Magistrado homem: acréscimo de 17% sobre o tempo de serviço até 15/12/1998, em qualquer regra (EC 20/1998, art. 8º, §3º — prática da SESES; o STF, na Rcl 10823, restringiu)</span></label>
         <label class="chk full"><input type="checkbox" name="acrescimoMulher15"> <span>Servidora: acréscimo de 2% a partir de 15 anos de contribuição, e não de 20 (tese discutida em ADIs contra a EC 103)</span></label>
       </div>
     </details>
@@ -426,6 +427,7 @@ const PADRAO_PARAM = {
   lpNosPontos: true,            // licença-prêmio em dobro integra o tempo de contribuição dos pontos
   converteEspecial: true,       // conversão de tempo especial em comum até a EC 103 (STF Tema 942)
   acrescimoMulher15: false,     // 2% a partir de 15 anos (em vez de 20) para servidoras — tese em ADI
+  acrescimo17Magistrado: true,  // magistrado homem: +17% sobre todo o tempo de serviço até 15/12/1998, em qualquer regra (prática da SESES)
   idadeCompulsoria: 75          // LC 152/2015
 };
 function pontosExigidos(sexo, ano) {
@@ -499,6 +501,7 @@ function validar(x) {
   }
   if (lacuna) avisos.push({ lacuna: [n2d(lacuna[0]), n2d(lacuna[1])],
     texto: `O serviço público começa em ${n2br(x.ingressoSP)}, mas não há vínculo público informado de ${n2br(lacuna[0])} a ${n2br(lacuna[1])}. Informe esse período no bloco 3 (ex.: o órgão de origem, como RPPS e "conta como serviço público"). Sem ele, esse tempo não conta como contribuição nem como serviço público. Se houve mesmo interrupção, corrija a data de ingresso no serviço público.` });
+  if (x.p.acrescimo17Magistrado && x.magistrado && x.sexo === 'M') avisos.push('Magistrado: aplicado o acréscimo de 17% sobre todo o tempo de serviço até 15/12/1998, público ou privado, em qualquer regra (EC 20/1998, art. 8º, §3º — prática da SESES). Atenção: o STF, na Rcl 10823/2018, restringiu o acréscimo a quem reuniu os requisitos antes da EC 41/2003. O acréscimo não conta como serviço público nem como tempo no cargo. Pode ser desligado nos parâmetros.');
   if (x.policiaJudicial) avisos.push('Agente/inspetor de polícia judicial: sem regra especial vigente (art. 5º da EC 103/2019 não inclui o cargo; MI 844/STF). Aplicadas as regras gerais.');
   return { erros, avisos };
 }
@@ -537,11 +540,13 @@ function construirSeries(x) {
     Cp: new Float64Array(N),     // contribuição para pontos
     Cbruto: new Float64Array(N), // contribuição sem LP e sem conversão
     SP: new Float64Array(N), CG: new Float64Array(N), CR: new Float64Array(N),
-    EXP: new Float64Array(N), CONV: new Float64Array(N),
+    EXP: new Float64Array(N), CONV: new Float64Array(N), BON17: new Float64Array(N),
     PCDf: new Float64Array(N),   // fração acumulada (LC 142, art. 7º)
     PCDd: new Float64Array(N),   // dias de contribuição na condição de PcD
     sobreposicao: 0
   };
+  const aplica17 = x.p.acrescimo17Magistrado && x.magistrado && x.sexo === 'M';
+  let b17 = 0;
   let c = 0, s = 0, e = 0, ac = 0, as = 0, ag = 0, ar = 0, ae = 0, conv = 0, lp = 0, pf = 0, pd = 0, dc = 0, ds = 0, dg = 0;
   let somaBruta = 0;
   for (let k = 0; k < N; k++) {
@@ -551,6 +556,7 @@ function construirSeries(x) {
     if (c > 1) S.sobreposicao += (d <= x.ref ? c - 1 : 0);
     if (ativo) {
       ac++;
+      if (aplica17 && d < MARCOS.EC20) b17 += 0.17;   // tempo exercido até a publicação da EC 20 (dia 16/12/1998 incompleto)
       if (e > 0) { ae++; if (x.p.converteEspecial && d <= x.corte) conv += fator - 1; }
       if (def && def.ini != null && d >= def.ini && (def.fim == null || d <= def.fim)) { pd++; pf += 1 / (reqDef[def.grau] * ANO); }
       else pf += 1 / (reqSem * ANO);
@@ -561,10 +567,10 @@ function construirSeries(x) {
     if (k === lpK) lp = x.lpDias;
     dc += dedC[k]; ds += dedS[k]; dg += dedG[k];
     S.Cbruto[k] = ac - dc;
-    S.C[k] = ac - dc + lp + conv;
-    S.Cp[k] = ac - dc + (x.p.lpNosPontos ? lp : 0) + conv;
+    S.C[k] = ac - dc + lp + conv + b17;
+    S.Cp[k] = ac - dc + (x.p.lpNosPontos ? lp : 0) + conv + b17;
     S.SP[k] = as - ds; S.CG[k] = ag - dg; S.CR[k] = ar - dg;
-    S.EXP[k] = ae; S.CONV[k] = conv;
+    S.EXP[k] = ae; S.CONV[k] = conv; S.BON17[k] = b17;
     S.PCDf[k] = pf - (dc / ((reqSem) * ANO)); S.PCDd[k] = pd;
   }
   // mínimo do sufixo: primeiro dia a partir do qual a série não cai mais abaixo do limiar
@@ -804,7 +810,7 @@ function avaliar(entrada) {
   const situacao = {
     ref: x.ref, idadeAnos: idadeAnos(x.nasc, x.ref), idadeDias: x.ref - x.nasc + 1,
     contribuicao: S.C[k], contribuicaoBruta: S.Cbruto[k], lp: x.ref >= x.lpData ? x.lpDias : 0,
-    conversao: S.CONV[k], servicoPublico: S.SP[k], cargo: S.CG[k], carreira: x.ingressoCarreira != null ? S.CR[k] : null,
+    conversao: S.CONV[k], acrescimo17: S.BON17[k], servicoPublico: S.SP[k], cargo: S.CG[k], carreira: x.ingressoCarreira != null ? S.CR[k] : null,
     exposicao: S.EXP[k], pontos: (x.ref - x.nasc + 1 + S.Cp[k]) / ANO,
     pontosExigidos: pontosExigidos(x.sexo, anoDe(x.ref)),
     contribNoCorte: S.v('C', x.corte), sobreposicao: S.sobreposicao,
@@ -884,7 +890,7 @@ function ler() {
     valor: { cargo: v('vCargo'), padrao: v('vPadrao'), ats: +v('vAts') || 0, outras: +v('vOutras') || 0, mag: v('vMag') },
     exposicoes: lerLista('exp'), exposicaoContinua: c('exposicaoContinua'),
     deficiencia: v('defGrau') ? { grau: v('defGrau'), inicio: v('defInicio') || v('exercicio') } : null,
-    param: { corteEC103: v('corteEC103') || '2019-11-12', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15') }
+    param: { corteEC103: v('corteEC103') || '2019-11-12', lpNosPontos: c('lpNosPontos'), converteEspecial: c('converteEspecial'), acrescimoMulher15: c('acrescimoMulher15'), acrescimo17Magistrado: c('acrescimo17Magistrado') }
   };
 }
 function escrever(e) {
@@ -896,7 +902,7 @@ function escrever(e) {
   const sx = f.querySelector(`[name=sexo][value="${e.sexo === 'F' ? 'F' : 'M'}"]`); if (sx) sx.checked = true;
   if (e.deficiencia) { set('defGrau', e.deficiencia.grau); set('defInicio', e.deficiencia.inicio); }
   const p = Object.assign({}, M.PADRAO_PARAM, e.param || {});
-  set('corteEC103', p.corteEC103); set('lpNosPontos', p.lpNosPontos); set('converteEspecial', p.converteEspecial); set('acrescimoMulher15', p.acrescimoMulher15);
+  set('corteEC103', p.corteEC103); set('lpNosPontos', p.lpNosPontos); set('converteEspecial', p.converteEspecial); set('acrescimoMulher15', p.acrescimoMulher15); set('acrescimo17Magistrado', p.acrescimo17Magistrado);
   for (const t in LISTAS) $(LISTAS[t][0]).innerHTML = '';
   (e.periodos || []).forEach(q => addLinha('per', q));
   (e.deducoes || []).forEach(q => addLinha('ded', q));
@@ -1043,6 +1049,7 @@ function render(res, e) {
     <div><span>Compulsória</span><b>${br(s.compulsoria)}</b></div>
     ${s.lp ? `<div><span>Licença-prêmio em dobro</span><b>${s.lp} dias</b></div>` : ''}
     ${s.conversao ? `<div><span>Acréscimo por conversão</span><b>${Math.round(s.conversao)} dias</b></div>` : ''}
+    ${s.acrescimo17 ? `<div><span>Acréscimo de 17% (magistrado)</span><b>${Math.round(s.acrescimo17)} dias</b></div>` : ''}
     ${s.exposicao ? `<div><span>Efetiva exposição</span><b>${ft(s.exposicao)}</b></div>` : ''}
     ${s.pcdFracao != null ? `<div><span>Tempo PcD cumprido</span><b>${Math.min(100, s.pcdFracao * 100).toFixed(1).replace('.', ',')}%</b></div>` : ''}
   </div>
@@ -1080,7 +1087,7 @@ function render(res, e) {
     h += `<tr class="det" ${ab || imp ? '' : 'hidden'} data-det="${r.id}"><td colspan="4">${det}</td></tr>`;
   }
   h += `</tbody></table></div></div>`;
-  h += `<p class="rodape">Simulação baseada nos dados informados. Não substitui a análise do processo de aposentadoria pela unidade competente nem gera direito. Tempo em dias, ano de 365 dias (Lei 8.112/1990, art. 101). Após a data de referência, presume-se exercício contínuo no cargo atual. Parâmetros: corte da EC 103 em ${br(res.x.corte)}; licença-prêmio nos pontos: ${res.x.p.lpNosPontos ? 'sim' : 'não'}; conversão de tempo especial: ${res.x.p.converteEspecial ? 'sim' : 'não'}.</p>`;
+  h += `<p class="rodape">Simulação baseada nos dados informados. Não substitui a análise do processo de aposentadoria pela unidade competente nem gera direito. Tempo em dias, ano de 365 dias (Lei 8.112/1990, art. 101). Após a data de referência, presume-se exercício contínuo no cargo atual. Parâmetros: corte da EC 103 em ${br(res.x.corte)}; licença-prêmio nos pontos: ${res.x.p.lpNosPontos ? 'sim' : 'não'}; conversão de tempo especial: ${res.x.p.converteEspecial ? 'sim' : 'não'}; acréscimo de 17% para magistrado: ${res.x.p.acrescimo17Magistrado ? 'sim' : 'não'}.</p>`;
   corpo.innerHTML = h;
   // cabeçalho de impressão
   $('#impCab').innerHTML = `<p style="margin:0 0 10px"><b>Interessado(a):</b> ${esc(e.nome || '—')} · <b>Processo:</b> ${esc(e.processo || '—')} · <b>Nascimento:</b> ${br(M.d2n(e.nasc))} · <b>Sexo:</b> ${e.sexo === 'F' ? 'feminino' : 'masculino'} · <b>Gerado em:</b> ${br(M.d2n(hoje))}</p>`;
