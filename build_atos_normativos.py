@@ -530,7 +530,9 @@ def incorpora_site(atos, site):
             alvo = cands[0] if cands else None
             if alvo is not None:
                 pw, pe = palavras(texto_site + " " + " ".join(x[0]["titulo"] or "" for x in docs)), palavras(alvo["ementa"])
-                if len(pw) >= 3 and len(pe) >= 3 and not (pw & pe):
+                # título só com a identificação (ex.: "ATO CONJUNTO TRT 17ª PRESI/NUPEMEC Nº 01/2024"): sem assunto para comparar
+                sem_assunto = len(palavras(texto_site) - palavras(nome)) < 3
+                if not sem_assunto and len(pw) >= 3 and len(pe) >= 3 and not (pw & pe):
                     st["rejeitado_assunto"] += 1   # mesmo número, assuntos sem nada em comum: atos diferentes
                     alvo = None
         if alvo is not None:
@@ -570,7 +572,7 @@ RX_CONCRETO = re.compile(r"^\W*(?:"
     r"convoca\w*|remov\w*|remo[cç][aã]o|lota\w*|cede\b|cess[aã]o d[eao]|redistribu\w*|vincula\w*|desvincula\w*|reconduz\w*|substitui[cç][aã]o d[eoa]|"
     r"homologa\w*|torna p[uú]blic\w*|publica (?:a|o) (?:lista|resultado|rela[cç])|indica\w*|elege\w*|elei[cç](?:[aã]o|[oõ]es)|escala\b|escala de|"
     r"suspen(?:de|s[aã]o)\b.{0,60}\b(?:prazo|expediente|atividade|distribui)|prorroga\w*\b.{0,60}\b(?:prazo|suspens|expediente)|"
-    r"aprova\w*\s+(?:a\s+)?prorroga[cç][aã]o\b|prorroga\w*\s+(?:d[aoe]s?\s+)?(?:prazo\s+de\s+)?validade|prorroga\w*\s+(?:d[aoe]s?\s+)?licen[cç]a|licen[cç]a[- ]pr[eê]mio|autoriza\w*\s+a\s+realiza[cç][aã]o\s+d[eo]\s+concurso|"
+    r"aprova\w*\s+(?:a\s+)?prorroga[cç][aã]o\b|relat[oó]rio\s+de\s+(?:auditoria|gest[aã]o|atividades)|prorroga\w*\s+(?:d[aoe]s?\s+)?(?:prazo\s+de\s+)?validade|prorroga\w*\s+(?:d[aoe]s?\s+)?licen[cç]a|licen[cç]a[- ]pr[eê]mio|autoriza\w*\s+a\s+realiza[cç][aã]o\s+d[eo]\s+concurso|"
     r"(?:decreta|declara)\b.{0,30}ponto facultativo|ponto facultativo|altera,?\s+excepcionalmente|altera a composi[cç][aã]o|comp[oõ]e\b|"
     r"referenda\w*|aceita\w*|averba\w*|declara\w* (?:vag|vac)|vac[aâ]ncia|promo(?:ve|[cç][aã]o)\b|abono|"
     r"gabarito|resultado|calend[aá]rio de correi|edital|lista d|rela[cç][aã]o d[oe]s|autoriza a elimina|aprova (?:a|o) (?:escala|relat[oó]rio|calend|lista)|"
